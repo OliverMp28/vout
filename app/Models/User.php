@@ -2,19 +2,30 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 
+/**
+ * Usuario del ecosistema Vout.
+ *
+ * Es la entidad central del sistema de identidad (IdP).
+ * Un usuario puede tener configuración personal, perfiles
+ * de gestos faciales, y un historial de juegos interactuados.
+ */
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable, TwoFactorAuthenticatable;
 
     /**
-     * The attributes that are mass assignable.
+     * Atributos asignables masivamente.
      *
      * @var list<string>
      */
@@ -29,7 +40,7 @@ class User extends Authenticatable
     ];
 
     /**
-     * The attributes that should be hidden for serialization.
+     * Atributos ocultos en la serialización (JSON/array).
      *
      * @var list<string>
      */
@@ -41,7 +52,7 @@ class User extends Authenticatable
     ];
 
     /**
-     * Get the attributes that should be cast.
+     * Definición de casts para atributos del modelo.
      *
      * @return array<string, string>
      */
@@ -52,5 +63,57 @@ class User extends Authenticatable
             'password' => 'hashed',
             'two_factor_confirmed_at' => 'datetime',
         ];
+    }
+
+    // ─── Relaciones ──────────────────────────────────────────
+
+    /**
+     * Configuración personal del usuario (modo oscuro, mascota, etc.).
+     * Relación uno-a-uno.
+     */
+    public function settings(): HasOne
+    {
+        return $this->hasOne(UserSetting::class);
+    }
+
+    /**
+     * Perfiles de configuración de gestos faciales del usuario.
+     * Un usuario puede tener múltiples perfiles de gestos.
+     */
+    public function gestureConfigs(): HasMany
+    {
+        return $this->hasMany(GestureConfig::class);
+    }
+
+    /**
+     * Juegos con los que el usuario ha interactuado.
+     * La tabla pivote almacena favoritos, puntuaciones y conteo de partidas.
+     */
+    public function games(): BelongsToMany
+    {
+        return $this->belongsToMany(Game::class)
+            ->withPivot('is_favorite', 'is_saved', 'play_count', 'best_score', 'last_played_at')
+            ->withTimestamps();
+    }
+
+    // ─── Accessors ───────────────────────────────────────────
+
+    /**
+     * Indica si el usuario tiene una cuenta de Google vinculada.
+     * Útil para verificar rápidamente el estado SSO del perfil.
+     */
+    protected function hasGoogleLinked(): Attribute
+    {
+        return Attribute::get(fn (): bool => $this->google_id !== null);
+    }
+
+    // ─── Scopes ──────────────────────────────────────────────
+
+    /**
+     * Scope: solo usuarios con cuenta de Google vinculada.
+     */
+    public function scopeWithGoogle(Builder $query): Builder
+    {
+        return $query->whereNotNull('google_id');
     }
 }

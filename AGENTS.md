@@ -52,6 +52,80 @@ Actualmente, el trabajo se centra exclusivamente en Vout. El objetivo es:
 **Instrucción para Agentes de IA:**
 Cuando trabajes en este proyecto, recuerda que el foco es construir esta base sólida de usuarios (SSO / Proveedor de identidad cruzada) y el sistema de control facial (MediaPipe) que servirá de cimiento para todo el ecosistema futuro. Todo el código desarrollado debe alinearse con esta visión de "Plataforma Central de Identidad y Gaming". No te desvíes creando lógicas para juegos específicos, enfócate en el núcleo (Vout).
 
+=== .ai/vout-roadmap rules ===
+
+# Hoja de Ruta de Desarrollo: Proyecto Vout
+
+Este documento define la estrategia recomendada para desarrollar Vout (antes Tout), priorizando su función como **Identity Provider (IdP)** y motor de visión antes de la integración de juegos externos.
+*Nota: Esta ruta es flexible y puede adaptarse según las necesidades del desarrollo a lo largo del tiempo.*
+
+## Fase 1: Cimientos y Sistema de Identidad (IdP)
+
+La prioridad absoluta es establecer a Vout como el servidor central de autenticación. No se puede avanzar en el ecosistema de gaming si el "pasaporte" de usuario no existe.
+
+### 1.1. Entorno de Desarrollo Base:
+
+- [x] Instalación limpia de Laravel 12 mediante Laravel Sail.
+- [x] Configuración de Inertia.js con React, Vite y Tailwind v4.
+- [x] Configuración de TypeScript para asegurar la robustez del frontend.
+*El entorno base ya está establecido en el repositorio.*
+
+### 1.2. Sistema de Usuarios Nativo:
+
+- [x] Diseño de migraciones y base de datos (campo `google_id`, `avatar`, etc.).
+- [ ] Desarrollo de controladores de autenticación (`AuthController`) y vistas de registro/login en React (`Inertia`).
+
+### 1.3. Integración con Google (Socialite):
+
+- [ ] Implementación de Laravel Socialite para permitir el inicio de sesión con Google.
+- [ ] Lógica de vinculación: Asociar perfiles existentes por correo o registrar nuevos extrayendo datos (como el avatar).
+
+### 1.4. Seguridad y Emisión de Tokens (Cross-Domain):
+
+- [ ] Configuración de sesión unificada para la propia web de Vout usando Laravel Sanctum.
+- [ ] Propuesta Técnica: Uso de `lcobucci/jwt` para la emisión de tokens JWT estandarizados destinados a aplicaciones externas (como Dino). *Nota: Sanctum API tokens no exportan este formato/funcionalidad pura de JWT que viene muy bien para SSO con apps de terceros, pero la decisión final sigue abierta a mejoras.*
+- [ ] Creación de endpoints para exponer la clave pública necesaria para que otros proyectos verifiquen la autenticidad de los usuarios de Vout de forma *stateless*.
+
+## Fase 2: Interfaz del Portal y Experiencia de Usuario
+
+Una vez que el usuario puede identificarse, Vout debe ofrecerle el entorno visual para gestionar su perfil y ver los juegos.
+
+### 2.1. Panel de Perfil del Usuario:
+
+- [ ] Vistas React/Inertia para mostrar datos del perfil, actualizar avatar y configuraciones de cuenta.
+- [ ] Implementación de un Layout compartido (Nav, Footer) para una navegación fluida (SPA).
+
+### 2.2. Catálogo de Juegos:
+
+- [ ] Controladores para consultar el catálogo (categorías, desarrolladores y juegos).
+- [ ] Vista de listado/grilla para juegos disponibles.
+
+## Fase 3: Motor de Visión e Inteligencia Artificial
+
+Esta es la fase de innovación donde Vout se convierte en un mando de juego por gestos faciales.
+
+### 3.1. Implementación de MediaPipe:
+
+- [ ] Prototipar componente de cámara usando MediaPipe FaceLandmarker.
+- [ ] **Optimización Crucial:** Ejecutar MediaPipe dentro de un **Web Worker** para garantizar que el procesamiento pesado de la cámara no bloquee el juego en pantalla.
+
+### 3.2. Traducción de Gestos a Acciones:
+
+- [ ] Desarrollo de un controlador JS que traduzca gestos (ej. `BROW_RAISE`) a acciones de juego (ej. `JUMP`).
+- [ ] Interfaz para que el usuario mapee/configure sus propios gestos faciales y guardarlo en tabla `gesture_configs`.
+
+### 3.3. Comunicación con Juegos (iFrames):
+
+- [ ] Componente React para cargar los juegos como iFrames dentro del portal Vout.
+- [ ] Implementación de `postMessage` para enviar las acciones detectadas por la IA desde Vout "hacia dentro" del juego embebido.
+- [ ] **Seguridad:** Validación estricta del origen del mensaje (CORS origin checks) para evitar ataques.
+
+---
+
+### 🛠️ Próximo paso accionable (Qué debe hacer el Agente):
+
+- [ ] **Implementar Auth Nativo (Login/Registro en React)** y finalizar la estructura del Layout fundamental del portal.
+
 === foundation rules ===
 
 # Laravel Boost Guidelines

@@ -3,21 +3,34 @@
 namespace Database\Seeders;
 
 use App\Models\User;
-// use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+use App\Models\UserSetting;
 use Illuminate\Database\Seeder;
 
+/**
+ * Seeder principal que orquesta la población de la base de datos.
+ *
+ * Ejecuta los seeders de dominio en el orden correcto
+ * respetando las restricciones de clave foránea.
+ */
 class DatabaseSeeder extends Seeder
 {
     /**
-     * Seed the application's database.
+     * Puebla la base de datos de la aplicación.
      */
     public function run(): void
     {
-        // User::factory(10)->create();
+        $this->call([
+            CategorySeeder::class,
+        ]);
 
-        User::factory()->create([
+        $user = User::factory()->create([
             'name' => 'Test User',
+            'username' => 'testuser',
             'email' => 'test@example.com',
+        ]);
+
+        UserSetting::factory()->create([
+            'user_id' => $user->id,
         ]);
     }
 }

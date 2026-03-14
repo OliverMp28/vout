@@ -57,4 +57,25 @@ class UserFactory extends Factory
             'two_factor_confirmed_at' => now(),
         ]);
     }
+
+    /**
+     * Estado: usuario con cuenta de Google vinculada (SSO).
+     */
+    public function withGoogle(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'google_id' => (string) fake()->unique()->randomNumber(8),
+            'avatar' => 'https://lh3.googleusercontent.com/a/default-user=s96-c',
+        ]);
+    }
+
+    /**
+     * Estado: usuario con avatar personalizado.
+     */
+    public function withAvatar(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'avatar' => fake()->imageUrl(200, 200, 'people'),
+        ]);
+    }
 }

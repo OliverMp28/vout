@@ -28,17 +28,19 @@ Uno de los diferenciadores clave de Vout es el uso de inteligencia artificial pa
 
 Como proyecto central, Vout se encarga de:
 
-- **Gestión de Perfiles:** Donde los usuarios pueden personalizar su avatar (`avatar` en `users`), ver su historial de juegos y configurar sus preferencias de control facial.
-- **Catálogo y Categorías:** Un sistema robusto para organizar juegos por género, popularidad o desarrollador (creador o creadores del minijuego en cuestión, considerando que no todos los minijuegos web serán desarrollados de manera interna). Esto se refleja en tablas como `games`, `categories`, `developers`, etc.
+- **Gestión de Perfiles:** Donde los usuarios pueden personalizar su avatar (`avatar` en `users`), ver su historial de juegos y configurar sus preferencias de control facial. Cada usuario tiene su propia configuración de plataforma (tabla `user_settings`: modo oscuro, mascota, gestos habilitados) y su historial de interacción con juegos (tabla pivote `game_user`: favoritos, guardados, puntuación, conteo de partidas).
+- **Catálogo y Categorías:** Un sistema robusto para organizar juegos por género, popularidad o desarrollador (creador o creadores del minijuego en cuestión, considerando que no todos los minijuegos web serán desarrollados de manera interna). Un juego puede pertenecer a **múltiples categorías** simultáneamente (relación many-to-many vía tabla pivote `category_game`). Esto se refleja en tablas como `games`, `categories`, `category_game`, `developers`, `developer_game`, etc.
+- **Aplicaciones Externas (SSO):** La tabla `registered_apps` almacena las aplicaciones externas del ecosistema autorizadas para usar Vout como proveedor de identidad, incluyendo sus orígenes permitidos para validaciones CORS.
 - **Hospedaje de Juegos (iFrames):** Los juegos se ejecutan dentro de Vout de forma segura. Vout actúa como el "anfitrión" que le envía las órdenes de movimiento al juego que el usuario está viendo en pantalla.
 
 ## 5. El "Apretón de Manos" Técnico
 
 Para lograr esto, Vout se está construyendo con tecnologías modernas que garantizan seguridad y velocidad:
 
-- **El Motor (Backend):** Laravel 12, que se encarga de la seguridad, la base de datos de usuarios (MariaDB) y la emisión de los "pasaportes" digitales.
-- **La Interfaz (Frontend):** Una combinación de React e Inertia.js v2 que permite que la navegación por el portal sea instantánea, como si fuera una aplicación móvil, pero con la potencia de una web profesional.
-- **Diseño:** Se utiliza Tailwind CSS v4 para asegurar una interfaz visualmente atractiva, moderna y adaptable a cualquier dispositivo. Pest PHP para pruebas de código.
+- **El Motor (Backend):** Laravel 12, que se encarga de la seguridad, la base de datos de usuarios (MariaDB) y la emisión de los "pasaportes" digitales. Laravel Fortify gestiona la autenticación nativa (registro, login, verificación de email, reset de contraseña, 2FA con TOTP).
+- **La Interfaz (Frontend):** Una combinación de React e Inertia.js v2 que permite que la navegación por el portal sea instantánea, como si fuera una aplicación móvil, pero con la potencia de una web profesional. Wayfinder genera funciones TypeScript tipadas para las rutas de Laravel.
+- **Diseño:** Se utiliza Tailwind CSS v4 para asegurar una interfaz visualmente atractiva, moderna y adaptable a cualquier dispositivo.
+- **Testing:** Pest PHP para pruebas de código (unit y feature tests). Pint para formateo automático del código.
 
 ## 6. Intención del Proyecto Actual
 
