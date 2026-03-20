@@ -30,4 +30,10 @@ yarn-error.log
 /.claude
 /.cursor
 /list.txt
-/.ai/guidelines/vout-roadmap.md
+/.ai/guidelines/vout-*
+!/.ai/guidelines/vout-context.md
+
+# AI Instruction files
+/AGENTS.md
+/CLAUDE.md
+/GEMINI.md
