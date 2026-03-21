@@ -1,4 +1,5 @@
 import { Form, Head } from '@inertiajs/react';
+import { ShieldCheck } from 'lucide-react';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,41 +11,46 @@ import { store } from '@/routes/password/confirm';
 export default function ConfirmPassword() {
     return (
         <AuthLayout
-            title="Confirm your password"
-            description="This is a secure area of the application. Please confirm your password before continuing."
+            title="Confirmar contraseña"
+            description="Esta es una zona segura. Confirma tu contraseña para continuar."
         >
-            <Head title="Confirm password" />
+            <Head title="Confirmar contraseña" />
 
-            <Form {...store.form()} resetOnSuccess={['password']}>
-                {({ processing, errors }) => (
-                    <div className="space-y-6">
-                        <div className="grid gap-2">
-                            <Label htmlFor="password">Password</Label>
-                            <Input
-                                id="password"
-                                type="password"
-                                name="password"
-                                placeholder="Password"
-                                autoComplete="current-password"
-                                autoFocus
-                            />
+            <div className="space-y-6">
+                <div className="flex justify-center">
+                    <div className="flex size-16 items-center justify-center rounded-full bg-primary/10">
+                        <ShieldCheck className="size-8 text-primary" />
+                    </div>
+                </div>
 
-                            <InputError message={errors.password} />
-                        </div>
+                <Form {...store.form()} resetOnSuccess={['password']}>
+                    {({ processing, errors }) => (
+                        <div className="space-y-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="password">Contraseña</Label>
+                                <Input
+                                    id="password"
+                                    type="password"
+                                    name="password"
+                                    placeholder="••••••••"
+                                    autoComplete="current-password"
+                                    autoFocus
+                                />
+                                <InputError message={errors.password} />
+                            </div>
 
-                        <div className="flex items-center">
                             <Button
                                 className="w-full"
                                 disabled={processing}
                                 data-test="confirm-password-button"
                             >
                                 {processing && <Spinner />}
-                                Confirm password
+                                Confirmar contraseña
                             </Button>
                         </div>
-                    </div>
-                )}
-            </Form>
+                    )}
+                </Form>
+            </div>
         </AuthLayout>
     );
 }

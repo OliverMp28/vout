@@ -7,9 +7,16 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/*
+ * ─── Tipografía ──────────────────────────────────────────────
+ * Inter: moderna, legible, excelente para interfaces.
+ * Cargada desde Google Fonts con display=swap para rendimiento.
+ */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
 @theme {
     --font-sans:
-        'Instrument Sans', ui-sans-serif, system-ui, sans-serif,
+        'Inter', ui-sans-serif, system-ui, sans-serif,
         'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
         'Noto Color Emoji';
 
@@ -61,75 +68,91 @@
     --color-sidebar-ring: var(--sidebar-ring);
 }
 
+/*
+ * ─── Light Mode ──────────────────────────────────────────────
+ * Paleta violeta/púrpura como accent de marca Vout.
+ * oklch para mayor percepción de color uniforme.
+ */
 :root {
-    --background: oklch(1 0 0);
-    --foreground: oklch(0.145 0 0);
-    --card: oklch(1 0 0);
-    --card-foreground: oklch(0.145 0 0);
-    --popover: oklch(1 0 0);
-    --popover-foreground: oklch(0.145 0 0);
-    --primary: oklch(0.205 0 0);
-    --primary-foreground: oklch(0.985 0 0);
-    --secondary: oklch(0.97 0 0);
-    --secondary-foreground: oklch(0.205 0 0);
-    --muted: oklch(0.97 0 0);
-    --muted-foreground: oklch(0.556 0 0);
-    --accent: oklch(0.97 0 0);
-    --accent-foreground: oklch(0.205 0 0);
+    --background: oklch(0.975 0.005 285);
+    --foreground: oklch(0.145 0.015 285);
+    --card: oklch(0.99 0.002 285);
+    --card-foreground: oklch(0.145 0.015 285);
+    --popover: oklch(0.99 0.002 285);
+    --popover-foreground: oklch(0.145 0.015 285);
+    --primary: oklch(0.45 0.2 285);
+    --primary-foreground: oklch(0.985 0.005 285);
+    --secondary: oklch(0.95 0.01 285);
+    --secondary-foreground: oklch(0.25 0.06 285);
+    --muted: oklch(0.95 0.01 285);
+    --muted-foreground: oklch(0.5 0.02 285);
+    --accent: oklch(0.95 0.02 285);
+    --accent-foreground: oklch(0.3 0.08 285);
     --destructive: oklch(0.577 0.245 27.325);
     --destructive-foreground: oklch(0.577 0.245 27.325);
-    --border: oklch(0.922 0 0);
-    --input: oklch(0.922 0 0);
-    --ring: oklch(0.87 0 0);
-    --chart-1: oklch(0.646 0.222 41.116);
+    --border: oklch(0.91 0.01 285);
+    --input: oklch(0.91 0.01 285);
+    --ring: oklch(0.55 0.18 285);
+    --chart-1: oklch(0.55 0.2 285);
     --chart-2: oklch(0.6 0.118 184.704);
     --chart-3: oklch(0.398 0.07 227.392);
     --chart-4: oklch(0.828 0.189 84.429);
     --chart-5: oklch(0.769 0.188 70.08);
     --radius: 0.625rem;
-    --sidebar: oklch(0.985 0 0);
-    --sidebar-foreground: oklch(0.145 0 0);
-    --sidebar-primary: oklch(0.205 0 0);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.97 0 0);
-    --sidebar-accent-foreground: oklch(0.205 0 0);
-    --sidebar-border: oklch(0.922 0 0);
-    --sidebar-ring: oklch(0.87 0 0);
+    --sidebar: oklch(0.98 0.005 285);
+    --sidebar-foreground: oklch(0.145 0.015 285);
+    --sidebar-primary: oklch(0.45 0.2 285);
+    --sidebar-primary-foreground: oklch(0.985 0.005 285);
+    --sidebar-accent: oklch(0.95 0.02 285);
+    --sidebar-accent-foreground: oklch(0.3 0.08 285);
+    --sidebar-border: oklch(0.91 0.01 285);
+    --sidebar-ring: oklch(0.55 0.18 285);
+
+    /* Marca Vout — gradientes decorativos */
+    --vout-gradient-start: oklch(0.5 0.22 280);
+    --vout-gradient-end: oklch(0.45 0.18 310);
 }
 
+/*
+ * ─── Dark Mode ───────────────────────────────────────────────
+ */
 .dark {
-    --background: oklch(0.145 0 0);
-    --foreground: oklch(0.985 0 0);
-    --card: oklch(0.145 0 0);
-    --card-foreground: oklch(0.985 0 0);
-    --popover: oklch(0.145 0 0);
-    --popover-foreground: oklch(0.985 0 0);
-    --primary: oklch(0.985 0 0);
-    --primary-foreground: oklch(0.205 0 0);
-    --secondary: oklch(0.269 0 0);
-    --secondary-foreground: oklch(0.985 0 0);
-    --muted: oklch(0.269 0 0);
-    --muted-foreground: oklch(0.708 0 0);
-    --accent: oklch(0.269 0 0);
-    --accent-foreground: oklch(0.985 0 0);
+    --background: oklch(0.19 0.015 285);
+    --foreground: oklch(0.96 0.005 285);
+    --card: oklch(0.22 0.02 285);
+    --card-foreground: oklch(0.96 0.005 285);
+    --popover: oklch(0.22 0.02 285);
+    --popover-foreground: oklch(0.96 0.005 285);
+    --primary: oklch(0.7 0.18 285);
+    --primary-foreground: oklch(0.19 0.015 285);
+    --secondary: oklch(0.27 0.03 285);
+    --secondary-foreground: oklch(0.96 0.005 285);
+    --muted: oklch(0.27 0.03 285);
+    --muted-foreground: oklch(0.7 0.02 285);
+    --accent: oklch(0.27 0.03 285);
+    --accent-foreground: oklch(0.96 0.005 285);
     --destructive: oklch(0.396 0.141 25.723);
     --destructive-foreground: oklch(0.637 0.237 25.331);
-    --border: oklch(0.269 0 0);
-    --input: oklch(0.269 0 0);
-    --ring: oklch(0.439 0 0);
-    --chart-1: oklch(0.488 0.243 264.376);
+    --border: oklch(0.30 0.025 285);
+    --input: oklch(0.30 0.025 285);
+    --ring: oklch(0.6 0.15 285);
+    --chart-1: oklch(0.65 0.2 285);
     --chart-2: oklch(0.696 0.17 162.48);
     --chart-3: oklch(0.769 0.188 70.08);
     --chart-4: oklch(0.627 0.265 303.9);
     --chart-5: oklch(0.645 0.246 16.439);
-    --sidebar: oklch(0.205 0 0);
-    --sidebar-foreground: oklch(0.985 0 0);
-    --sidebar-primary: oklch(0.985 0 0);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.269 0 0);
-    --sidebar-accent-foreground: oklch(0.985 0 0);
-    --sidebar-border: oklch(0.269 0 0);
-    --sidebar-ring: oklch(0.439 0 0);
+    --sidebar: oklch(0.22 0.02 285);
+    --sidebar-foreground: oklch(0.96 0.005 285);
+    --sidebar-primary: oklch(0.7 0.18 285);
+    --sidebar-primary-foreground: oklch(0.96 0.005 285);
+    --sidebar-accent: oklch(0.27 0.03 285);
+    --sidebar-accent-foreground: oklch(0.96 0.005 285);
+    --sidebar-border: oklch(0.30 0.025 285);
+    --sidebar-ring: oklch(0.6 0.15 285);
+
+    /* Marca Vout — gradientes decorativos (dark) */
+    --vout-gradient-start: oklch(0.4 0.2 280);
+    --vout-gradient-end: oklch(0.35 0.15 310);
 }
 
 @layer base {
@@ -141,3 +164,75 @@
         @apply bg-background text-foreground;
     }
 }
+
+/*
+ * ─── Glassmorfismo ───────────────────────────────────────────
+ * Uso natural, solo en paneles decorativos y cards flotantes.
+ * NO usar en inputs ni en botones de acción.
+ */
+.glass-card {
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(12px) saturate(1.4);
+    -webkit-backdrop-filter: blur(12px) saturate(1.4);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: var(--radius);
+}
+
+.glass-card-light {
+    background: rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(16px) saturate(1.3);
+    -webkit-backdrop-filter: blur(16px) saturate(1.3);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: var(--radius);
+    box-shadow:
+        0 1px 3px rgba(0, 0, 0, 0.04),
+        0 4px 12px rgba(0, 0, 0, 0.03);
+}
+
+:is(.dark) .glass-card-light {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.08);
+    box-shadow:
+        0 1px 3px rgba(0, 0, 0, 0.2),
+        0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/*
+ * ─── Animaciones decorativas ─────────────────────────────────
+ */
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-8px); }
+}
+
+@keyframes float-slow {
+    0%, 100% { transform: translateY(0px) rotate(0deg); }
+    50% { transform: translateY(-12px) rotate(2deg); }
+}
+
+@keyframes glow-pulse {
+    0%, 100% { opacity: 0.4; }
+    50% { opacity: 0.7; }
+}
+
+@keyframes slide-up-fade {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-float {
+    animation: float 5s ease-in-out infinite;
+}
+
+.animate-float-slow {
+    animation: float-slow 7s ease-in-out infinite;
+}
+
+.animate-glow-pulse {
+    animation: glow-pulse 4s ease-in-out infinite;
+}
+
+.animate-slide-up-fade {
+    animation: slide-up-fade 0.5s ease-out both;
+}
+
