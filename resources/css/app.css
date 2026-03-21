@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
 @import 'tailwindcss';
 
 @import 'tw-animate-css';
@@ -12,7 +14,6 @@
  * Inter: moderna, legible, excelente para interfaces.
  * Cargada desde Google Fonts con display=swap para rendimiento.
  */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
 @theme {
     --font-sans:

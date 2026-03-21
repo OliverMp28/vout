@@ -50,3 +50,9 @@ Actualmente, el trabajo se centra exclusivamente en Vout. El objetivo es:
 
 **Instrucción para Agentes de IA:**
 Cuando trabajes en este proyecto, recuerda que el foco es construir esta base sólida de usuarios (SSO / Proveedor de identidad cruzada) y el sistema de control facial (MediaPipe) que servirá de cimiento para todo el ecosistema futuro. Todo el código desarrollado debe alinearse con esta visión de "Plataforma Central de Identidad y Gaming". No te desvíes creando lógicas para juegos específicos, enfócate en el núcleo (Vout).
+
+## 7. Notas de Entorno y Ejecución para Agentes de IA (CRÍTICO)
+
+1. **Entorno WSL y Navegador:** El proyecto se ejecuta en Ubuntu bajo WSL2 en Windows. Las dependencias del SO y el binario de Chromium para el "Agente Navegador" (Playwright) **ya están instaladas**. El navegador ya funciona localmente en `http://localhost`.
+2. **Laravel Sail:** Todo comando back-end se debe ejecutar a través de Sail (`./vendor/bin/sail ...`), nunca llamando a `php` o `artisan` localmente.
+3. **Gestor de Paquetes (Bun):** El proyecto usa `bun` para el Front-end. Usa `./vendor/bin/sail bun dev` y `./vendor/bin/sail bun add ...`. Nunca uses `npm`.

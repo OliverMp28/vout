@@ -1,4 +1,5 @@
 import { Form, Head } from '@inertiajs/react';
+import { GoogleIcon } from '@/components/icons/google-icon';
 import InputError from '@/components/input-error';
 import TextLink from '@/components/text-link';
 import { Button } from '@/components/ui/button';
@@ -111,6 +112,27 @@ export default function Login({
                         >
                             {processing && <Spinner />}
                             Iniciar sesión
+                        </Button>
+
+                        <div className="relative my-4">
+                            <div className="absolute inset-0 flex items-center">
+                                <span className="w-full border-t border-border" />
+                            </div>
+                            <div className="relative flex justify-center text-xs uppercase">
+                                <span className="bg-background px-2 text-muted-foreground">
+                                    O continuar con
+                                </span>
+                            </div>
+                        </div>
+
+                        <Button
+                            type="button"
+                            variant="outline"
+                            className="w-full transition-all duration-200 hover:shadow-md"
+                            onClick={() => window.location.href = '/auth/google/redirect'}
+                        >
+                            <GoogleIcon className="mr-2 size-4" />
+                            Continuar con Google
                         </Button>
 
                         {canRegister && (
