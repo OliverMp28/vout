@@ -10,7 +10,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Str;
 use Laravel\Fortify\TwoFactorAuthenticatable;
+use Laravel\Passport\HasApiTokens;
 
 /**
  * Usuario del ecosistema Vout.
@@ -22,7 +24,10 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable, TwoFactorAuthenticatable;
+    use HasApiTokens;
+    use HasFactory;
+    use Notifiable;
+    use TwoFactorAuthenticatable;
 
     /**
      * Atributos asignables masivamente.
@@ -30,6 +35,7 @@ class User extends Authenticatable
      * @var list<string>
      */
     protected $fillable = [
+        'vout_id',
         'name',
         'username',
         'email',
@@ -38,6 +44,18 @@ class User extends Authenticatable
         'bio',
         'google_id',
     ];
+
+    /**
+     * Hook para modelos
+     */
+    protected static function booted(): void
+    {
+        static::creating(function (User $user) {
+            if (empty($user->vout_id)) {
+                $user->vout_id = (string) Str::uuid();
+            }
+        });
+    }
 
     /**
      * Atributos ocultos en la serialización (JSON/array).

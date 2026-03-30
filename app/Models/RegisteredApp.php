@@ -29,6 +29,9 @@ class RegisteredApp extends Model
         'app_url',
         'allowed_origins',
         'is_active',
+        'oauth_client_id',
+        'is_first_party',
+        'requires_auth',
     ];
 
     /**
@@ -41,6 +44,8 @@ class RegisteredApp extends Model
         return [
             'allowed_origins' => 'array',
             'is_active' => 'boolean',
+            'is_first_party' => 'boolean',
+            'requires_auth' => 'boolean',
         ];
     }
 

@@ -24,6 +24,20 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->configureDefaults();
+        $this->configurePassport();
+    }
+
+    /**
+     * Vout: Configuración centralizada de Laravel Passport IdP
+     */
+    protected function configurePassport(): void
+    {
+        \Laravel\Passport\Passport::tokensExpireIn(now()->addMinutes(config('vout.passport.access_token_ttl_minutes')));
+        \Laravel\Passport\Passport::refreshTokensExpireIn(now()->addDays(config('vout.passport.refresh_token_ttl_days')));
+        \Laravel\Passport\Passport::personalAccessTokensExpireIn(now()->addMonths(config('vout.passport.personal_access_token_ttl_months')));
+
+        // Seamless SSO para First-Party Apps mediante modelo extendido
+        \Laravel\Passport\Passport::useClientModel(\App\Models\Passport\Client::class);
     }
 
     /**

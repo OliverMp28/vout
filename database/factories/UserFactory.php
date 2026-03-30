@@ -24,6 +24,7 @@ class UserFactory extends Factory
     public function definition(): array
     {
         return [
+            'vout_id' => Str::uuid()->toString(),
             'name' => fake()->name(),
             'username' => preg_replace('/[^a-zA-Z0-9_]/', '_', fake()->unique()->userName()),
             'email' => fake()->unique()->safeEmail(),

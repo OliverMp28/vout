@@ -25,6 +25,9 @@ class RegisteredAppFactory extends Factory
             'app_url' => fake()->url(),
             'allowed_origins' => [fake()->url(), fake()->url()],
             'is_active' => true,
+            'oauth_client_id' => null,
+            'is_first_party' => false,
+            'requires_auth' => true,
         ];
     }
 
