@@ -1,9 +1,11 @@
 import { Link } from '@inertiajs/react';
 import { Github, Twitter, Youtube } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
+import { useTranslation } from '@/hooks/use-translation';
 
 export function AppFooter() {
     const currentYear = new Date().getFullYear();
+    const { t } = useTranslation();
 
     return (
         <footer className="border-t border-border/40 bg-background/50 backdrop-blur-sm">
@@ -14,9 +16,7 @@ export function AppFooter() {
                             <AppLogo />
                         </Link>
                         <p className="max-w-xs text-sm text-muted-foreground">
-                            La plataforma central de identidad y gaming
-                            hands-free. Impulsando la accesibilidad a través de
-                            la visión artificial.
+                            {t('footer.desc')}
                         </p>
                         <div className="flex space-x-6">
                             <a
@@ -46,7 +46,7 @@ export function AppFooter() {
                         <div className="md:grid md:grid-cols-2 md:gap-8">
                             <div>
                                 <h3 className="text-sm font-semibold tracking-wider text-foreground uppercase">
-                                    Plataforma
+                                    {t('footer.platform')}
                                 </h3>
                                 <ul className="mt-4 space-y-4">
                                     <li>
@@ -54,7 +54,7 @@ export function AppFooter() {
                                             href="#"
                                             className="text-sm text-muted-foreground transition-colors hover:text-primary"
                                         >
-                                            Catálogo
+                                            {t('footer.catalog')}
                                         </Link>
                                     </li>
                                     <li>
@@ -62,7 +62,7 @@ export function AppFooter() {
                                             href="#"
                                             className="text-sm text-muted-foreground transition-colors hover:text-primary"
                                         >
-                                            Desarrolladores
+                                            {t('footer.developers')}
                                         </Link>
                                     </li>
                                     <li>
@@ -77,7 +77,7 @@ export function AppFooter() {
                             </div>
                             <div className="mt-12 md:mt-0">
                                 <h3 className="text-sm font-semibold tracking-wider text-foreground uppercase">
-                                    Soporte
+                                    {t('footer.support')}
                                 </h3>
                                 <ul className="mt-4 space-y-4">
                                     <li>
@@ -85,7 +85,7 @@ export function AppFooter() {
                                             href="#"
                                             className="text-sm text-muted-foreground transition-colors hover:text-primary"
                                         >
-                                            Documentación
+                                            {t('footer.docs')}
                                         </Link>
                                     </li>
                                     <li>
@@ -93,7 +93,7 @@ export function AppFooter() {
                                             href="#"
                                             className="text-sm text-muted-foreground transition-colors hover:text-primary"
                                         >
-                                            Guía de Gestos
+                                            {t('footer.guides')}
                                         </Link>
                                     </li>
                                     <li>
@@ -101,7 +101,7 @@ export function AppFooter() {
                                             href="#"
                                             className="text-sm text-muted-foreground transition-colors hover:text-primary"
                                         >
-                                            Contacto
+                                            {t('footer.contact')}
                                         </Link>
                                     </li>
                                 </ul>
@@ -110,7 +110,7 @@ export function AppFooter() {
                         <div className="md:grid md:grid-cols-2 md:gap-8">
                             <div>
                                 <h3 className="text-sm font-semibold tracking-wider text-foreground uppercase">
-                                    Legal
+                                    {t('footer.legal')}
                                 </h3>
                                 <ul className="mt-4 space-y-4">
                                     <li>
@@ -118,7 +118,7 @@ export function AppFooter() {
                                             href="#"
                                             className="text-sm text-muted-foreground transition-colors hover:text-primary"
                                         >
-                                            Privacidad
+                                            {t('footer.privacy')}
                                         </Link>
                                     </li>
                                     <li>
@@ -126,7 +126,7 @@ export function AppFooter() {
                                             href="#"
                                             className="text-sm text-muted-foreground transition-colors hover:text-primary"
                                         >
-                                            Términos
+                                            {t('footer.terms')}
                                         </Link>
                                     </li>
                                     <li>
@@ -134,7 +134,7 @@ export function AppFooter() {
                                             href="#"
                                             className="text-sm text-muted-foreground transition-colors hover:text-primary"
                                         >
-                                            Cookies
+                                            {t('footer.cookies')}
                                         </Link>
                                     </li>
                                 </ul>
@@ -144,8 +144,7 @@ export function AppFooter() {
                 </div>
                 <div className="mt-12 border-t border-border/40 pt-8">
                     <p className="text-sm text-muted-foreground xl:text-center">
-                        &copy; {currentYear} Vout Ecosystem. Todos los derechos
-                        reservados.
+                        &copy; {currentYear} Vout Ecosystem. {t('footer.rights')}
                     </p>
                 </div>
             </div>

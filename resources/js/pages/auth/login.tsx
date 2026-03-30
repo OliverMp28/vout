@@ -7,6 +7,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
+import { useTranslation } from '@/hooks/use-translation';
 import AuthLayout from '@/layouts/auth-layout';
 import { register } from '@/routes';
 import { store } from '@/routes/login';
@@ -24,13 +25,14 @@ export default function Login({
     canRegister,
 }: Props) {
     const { errors: pageErrors } = usePage().props;
+    const { t } = useTranslation();
 
     return (
         <AuthLayout
-            title="Bienvenido de nuevo"
-            description="Inicia sesión para acceder a tu cuenta"
+            title={t('auth.login.title')}
+            description={t('auth.login.description')}
         >
-            <Head title="Iniciar sesión" />
+            <Head title={t('auth.login.title')} />
 
             {status && (
                 <div className="mb-4 rounded-md bg-green-50 px-3 py-2 text-center text-sm font-medium text-green-700 dark:bg-green-900/20 dark:text-green-400">
@@ -54,7 +56,7 @@ export default function Login({
                         <div className="space-y-4">
                             <div className="space-y-2">
                                 <Label htmlFor="email">
-                                    Correo electrónico
+                                    {t('auth.login.email')}
                                 </Label>
                                 <Input
                                     id="email"
@@ -71,14 +73,14 @@ export default function Login({
 
                             <div className="space-y-2">
                                 <div className="flex items-center justify-between">
-                                    <Label htmlFor="password">Contraseña</Label>
+                                    <Label htmlFor="password">{t('auth.login.password')}</Label>
                                     {canResetPassword && (
                                         <TextLink
                                             href={request()}
                                             className="text-xs"
                                             tabIndex={5}
                                         >
-                                            ¿Olvidaste tu contraseña?
+                                            {t('auth.login.forgot')}
                                         </TextLink>
                                     )}
                                 </div>
@@ -104,7 +106,7 @@ export default function Login({
                                     htmlFor="remember"
                                     className="text-sm font-normal text-muted-foreground"
                                 >
-                                    Recuérdame
+                                    {t('auth.login.remember')}
                                 </Label>
                             </div>
                         </div>
@@ -117,7 +119,7 @@ export default function Login({
                             data-test="login-button"
                         >
                             {processing && <Spinner />}
-                            Iniciar sesión
+                            {t('auth.login.submit')}
                         </Button>
 
                         <div className="relative my-4">
@@ -126,7 +128,7 @@ export default function Login({
                             </div>
                             <div className="relative flex justify-center text-xs uppercase">
                                 <span className="bg-background px-2 text-muted-foreground">
-                                    O continuar con
+                                    {t('auth.login.or')}
                                 </span>
                             </div>
                         </div>
@@ -140,14 +142,14 @@ export default function Login({
                             }
                         >
                             <GoogleIcon className="mr-2 size-4" />
-                            Continuar con Google
+                            {t('auth.login.google')}
                         </Button>
 
                         {canRegister && (
                             <p className="text-center text-sm text-muted-foreground">
-                                ¿No tienes una cuenta?{' '}
+                                {t('auth.login.no_account')}{' '}
                                 <TextLink href={register()} tabIndex={5}>
-                                    Regístrate
+                                    {t('auth.login.register')}
                                 </TextLink>
                             </p>
                         )}

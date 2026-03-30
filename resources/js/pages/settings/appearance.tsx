@@ -7,20 +7,22 @@ import Heading from '@/components/heading';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import { useTranslation } from '@/hooks/use-translation';
 import AppLayout from '@/layouts/app-layout';
 import SettingsLayout from '@/layouts/settings/layout';
 import { edit as editAppearance } from '@/routes/appearance';
 import type { Auth, BreadcrumbItem } from '@/types';
 
-const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Appearance settings',
-        href: editAppearance(),
-    },
-];
-
 export default function Appearance() {
     const auth = usePage().props.auth as Auth;
+    const { t } = useTranslation();
+
+    const breadcrumbs: BreadcrumbItem[] = [
+        {
+            title: t('profile.settings.appearance'),
+            href: editAppearance(),
+        },
+    ];
 
     const { data, setData, patch, processing, recentlySuccessful } = useForm({
         dark_mode: auth.user.settings?.dark_mode ?? true,
@@ -37,14 +39,14 @@ export default function Appearance() {
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Appearance settings" />
+            <Head title={t('profile.settings.appearance')} />
 
-            <h1 className="sr-only">Appearance settings</h1>
+            <h1 className="sr-only">{t('profile.settings.appearance')}</h1>
 
             <SettingsLayout>
                 <div className="space-y-8">
                     {/* Theme Preference */}
-                    <div className="glass-card space-y-6 rounded-xl p-6 md:p-8">
+                    <div className="glass-card-light space-y-6 rounded-xl p-6 md:p-8">
                         <div className="flex items-start gap-4">
                             <div className="shrink-0 rounded-lg bg-primary/10 p-3">
                                 <Paintbrush className="h-6 w-6 text-primary" />
@@ -52,8 +54,8 @@ export default function Appearance() {
                             <div>
                                 <Heading
                                     variant="small"
-                                    title="Theme Preference"
-                                    description="Update the look and feel of your Vout portal"
+                                    title={t('appearance.theme.title')}
+                                    description={t('appearance.theme.desc')}
                                 />
                                 <div className="mt-4">
                                     <AppearanceTabs />
@@ -63,11 +65,11 @@ export default function Appearance() {
                     </div>
 
                     {/* Vout Ecosystem Preferences */}
-                    <div className="glass-card space-y-6 rounded-xl p-6 md:p-8">
+                    <div className="glass-card-light space-y-6 rounded-xl p-6 md:p-8">
                         <Heading
                             variant="small"
-                            title="Ecosystem Preferences"
-                            description="Configure your virtual companion and accessibility tools"
+                            title={t('appearance.ecosystem.title')}
+                            description={t('appearance.ecosystem.desc')}
                         />
 
                         <form onSubmit={submit} className="mt-6 space-y-8">
@@ -82,13 +84,10 @@ export default function Appearance() {
                                             htmlFor="show_mascot"
                                             className="text-base font-medium"
                                         >
-                                            Virtual Mascot
+                                            {t('appearance.mascot.title')}
                                         </Label>
                                         <p className="w-full text-sm text-muted-foreground md:w-3/4">
-                                            Enable the Vout companion character
-                                            to accompany you throughout the
-                                            portal. (The final design of the
-                                            mascot will appear here soon!)
+                                            {t('appearance.mascot.desc')}
                                         </p>
                                     </div>
                                 </div>
@@ -106,7 +105,7 @@ export default function Appearance() {
                                 <div className="animate-in duration-500 ease-out fade-in slide-in-from-top-4">
                                     <div className="flex h-32 w-full items-center justify-center rounded-xl border-2 border-dashed border-primary/20 bg-primary/5 md:h-48">
                                         <div className="space-y-2 text-center">
-                                            <Smile className="mx-auto h-8 w-8 text-primary/40" />
+                                            <Smile className="mx-auto h-8 w-8 text-primary/40 animate-bounce" />
                                             <p className="text-sm font-medium text-primary/60">
                                                 Mascot Preview Area
                                             </p>
@@ -126,12 +125,10 @@ export default function Appearance() {
                                             htmlFor="gestures_enabled"
                                             className="text-base font-medium"
                                         >
-                                            Facial Gesture Controls (MediaPipe)
+                                            {t('appearance.gestures.title')}
                                         </Label>
                                         <p className="w-full text-sm text-muted-foreground md:w-3/4">
-                                            Enable webcam-based facial tracking
-                                            for hands-free gaming in supported
-                                            ecosystem games.
+                                            {t('appearance.gestures.desc')}
                                         </p>
                                     </div>
                                 </div>
@@ -146,7 +143,7 @@ export default function Appearance() {
 
                             <div className="flex items-center gap-4 pt-4">
                                 <Button disabled={processing} type="submit">
-                                    Save Preferences
+                                    {t('profile.save')}
                                 </Button>
 
                                 <Transition
@@ -157,7 +154,7 @@ export default function Appearance() {
                                     leaveTo="opacity-0"
                                 >
                                     <p className="text-sm font-medium text-green-600 dark:text-green-400">
-                                        Preferences saved
+                                        {t('profile.saved')}
                                     </p>
                                 </Transition>
                             </div>

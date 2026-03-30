@@ -17,4 +17,6 @@ Route::middleware('guest')->group(function () {
     Route::get('auth/google/callback', [SocialiteController::class, 'callback'])->name('auth.google.callback');
 });
 
+Route::post('/locale', [\App\Http\Controllers\LocaleController::class, 'update'])->name('locale.update');
+
 require __DIR__.'/settings.php';

@@ -3,6 +3,7 @@ import { LayoutGrid, Menu, Search } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import AppLogoIcon from '@/components/app-logo-icon';
 import { Breadcrumbs } from '@/components/breadcrumbs';
+import { LanguageSwitcher } from '@/components/language-switcher';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
@@ -32,6 +33,7 @@ import {
 import { UserMenuContent } from '@/components/user-menu-content';
 import { useCurrentUrl } from '@/hooks/use-current-url';
 import { useInitials } from '@/hooks/use-initials';
+import { useTranslation } from '@/hooks/use-translation';
 import { cn } from '@/lib/utils';
 import { dashboard } from '@/routes';
 import type { BreadcrumbItem, NavItem } from '@/types';
@@ -40,19 +42,21 @@ type Props = {
     breadcrumbs?: BreadcrumbItem[];
 };
 
-const mainNavItems: NavItem[] = [
-    {
-        title: 'Dashboard',
-        href: dashboard(),
-        icon: LayoutGrid,
-    },
-];
-
 export function AppHeader({ breadcrumbs = [] }: Props) {
     const page = usePage();
     const { auth } = page.props;
     const getInitials = useInitials();
     const { isCurrentUrl, whenCurrentUrl } = useCurrentUrl();
+    const { t } = useTranslation();
+
+    const mainNavItems: NavItem[] = [
+        {
+            title: t('nav.dashboard'),
+            href: dashboard(),
+            icon: LayoutGrid,
+        },
+    ];
+
     return (
         <header className="glass-card-light sticky top-0 z-50 w-full border-b border-white/10 dark:border-white/5">
             <div className="mx-auto flex h-16 items-center px-4 md:max-w-7xl md:px-6 lg:px-8">
@@ -73,7 +77,7 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                             className="flex h-full w-64 flex-col items-stretch justify-between border-r border-border/40 bg-background"
                         >
                             <SheetTitle className="sr-only">
-                                Menú de navegación
+                                {t('nav.menu')}
                             </SheetTitle>
                             <SheetHeader className="flex justify-start border-b border-border/40 px-4 py-6 text-left">
                                 <Link
@@ -172,37 +176,41 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                                     </Button>
                                 </TooltipTrigger>
                                 <TooltipContent>
-                                    <p>Buscar juegos</p>
+                                    <p>{t('nav.search')}</p>
                                 </TooltipContent>
                             </Tooltip>
                         </TooltipProvider>
                     </div>
 
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button
-                                variant="ghost"
-                                className="relative size-10 overflow-hidden rounded-full border-2 border-primary/20 p-0 transition-colors hover:border-primary/50"
+                    <LanguageSwitcher />
+
+                    {auth?.user && (
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button
+                                    variant="ghost"
+                                    className="relative size-10 overflow-hidden rounded-full border-2 border-primary/20 p-0 transition-colors hover:border-primary/50"
+                                >
+                                    <Avatar className="size-full">
+                                        <AvatarImage
+                                            src={auth.user.avatar ?? undefined}
+                                            alt={auth.user.name}
+                                            className="object-cover"
+                                        />
+                                        <AvatarFallback className="bg-primary/10 font-bold text-primary">
+                                            {getInitials(auth.user.name)}
+                                        </AvatarFallback>
+                                    </Avatar>
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent
+                                className="glass-card-light mt-2 w-64 border-white/20 p-1"
+                                align="end"
                             >
-                                <Avatar className="size-full">
-                                    <AvatarImage
-                                        src={auth.user.avatar}
-                                        alt={auth.user.name}
-                                        className="object-cover"
-                                    />
-                                    <AvatarFallback className="bg-primary/10 font-bold text-primary">
-                                        {getInitials(auth.user.name)}
-                                    </AvatarFallback>
-                                </Avatar>
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent
-                            className="glass-card-light mt-2 w-64 border-white/20 p-1"
-                            align="end"
-                        >
-                            <UserMenuContent user={auth.user} />
-                        </DropdownMenuContent>
-                    </DropdownMenu>
+                                <UserMenuContent user={auth.user} />
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    )}
                 </div>
             </div>
             {breadcrumbs.length > 1 && (

@@ -4,6 +4,7 @@ import Heading from '@/components/heading';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { useCurrentUrl } from '@/hooks/use-current-url';
+import { useTranslation } from '@/hooks/use-translation';
 import { cn, toUrl } from '@/lib/utils';
 import { edit as editAppearance } from '@/routes/appearance';
 import { edit } from '@/routes/profile';
@@ -11,10 +12,10 @@ import { show } from '@/routes/two-factor';
 import { edit as editPassword } from '@/routes/user-password';
 import type { NavItem, Auth } from '@/types';
 
-const getSidebarNavItems = (user: Auth['user']): NavItem[] => {
+const getSidebarNavItems = (user: Auth['user'], t: (key: string) => string): NavItem[] => {
     const items: NavItem[] = [
         {
-            title: 'Profile',
+            title: t('nav.profile'),
             href: edit(),
             icon: null,
         },
@@ -22,7 +23,7 @@ const getSidebarNavItems = (user: Auth['user']): NavItem[] => {
 
     if (user.has_password) {
         items.push({
-            title: 'Password',
+            title: t('nav.password'),
             href: editPassword(),
             icon: null,
         });
@@ -30,12 +31,12 @@ const getSidebarNavItems = (user: Auth['user']): NavItem[] => {
 
     items.push(
         {
-            title: 'Two-factor auth',
+            title: t('nav.two_factor'),
             href: show(),
             icon: null,
         },
         {
-            title: 'Appearance',
+            title: t('nav.appearance'),
             href: editAppearance(),
             icon: null,
         },
@@ -47,7 +48,8 @@ const getSidebarNavItems = (user: Auth['user']): NavItem[] => {
 export default function SettingsLayout({ children }: PropsWithChildren) {
     const { isCurrentOrParentUrl } = useCurrentUrl();
     const auth = usePage().props.auth as Auth;
-    const sidebarNavItems = getSidebarNavItems(auth.user);
+    const { t } = useTranslation();
+    const sidebarNavItems = getSidebarNavItems(auth.user, t);
 
     // When server-side rendering, we only render the layout on the client...
     if (typeof window === 'undefined') {
@@ -57,8 +59,8 @@ export default function SettingsLayout({ children }: PropsWithChildren) {
     return (
         <div className="px-4 py-6">
             <Heading
-                title="Settings"
-                description="Manage your profile and account settings"
+                title={t('nav.settings')}
+                description={t('profile.settings.desc')}
             />
 
             <div className="flex flex-col lg:flex-row lg:space-x-12">

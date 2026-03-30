@@ -6,17 +6,20 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
+import { useTranslation } from '@/hooks/use-translation';
 import AuthLayout from '@/layouts/auth-layout';
 import { login } from '@/routes';
 import { store } from '@/routes/register';
 
 export default function Register() {
+    const { t } = useTranslation();
+
     return (
         <AuthLayout
-            title="Crear una cuenta"
-            description="Únete a Vout y empieza a jugar"
+            title={t('auth.register.title')}
+            description={t('auth.register.description')}
         >
-            <Head title="Registro" />
+            <Head title={t('auth.register.title')} />
             <Form
                 {...store.form()}
                 resetOnSuccess={['password', 'password_confirmation']}
@@ -27,7 +30,7 @@ export default function Register() {
                     <>
                         <div className="space-y-4">
                             <div className="space-y-2">
-                                <Label htmlFor="name">Nombre</Label>
+                                <Label htmlFor="name">{t('auth.register.name')}</Label>
                                 <Input
                                     id="name"
                                     type="text"
@@ -36,14 +39,14 @@ export default function Register() {
                                     tabIndex={1}
                                     autoComplete="name"
                                     name="name"
-                                    placeholder="Tu nombre completo"
+                                    placeholder="Jane Doe"
                                 />
                                 <InputError message={errors.name} />
                             </div>
 
                             <div className="space-y-2">
                                 <Label htmlFor="username">
-                                    Nombre de usuario
+                                    {t('profile.fields.username')}
                                 </Label>
                                 <Input
                                     id="username"
@@ -52,14 +55,14 @@ export default function Register() {
                                     tabIndex={2}
                                     autoComplete="username"
                                     name="username"
-                                    placeholder="tu_usuario"
+                                    placeholder="jdoe"
                                 />
                                 <InputError message={errors.username} />
                             </div>
 
                             <div className="space-y-2">
                                 <Label htmlFor="email">
-                                    Correo electrónico
+                                    {t('auth.login.email')}
                                 </Label>
                                 <Input
                                     id="email"
@@ -68,14 +71,14 @@ export default function Register() {
                                     tabIndex={3}
                                     autoComplete="email"
                                     name="email"
-                                    placeholder="tu@correo.com"
+                                    placeholder="correo@ejemplo.com"
                                 />
                                 <InputError message={errors.email} />
                             </div>
 
                             <div className="grid grid-cols-2 gap-3">
                                 <div className="space-y-2">
-                                    <Label htmlFor="password">Contraseña</Label>
+                                    <Label htmlFor="password">{t('auth.login.password')}</Label>
                                     <Input
                                         id="password"
                                         type="password"
@@ -90,7 +93,7 @@ export default function Register() {
 
                                 <div className="space-y-2">
                                     <Label htmlFor="password_confirmation">
-                                        Confirmar
+                                        Confirm
                                     </Label>
                                     <Input
                                         id="password_confirmation"
@@ -115,7 +118,7 @@ export default function Register() {
                             data-test="register-user-button"
                         >
                             {processing && <Spinner />}
-                            Crear cuenta
+                            {t('auth.register.submit')}
                         </Button>
 
                         <div className="relative my-4">
@@ -124,7 +127,7 @@ export default function Register() {
                             </div>
                             <div className="relative flex justify-center text-xs uppercase">
                                 <span className="bg-background px-2 text-muted-foreground">
-                                    O regístrate con
+                                    {t('auth.login.or')}
                                 </span>
                             </div>
                         </div>
@@ -139,13 +142,13 @@ export default function Register() {
                             tabIndex={7}
                         >
                             <GoogleIcon className="mr-2 size-4" />
-                            Continuar con Google
+                            {t('auth.login.google')}
                         </Button>
 
                         <p className="text-center text-sm text-muted-foreground">
-                            ¿Ya tienes una cuenta?{' '}
+                            {t('auth.register.has_account')}{' '}
                             <TextLink href={login()} tabIndex={8}>
-                                Iniciar sesión
+                                {t('auth.register.login')}
                             </TextLink>
                         </p>
                     </>
