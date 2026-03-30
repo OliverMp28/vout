@@ -14,7 +14,7 @@ export function AppShell({ children, variant = 'header', className }: Props) {
 
     if (variant === 'header') {
         return (
-            <div className={cn("flex min-h-screen w-full flex-col", className)}>
+            <div className={cn('flex min-h-screen w-full flex-col', className)}>
                 {children}
             </div>
         );

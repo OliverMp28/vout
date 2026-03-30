@@ -45,7 +45,17 @@ class SocialiteController extends Controller
         $user = User::where('email', $googleUser->getEmail())->first();
 
         if ($user) {
-            // El usuario existe nativamente. Vinculamos la cuenta de Google.
+            // El usuario existe nativamente.
+            
+            // Protección contra sobrescritura silenciosa:
+            // Si el usuario ya tiene un google_id distinto al que intenta usar ahora, abortamos.
+            if ($user->google_id !== null && $user->google_id !== $googleUser->getId()) {
+                return redirect()->route('login')->withErrors([
+                    'email' => 'Esta cuenta de Vout ya está vinculada a otra cuenta de Google distinta. Inicia sesión con la cuenta de Google correcta.',
+                ]);
+            }
+
+            // Vinculamos (o re-vinculamos si era el mismo) la cuenta de Google.
             $user->update([
                 'google_id' => $googleUser->getId(),
                 // Actualizamos el avatar solo si el usuario no tiene uno customizado
@@ -79,5 +89,24 @@ class SocialiteController extends Controller
         Auth::login($user);
 
         return redirect()->intended(route('dashboard', absolute: false));
+    }
+    /**
+     * Desvincula la cuenta de Google del usuario autenticado.
+     */
+    public function unlink(): RedirectResponse
+    {
+        $user = Auth::user();
+
+        // Validamos si el usuario tiene contraseña. Si no tiene, no puede desvincular Google
+        // o perdería el acceso a su cuenta por completo.
+        if (empty($user->password)) {
+            return back()->with('error', 'No puedes desvincular Google porque no has establecido una contraseña para tu cuenta nativa.');
+        }
+
+        $user->update([
+            'google_id' => null,
+        ]);
+
+        return back()->with('status', 'google-unlinked');
     }
 }

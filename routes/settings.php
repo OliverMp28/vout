@@ -25,4 +25,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('settings/two-factor', [TwoFactorAuthenticationController::class, 'show'])
         ->name('two-factor.show');
+
+    Route::patch('settings/appearance', [\App\Http\Controllers\Settings\UserSettingController::class, 'update'])->name('user-settings.update');
+
+    Route::delete('settings/google', [\App\Http\Controllers\Auth\SocialiteController::class, 'unlink'])->name('google.unlink');
 });

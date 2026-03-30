@@ -17,9 +17,8 @@
 
 @theme {
     --font-sans:
-        'Inter', ui-sans-serif, system-ui, sans-serif,
-        'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
-        'Noto Color Emoji';
+        'Inter', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji',
+        'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
 
     --radius-lg: var(--radius);
     --radius-md: calc(var(--radius) - 2px);
@@ -134,8 +133,8 @@
     --accent-foreground: oklch(0.96 0.005 285);
     --destructive: oklch(0.396 0.141 25.723);
     --destructive-foreground: oklch(0.637 0.237 25.331);
-    --border: oklch(0.30 0.025 285);
-    --input: oklch(0.30 0.025 285);
+    --border: oklch(0.3 0.025 285);
+    --input: oklch(0.3 0.025 285);
     --ring: oklch(0.6 0.15 285);
     --chart-1: oklch(0.65 0.2 285);
     --chart-2: oklch(0.696 0.17 162.48);
@@ -148,7 +147,7 @@
     --sidebar-primary-foreground: oklch(0.96 0.005 285);
     --sidebar-accent: oklch(0.27 0.03 285);
     --sidebar-accent-foreground: oklch(0.96 0.005 285);
-    --sidebar-border: oklch(0.30 0.025 285);
+    --sidebar-border: oklch(0.3 0.025 285);
     --sidebar-ring: oklch(0.6 0.15 285);
 
     /* Marca Vout — gradientes decorativos (dark) */
@@ -202,23 +201,44 @@
  * ─── Animaciones decorativas ─────────────────────────────────
  */
 @keyframes float {
-    0%, 100% { transform: translateY(0px); }
-    50% { transform: translateY(-8px); }
+    0%,
+    100% {
+        transform: translateY(0px);
+    }
+    50% {
+        transform: translateY(-8px);
+    }
 }
 
 @keyframes float-slow {
-    0%, 100% { transform: translateY(0px) rotate(0deg); }
-    50% { transform: translateY(-12px) rotate(2deg); }
+    0%,
+    100% {
+        transform: translateY(0px) rotate(0deg);
+    }
+    50% {
+        transform: translateY(-12px) rotate(2deg);
+    }
 }
 
 @keyframes glow-pulse {
-    0%, 100% { opacity: 0.4; }
-    50% { opacity: 0.7; }
+    0%,
+    100% {
+        opacity: 0.4;
+    }
+    50% {
+        opacity: 0.7;
+    }
 }
 
 @keyframes slide-up-fade {
-    from { opacity: 0; transform: translateY(12px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .animate-float {
@@ -236,4 +256,3 @@
 .animate-slide-up-fade {
     animation: slide-up-fade 0.5s ease-out both;
 }
-

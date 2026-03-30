@@ -37,110 +37,239 @@ export default function Profile({
 
             <SettingsLayout>
                 <div className="space-y-6">
-                    <Heading
-                        variant="small"
-                        title="Profile information"
-                        description="Update your name and email address"
-                    />
+                    <div className="glass-card rounded-xl p-6 md:p-8">
+                        <Heading
+                            variant="small"
+                            title="Profile information"
+                            description="Update your photo, name, username, and bio"
+                        />
 
-                    <Form
-                        {...ProfileController.update.form()}
-                        options={{
-                            preserveScroll: true,
-                        }}
-                        className="space-y-6"
-                    >
-                        {({ processing, recentlySuccessful, errors }) => (
-                            <>
-                                <div className="grid gap-2">
-                                    <Label htmlFor="name">Name</Label>
-
-                                    <Input
-                                        id="name"
-                                        className="mt-1 block w-full"
-                                        defaultValue={auth.user.name}
-                                        name="name"
-                                        required
-                                        autoComplete="name"
-                                        placeholder="Full name"
-                                    />
-
-                                    <InputError
-                                        className="mt-2"
-                                        message={errors.name}
-                                    />
-                                </div>
-
-                                <div className="grid gap-2">
-                                    <Label htmlFor="email">Email address</Label>
-
-                                    <Input
-                                        id="email"
-                                        type="email"
-                                        className="mt-1 block w-full"
-                                        defaultValue={auth.user.email}
-                                        name="email"
-                                        required
-                                        autoComplete="username"
-                                        placeholder="Email address"
-                                    />
-
-                                    <InputError
-                                        className="mt-2"
-                                        message={errors.email}
-                                    />
-                                </div>
-
-                                {mustVerifyEmail &&
-                                    auth.user.email_verified_at === null && (
-                                        <div>
-                                            <p className="-mt-4 text-sm text-muted-foreground">
-                                                Your email address is
-                                                unverified.{' '}
-                                                <Link
-                                                    href={send()}
-                                                    as="button"
-                                                    className="text-foreground underline decoration-neutral-300 underline-offset-4 transition-colors duration-300 ease-out hover:decoration-current! dark:decoration-neutral-500"
-                                                >
-                                                    Click here to resend the
-                                                    verification email.
-                                                </Link>
-                                            </p>
-
-                                            {status ===
-                                                'verification-link-sent' && (
-                                                <div className="mt-2 text-sm font-medium text-green-600">
-                                                    A new verification link has
-                                                    been sent to your email
-                                                    address.
+                        <Form
+                            {...ProfileController.update.form()}
+                            options={{
+                                preserveScroll: true,
+                            }}
+                            encType="multipart/form-data"
+                            className="mt-6 space-y-6"
+                        >
+                            {({ processing, recentlySuccessful, errors }) => (
+                                <>
+                                    <div className="flex flex-col gap-6 sm:flex-row">
+                                        <div className="grid flex-1 gap-2">
+                                            <Label htmlFor="avatar">
+                                                Avatar
+                                            </Label>
+                                            <div className="flex items-center gap-4">
+                                                {auth.user.avatar && (
+                                                    <img
+                                                        src={auth.user.avatar}
+                                                        alt="Avatar"
+                                                        className="h-16 w-16 rounded-full border-2 border-primary/20 object-cover"
+                                                    />
+                                                )}
+                                                <div className="flex-1">
+                                                    <Input
+                                                        id="avatar"
+                                                        type="file"
+                                                        name="avatar"
+                                                        className="block w-full cursor-pointer file:cursor-pointer"
+                                                        accept="image/*"
+                                                    />
+                                                    <InputError
+                                                        className="mt-2"
+                                                        message={errors.avatar}
+                                                    />
                                                 </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                                        <div className="grid gap-2">
+                                            <Label htmlFor="name">
+                                                Full Name
+                                            </Label>
+                                            <Input
+                                                id="name"
+                                                className="mt-1 block w-full bg-background/50"
+                                                defaultValue={auth.user.name}
+                                                name="name"
+                                                required
+                                                autoComplete="name"
+                                                placeholder="Full name"
+                                            />
+                                            <InputError
+                                                className="mt-2"
+                                                message={errors.name}
+                                            />
+                                        </div>
+
+                                        <div className="grid gap-2">
+                                            <Label htmlFor="username">
+                                                Username
+                                            </Label>
+                                            <Input
+                                                id="username"
+                                                className="mt-1 block w-full bg-background/50"
+                                                defaultValue={
+                                                    auth.user.username
+                                                }
+                                                name="username"
+                                                required
+                                                autoComplete="username"
+                                                placeholder="Username"
+                                            />
+                                            <InputError
+                                                className="mt-2"
+                                                message={errors.username}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="email">
+                                            Email address
+                                        </Label>
+                                        <Input
+                                            id="email"
+                                            type="email"
+                                            className="mt-1 block w-full bg-background/50"
+                                            defaultValue={auth.user.email}
+                                            name="email"
+                                            required
+                                            autoComplete="email"
+                                            placeholder="Email address"
+                                        />
+                                        <InputError
+                                            className="mt-2"
+                                            message={errors.email}
+                                        />
+                                    </div>
+
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="bio">Biography</Label>
+                                        <textarea
+                                            id="bio"
+                                            className="mt-1 block min-h-[100px] w-full rounded-md border border-input bg-background/50 px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                                            defaultValue={auth.user.bio || ''}
+                                            name="bio"
+                                            placeholder="Tell us a little about yourself"
+                                        />
+                                        <InputError
+                                            className="mt-2"
+                                            message={errors.bio}
+                                        />
+                                    </div>
+
+                                    {mustVerifyEmail &&
+                                        auth.user.email_verified_at ===
+                                            null && (
+                                            <div>
+                                                <p className="-mt-4 text-sm text-muted-foreground">
+                                                    Your email address is
+                                                    unverified.{' '}
+                                                    <Link
+                                                        href={send()}
+                                                        as="button"
+                                                        className="text-foreground underline decoration-neutral-300 underline-offset-4 transition-colors duration-300 ease-out hover:decoration-current! dark:decoration-neutral-500"
+                                                    >
+                                                        Click here to resend the
+                                                        verification email.
+                                                    </Link>
+                                                </p>
+
+                                                {status ===
+                                                    'verification-link-sent' && (
+                                                    <div className="mt-2 text-sm font-medium text-green-600">
+                                                        A new verification link
+                                                        has been sent to your
+                                                        email address.
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+
+                                    <div className="flex items-center gap-4">
+                                        <Button
+                                            disabled={processing}
+                                            data-test="update-profile-button"
+                                        >
+                                            Save Changes
+                                        </Button>
+
+                                        <Transition
+                                            show={recentlySuccessful}
+                                            enter="transition ease-in-out"
+                                            enterFrom="opacity-0"
+                                            leave="transition ease-in-out"
+                                            leaveTo="opacity-0"
+                                        >
+                                            <p className="text-sm font-medium text-green-600 dark:text-green-400">
+                                                Saved successfully
+                                            </p>
+                                        </Transition>
+                                    </div>
+                                </>
+                            )}
+                        </Form>
+                    </div>
+
+                    <div className="glass-card space-y-6 rounded-xl p-6 md:p-8">
+                        <Heading
+                            variant="small"
+                            title="Account Details"
+                            description="Identifiers and linked services"
+                        />
+                        <div className="space-y-4">
+                            <div className="flex flex-col items-start justify-between gap-4 border-b border-border/50 py-2 sm:flex-row sm:items-center">
+                                <div>
+                                    <p className="font-medium">
+                                        Vout ID (Universal Identifier)
+                                    </p>
+                                    <p className="text-sm text-muted-foreground">
+                                        Used across all games in the ecosystem
+                                    </p>
+                                </div>
+                                <code className="rounded-md bg-muted px-3 py-1.5 text-center font-mono text-xs text-muted-foreground select-all">
+                                    {auth.user.vout_id}
+                                </code>
+                            </div>
+                            <div className="flex items-center justify-between py-2">
+                                <div>
+                                    <p className="font-medium">
+                                        Google Linked Account
+                                    </p>
+                                    <p className="text-sm text-muted-foreground">
+                                        Sign in securely with Google
+                                    </p>
+                                </div>
+                                <div>
+                                    {auth.user.google_id ? (
+                                        <div className="flex items-center gap-3">
+                                            <span className="inline-flex items-center rounded-md bg-green-500/10 px-2.5 py-1 text-xs font-semibold text-green-500 ring-1 ring-green-500/20 ring-inset">
+                                                Connected
+                                            </span>
+                                            {auth.user.has_password && (
+                                                <Link
+                                                    href="/settings/google"
+                                                    method="delete"
+                                                    as="button"
+                                                    type="button"
+                                                    className="text-xs text-red-500 transition-colors hover:text-red-600 hover:underline"
+                                                >
+                                                    Disconnect
+                                                </Link>
                                             )}
                                         </div>
+                                    ) : (
+                                        <span className="inline-flex items-center rounded-md bg-neutral-500/10 px-2.5 py-1 text-xs font-semibold text-neutral-500 ring-1 ring-neutral-500/20 ring-inset">
+                                            Not Connected
+                                        </span>
                                     )}
-
-                                <div className="flex items-center gap-4">
-                                    <Button
-                                        disabled={processing}
-                                        data-test="update-profile-button"
-                                    >
-                                        Save
-                                    </Button>
-
-                                    <Transition
-                                        show={recentlySuccessful}
-                                        enter="transition ease-in-out"
-                                        enterFrom="opacity-0"
-                                        leave="transition ease-in-out"
-                                        leaveTo="opacity-0"
-                                    >
-                                        <p className="text-sm text-neutral-600">
-                                            Saved
-                                        </p>
-                                    </Transition>
                                 </div>
-                            </>
-                        )}
-                    </Form>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <DeleteUser />

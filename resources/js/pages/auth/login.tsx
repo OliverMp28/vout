@@ -1,4 +1,4 @@
-import { Form, Head } from '@inertiajs/react';
+import { Form, Head, usePage } from '@inertiajs/react';
 import { GoogleIcon } from '@/components/icons/google-icon';
 import InputError from '@/components/input-error';
 import TextLink from '@/components/text-link';
@@ -23,6 +23,8 @@ export default function Login({
     canResetPassword,
     canRegister,
 }: Props) {
+    const { errors: pageErrors } = usePage().props;
+
     return (
         <AuthLayout
             title="Bienvenido de nuevo"
@@ -33,6 +35,12 @@ export default function Login({
             {status && (
                 <div className="mb-4 rounded-md bg-green-50 px-3 py-2 text-center text-sm font-medium text-green-700 dark:bg-green-900/20 dark:text-green-400">
                     {status}
+                </div>
+            )}
+
+            {Object.keys(pageErrors).length > 0 && pageErrors.email && (
+                <div className="mb-4 rounded-md border border-red-500/20 bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-500/10 dark:text-red-400">
+                    {pageErrors.email}
                 </div>
             )}
 
@@ -63,9 +71,7 @@ export default function Login({
 
                             <div className="space-y-2">
                                 <div className="flex items-center justify-between">
-                                    <Label htmlFor="password">
-                                        Contraseña
-                                    </Label>
+                                    <Label htmlFor="password">Contraseña</Label>
                                     {canResetPassword && (
                                         <TextLink
                                             href={request()}
@@ -129,7 +135,9 @@ export default function Login({
                             type="button"
                             variant="outline"
                             className="w-full transition-all duration-200 hover:shadow-md"
-                            onClick={() => window.location.href = '/auth/google/redirect'}
+                            onClick={() =>
+                                (window.location.href = '/auth/google/redirect')
+                            }
                         >
                             <GoogleIcon className="mr-2 size-4" />
                             Continuar con Google

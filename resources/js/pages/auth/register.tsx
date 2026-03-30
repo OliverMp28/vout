@@ -75,9 +75,7 @@ export default function Register() {
 
                             <div className="grid grid-cols-2 gap-3">
                                 <div className="space-y-2">
-                                    <Label htmlFor="password">
-                                        Contraseña
-                                    </Label>
+                                    <Label htmlFor="password">Contraseña</Label>
                                     <Input
                                         id="password"
                                         type="password"
@@ -135,7 +133,9 @@ export default function Register() {
                             type="button"
                             variant="outline"
                             className="w-full transition-all duration-200 hover:shadow-md"
-                            onClick={() => window.location.href = '/auth/google/redirect'}
+                            onClick={() =>
+                                (window.location.href = '/auth/google/redirect')
+                            }
                             tabIndex={7}
                         >
                             <GoogleIcon className="mr-2 size-4" />

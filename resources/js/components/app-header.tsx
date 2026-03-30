@@ -54,7 +54,7 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
     const getInitials = useInitials();
     const { isCurrentUrl, whenCurrentUrl } = useCurrentUrl();
     return (
-        <header className="sticky top-0 z-50 w-full border-b border-white/10 glass-card-light dark:border-white/5">
+        <header className="glass-card-light sticky top-0 z-50 w-full border-b border-white/10 dark:border-white/5">
             <div className="mx-auto flex h-16 items-center px-4 md:max-w-7xl md:px-6 lg:px-8">
                 {/* Mobile Menu */}
                 <div className="lg:hidden">
@@ -70,28 +70,33 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                         </SheetTrigger>
                         <SheetContent
                             side="left"
-                            className="flex h-full w-64 flex-col items-stretch justify-between bg-background border-r border-border/40"
+                            className="flex h-full w-64 flex-col items-stretch justify-between border-r border-border/40 bg-background"
                         >
                             <SheetTitle className="sr-only">
                                 Menú de navegación
                             </SheetTitle>
-                            <SheetHeader className="flex justify-start text-left px-4 py-6 border-b border-border/40">
-                                <Link href="/" className="flex items-center gap-2">
+                            <SheetHeader className="flex justify-start border-b border-border/40 px-4 py-6 text-left">
+                                <Link
+                                    href="/"
+                                    className="flex items-center gap-2"
+                                >
                                     <AppLogoIcon className="h-8 w-8" />
-                                    <span className="font-bold text-xl tracking-tight bg-clip-text text-transparent bg-linear-to-r from-(--vout-gradient-start) to-(--vout-gradient-end)">Vout</span>
+                                    <span className="bg-linear-to-r from-(--vout-gradient-start) to-(--vout-gradient-end) bg-clip-text text-xl font-bold tracking-tight text-transparent">
+                                        Vout
+                                    </span>
                                 </Link>
                             </SheetHeader>
-                            <div className="flex h-full flex-1 flex-col space-y-4 p-4 mt-4">
+                            <div className="mt-4 flex h-full flex-1 flex-col space-y-4 p-4">
                                 <nav className="flex flex-col space-y-2">
                                     {mainNavItems.map((item) => (
                                         <Link
                                             key={item.title}
                                             href={item.href}
                                             className={cn(
-                                                "flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
-                                                isCurrentUrl(item.href) 
-                                                    ? "bg-primary/10 text-primary" 
-                                                    : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                                                'flex items-center space-x-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
+                                                isCurrentUrl(item.href)
+                                                    ? 'bg-primary/10 text-primary'
+                                                    : 'text-muted-foreground hover:bg-accent hover:text-foreground',
                                             )}
                                         >
                                             {item.icon && (
@@ -102,8 +107,10 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                                     ))}
                                 </nav>
                             </div>
-                            <div className="p-4 border-t border-border/40">
-                                <p className="text-xs text-center text-muted-foreground">Vout Identity Provider</p>
+                            <div className="border-t border-border/40 p-4">
+                                <p className="text-center text-xs text-muted-foreground">
+                                    Vout Identity Provider
+                                </p>
                             </div>
                         </SheetContent>
                     </Sheet>
@@ -112,7 +119,7 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                 <Link
                     href={dashboard()}
                     prefetch
-                    className="flex items-center space-x-2 group hover:opacity-90 transition-opacity"
+                    className="group flex items-center space-x-2 transition-opacity hover:opacity-90"
                 >
                     <AppLogo />
                 </Link>
@@ -132,9 +139,9 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                                             navigationMenuTriggerStyle(),
                                             whenCurrentUrl(
                                                 item.href,
-                                                "text-primary bg-primary/5",
+                                                'bg-primary/5 text-primary',
                                             ),
-                                            'h-10 cursor-pointer px-4 text-sm font-medium hover:text-primary transition-colors bg-transparent',
+                                            'h-10 cursor-pointer bg-transparent px-4 text-sm font-medium transition-colors hover:text-primary',
                                         )}
                                     >
                                         {item.icon && (
@@ -143,7 +150,7 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                                         {item.title}
                                     </Link>
                                     {isCurrentUrl(item.href) && (
-                                        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 h-0.5 w-6 bg-primary rounded-full"></div>
+                                        <div className="absolute bottom-0 left-1/2 h-0.5 w-6 -translate-x-1/2 rounded-full bg-primary"></div>
                                     )}
                                 </NavigationMenuItem>
                             ))}
@@ -159,7 +166,7 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                                     <Button
                                         variant="ghost"
                                         size="icon"
-                                        className="h-9 w-9 text-muted-foreground hover:text-primary hover:bg-primary/5"
+                                        className="h-9 w-9 text-muted-foreground hover:bg-primary/5 hover:text-primary"
                                     >
                                         <Search className="h-5 w-5" />
                                     </Button>
@@ -175,7 +182,7 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                         <DropdownMenuTrigger asChild>
                             <Button
                                 variant="ghost"
-                                className="relative size-10 rounded-full p-0 overflow-hidden border-2 border-primary/20 hover:border-primary/50 transition-colors"
+                                className="relative size-10 overflow-hidden rounded-full border-2 border-primary/20 p-0 transition-colors hover:border-primary/50"
                             >
                                 <Avatar className="size-full">
                                     <AvatarImage
@@ -183,13 +190,16 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                                         alt={auth.user.name}
                                         className="object-cover"
                                     />
-                                    <AvatarFallback className="bg-primary/10 text-primary font-bold">
+                                    <AvatarFallback className="bg-primary/10 font-bold text-primary">
                                         {getInitials(auth.user.name)}
                                     </AvatarFallback>
                                 </Avatar>
                             </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent className="w-64 glass-card-light mt-2 p-1 border-white/20" align="end">
+                        <DropdownMenuContent
+                            className="glass-card-light mt-2 w-64 border-white/20 p-1"
+                            align="end"
+                        >
                             <UserMenuContent user={auth.user} />
                         </DropdownMenuContent>
                     </DropdownMenu>
