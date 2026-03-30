@@ -15,6 +15,9 @@
         "wayfinder-development",
         "pest-testing",
         "inertia-react-development",
-        "tailwindcss-development"
+        "tailwindcss-development",
+        "frontend-design",
+        "laravel-best-practices",
+        "shadcn-ui"
     ]
 }
