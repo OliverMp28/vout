@@ -18,6 +18,7 @@
         "tailwindcss-development",
         "frontend-design",
         "laravel-best-practices",
-        "shadcn-ui"
+        "shadcn-ui",
+        "vercel-react-best-practices"
     ]
 }
