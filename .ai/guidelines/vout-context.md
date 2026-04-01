@@ -12,9 +12,9 @@ Vout (evolución del proyecto anterior "Tout") es el corazón de un ecosistema d
 
 El problema principal que resuelve Vout es la fragmentación de identidad. En lugar de que cada juego sea una isla aislada, Vout ofrece un "Pasaporte Universal" soportado por estándares de la industria.
 
-La interfaz de Vout (Inertia/React) tiene un diseño premium (Glassmorfismo) para transmitir confianza como Proveedor de Identidad. La transición entre el portal y los juegos debe ser fluida, eliminando la sensación de que son sitios web distintos.
+La interfaz de Vout (Inertia/React) sigue los principios de **diseño premium y glassmorfismo** detallados en `vout-design.md`. El objetivo es transmitir confianza como Proveedor de Identidad, asegurando una transición fluida entre el portal y los juegos para eliminar la sensación de fragmentación.
 
-- **Autenticación Centralizada:** Si el usuario usa Google (Socialite) o registro nativo, lo hace una sola vez en el portal central, y esa identidad (su "Llave Maestra") le da acceso a todo el catálogo.
+- **Autenticación Centralizada:** Si el usuario usa Google (Socialite) o registro nativo, lo hace una sola vez en el portal central.
 - **Vout como Servidor OAuth2:** El ecosistema utiliza **Laravel Passport** para gestionar la emisión de tokens de acceso seguros.
 - **Vinculación (Account Linking):** El campo `Vout_id` (UUID) es el único identificador que otras apps deben usar para reconocer al usuario. Si un usuario tiene un progreso antiguo en un juego como Dino y entra con su nueva cuenta de Vout, se le mostrará una única vez una pantalla amigable para unir su historial previo con su nueva identidad global.
 
@@ -27,51 +27,41 @@ La interfaz de Vout (Inertia/React) tiene un diseño premium (Glassmorfismo) par
 
 ## 3. La Experiencia de Juego con MediaPipe
 
-Uno de los diferenciadores clave de Vout es el uso de inteligencia artificial para la detección de gestos.
-
-- **Mando Facial:** El sistema detecta movimientos específicos como levantar las cejas, abrir la boca o inclinar la cabeza.
-- **Traducción de Acciones:** Vout "traduce" estos gestos en comandos de teclado tradicionales. Por ejemplo, si el usuario levanta las cejas, el sistema envía una señal de "Salto" al juego. Estos controles o lo que ejecuten serán customizables (ver tabla `gesture_configs`).
-- **Privacidad y Rendimiento:** Esta detección ocurre directamente en el navegador del usuario y en un hilo de procesamiento separado (Web Worker) para que el juego siempre corra de forma fluida y sin interrupciones.
+Vout integra tecnología de visión artificial para permitir el control de juegos mediante gestos faciales, convirtiendo la cámara web en un mando interactivo. Los detalles técnicos de implementación, calibración y optimización (Web Workers) se encuentran detallados en `vout-strategy.md`.
 
 ## 4. Funcionalidades del Portal (Vout Core)
 
 Como proyecto central, Vout se encarga de:
 
-- **Gestión de Perfiles:** Donde los usuarios pueden personalizar su avatar (`avatar` en `users`), ver su historial de juegos y configurar sus preferencias de control facial. Cada usuario tiene su propia configuración de plataforma (tabla `user_settings`: modo oscuro, mascota, gestos habilitados) y su historial de interacción con juegos (tabla pivote `game_user`: favoritos, guardados, puntuación, conteo de partidas).
-- **Catálogo y Categorías:** Un sistema robusto para organizar juegos por género, popularidad o desarrollador (creador o creadores del minijuego en cuestión, considerando que no todos los minijuegos web serán desarrollados de manera interna). Un juego puede pertenecer a **múltiples categorías** simultáneamente (relación many-to-many vía tabla pivote `category_game`). Esto se refleja en tablas como `games`, `categories`, `category_game`, `developers`, `developer_game`, etc.
-- **Aplicaciones Externas (SSO):** La tabla `registered_apps` almacena las aplicaciones externas del ecosistema autorizadas para usar Vout como proveedor de identidad, incluyendo sus orígenes permitidos para validaciones CORS.
-- **Hospedaje de Juegos (iFrames):** Los juegos se ejecutan dentro de Vout de forma segura. Vout actúa como el "anfitrión" que le envía las órdenes de movimiento al juego que el usuario está viendo en pantalla.
+- **Gestión de Perfiles:** Donde los usuarios pueden personalizar su avatar (`avatar` en `users`), ver su historial de juegos y configurar sus preferencias de control facial (tablas `user_settings` y `game_user`).
+- **Catálogo y Categorías:** Un sistema robusto para organizar juegos por género, popularidad o desarrollador, tambien un juego puede pertenecer a **múltiples categorías** simultáneamente (relación many-to-many vía tabla pivote `category_game`).
+- **Aplicaciones Externas (SSO):** La tabla `registered_apps` almacena las aplicaciones externas autorizadas, incluyendo sus orígenes permitidos para validaciones CORS.
+- **Hospedaje de Juegos (iFrames):** Vout actúa como el "anfitrión" que envía órdenes de movimiento al juego embebido.
 
 ## 5. El "Apretón de Manos" Técnico y la Identidad OAuth2
 
-Para lograr esto, Vout utiliza **Laravel 13** como motor principal de identidad para el ecosistema.
+Vout utiliza **Laravel 13** como motor principal de identidad para el ecosistema.
 
 - **Motor Dual de Sesión/Tokens:**
     - **Sesión Web Interna:** Gestionada por Laravel Sanctum (Cookies) para la navegación de la propia SPA del portal Vout.
     - **Servidor OAuth2:** Configurado con `php artisan install:api --passport`. Emite tokens JWT (RS256) mediante flujos de **Authorization Code con PKCE** para aplicaciones externas standalone y **Personal Access Tokens** para pruebas.
 - **Modelo de Usuario:** El modelo User debe implementar la interfaz `OAuthenticatable` para ser compatible con Passport 13 (`class User extends Authenticatable implements OAuthenticatable { use HasApiTokens; }`).
 - **Validación Stateless (Apátrida):** Clientes externos (como Dino) **no consultarán la base de datos de Vout**. Usarán bibliotecas como `lcobucci/jwt` para validar la firma RS256 de los tokens utilizando la clave pública de Vout. Criterios rigurosos de validación: Firma, Emisor (`iss`), Audiencia (`aud`) y Expiración (`exp`).
-- **TTL de Tokens:** Los Access Tokens de Passport deben tener un TTL (Time-To-Live) configurado de 60 minutos para asegurar las sesiones de juego activas.
+- **TTL de Tokens:** Configurado a 60 minutos para asegurar las sesiones de juego activas.
 
 ### 5.1. Seguridad en la Integración de iFrames (Handshake READY)
 
-Para comunicar Vout con los minijuegos insertados en su portal web (iFrames), la comunicación y paso de tokens será **sólo por `postMessage`**. Está estrictamente **prohibido el paso de tokens por la URL** (parámetros GET).
+Para comunicar Vout con los iFrames de juegos, el paso de tokens será **sólo por `postMessage`**. Está estrictamente **prohibido el paso de tokens por la URL** (parámetros GET).
 
 1. El iFrame del juego cargará mediante una URL limpia (ej. `https://dino.vout.com/play`).
 2. Una vez que el minijuego esté preparado, enviará un mensaje de tipo `{ type: "READY" }` vía `postMessage` hacia Vout (parent).
 3. Sólo al recibir la confirmación de "READY", Vout comprobará la fuente y responderá con el Access Token de Passport (y/u otras credenciales necesarias) al iFrame mediante un `postMessage` cifrado y/o con **validación estricta de origen** basada en `allowed_origins`.
 
-## 6. Intención del Proyecto Actual
+## 6. Intención y Estado del Proyecto
 
-Actualmente, el trabajo se centra exclusivamente en Vout. El objetivo es:
-1. Dejar listo el sistema de identidad usando Passport (SSO).
-2. Preparar el motor de visión antes de conectar juegos externos.
+Vout es un servidor OAuth2 completo que garantiza una seguridad de nivel empresarial. Al implementar features, las aplicaciones externas deben mantenerse como Resource Servers sin conexión a la base de datos de Vout, integrando los handshakes de seguridad correctamente y cuidando la configuración de dominios CORS.
 
-**Instrucción para Agentes de IA:**
-Cualquier IA o desarrollador que lea esto debe entender que Vout no solo emite tokens, sino que es un servidor OAuth2 completo que garantiza una seguridad de nivel empresarial. Al implementar features, asegúrate de mantener a Dino/Otras Apps como Resource Servers externos sin conexión a la base de datos de Vout, integrando los Handshakes por `postMessage` correctamente según la última directiva, y cuidando la configuración de dominios CORS en Laravel (Fase 1).
+Para la planificación de fases, seguimiento de tareas y próximos pasos detallados, consulta el archivo `docs/roadmap.md` en la raíz del proyecto.
 
-## 7. Notas de Entorno y Ejecución para Agentes de IA (CRÍTICO)
-
-1. **Entorno WSL y Navegador:** El proyecto se ejecuta en Ubuntu bajo WSL2 en Windows. Las dependencias del SO y el binario de Chromium para el "Agente Navegador" (Playwright) **ya están instaladas**. El navegador ya funciona localmente en `http://localhost`.
-2. **Laravel Sail:** Todo comando back-end se debe ejecutar a través de Sail (`./vendor/bin/sail ...`), nunca llamando a `php` o `artisan` localmente.
-3. **Gestor de Paquetes (Bun):** El proyecto usa `bun` para el Front-end. Usa `./vendor/bin/sail bun dev` y `./vendor/bin/sail bun add ...`. Nunca uses `npm`.
+### Nota sobre el Entorno de Ejecución
+El proyecto corre sobre **WSL2 (Ubuntu)** usando **Laravel Sail**, tambien se usa bun. ELas dependencias del SO y el binario de Chromium para el "Agente Navegador" (Playwright) **ya están instaladas**. El navegador ya funciona localmente en `http://localhost`.
