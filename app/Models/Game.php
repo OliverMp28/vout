@@ -2,10 +2,12 @@
 
 namespace App\Models;
 
+use Database\Factories\GameFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Juego disponible en el portal Vout.
@@ -16,7 +18,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
  */
 class Game extends Model
 {
-    /** @use HasFactory<\Database\Factories\GameFactory> */
+    /** @use HasFactory<GameFactory> */
     use HasFactory;
 
     /**
@@ -104,5 +106,97 @@ class Game extends Model
     public function scopeFeatured(Builder $query): Builder
     {
         return $query->where('is_featured', true);
+    }
+
+    /**
+     * Scope: adjunta los datos de interacción del usuario autenticado.
+     *
+     * Hace un LEFT JOIN con la tabla pivote game_user para el usuario dado,
+     * añadiendo is_favorite, is_saved y play_count_user en una sola query.
+     * Evita el problema N+1 al listar el catálogo para usuarios autenticados.
+     */
+    public function scopeWithUserInteraction(Builder $query, int $userId): Builder
+    {
+        return $query->leftJoin(
+            DB::raw('(SELECT game_id, is_favorite, is_saved, play_count AS play_count_user, best_score, last_played_at
+                       FROM game_user WHERE user_id = '.(int) $userId.') AS user_pivot'),
+            'games.id',
+            '=',
+            'user_pivot.game_id',
+        )->addSelect([
+            'games.*',
+            'user_pivot.is_favorite',
+            'user_pivot.is_saved',
+            'user_pivot.play_count_user',
+            'user_pivot.best_score',
+            'user_pivot.last_played_at',
+        ]);
+    }
+
+    /**
+     * Scope: filtra juegos que pertenezcan a cualquiera de las categorías dadas (OR).
+     *
+     * Los resultados se ordenan por relevancia: los juegos que coincidan con
+     * más categorías de las solicitadas aparecen primero.
+     *
+     * @param  list<string>  $slugs  Slugs de categorías a filtrar.
+     */
+    public function scopeInCategories(Builder $query, array $slugs): Builder
+    {
+        if (empty($slugs)) {
+            return $query;
+        }
+
+        return $query->whereHas(
+            'categories',
+            fn (Builder $q): Builder => $q->whereIn('categories.slug', $slugs),
+        );
+    }
+
+    /**
+     * Scope: búsqueda fulltext con fallback a LIKE.
+     *
+     * En MySQL/MariaDB usa MATCH AGAINST (fulltext) aprovechando games_fulltext_idx.
+     * En otros drivers (SQLite en tests) usa LIKE para mantener compatibilidad.
+     * Para términos menores a 3 caracteres siempre usa LIKE.
+     */
+    public function scopeSearch(Builder $query, string $term): Builder
+    {
+        $term = trim($term);
+
+        if ($term === '') {
+            return $query;
+        }
+
+        $useFulltext = mb_strlen($term) >= 3
+            && in_array(DB::connection()->getDriverName(), ['mysql', 'mariadb']);
+
+        if ($useFulltext) {
+            return $query->whereRaw(
+                'MATCH(games.name, games.description) AGAINST(? IN BOOLEAN MODE)',
+                [$term.'*'],
+            );
+        }
+
+        return $query->where(function (Builder $q) use ($term): void {
+            $q->where('games.name', 'LIKE', '%'.$term.'%')
+                ->orWhere('games.description', 'LIKE', '%'.$term.'%');
+        });
+    }
+
+    /**
+     * Scope: ordena los resultados según el criterio solicitado.
+     *
+     * - popular:      más jugados primero (play_count DESC)
+     * - newest:       más recientes primero (release_date DESC, luego created_at DESC)
+     * - alphabetical: orden A-Z por nombre
+     */
+    public function scopeSortedBy(Builder $query, string $sort): Builder
+    {
+        return match ($sort) {
+            'newest' => $query->orderByDesc('release_date')->orderByDesc('games.created_at'),
+            'alphabetical' => $query->orderBy('games.name'),
+            default => $query->orderByDesc('play_count'),
+        };
     }
 }
