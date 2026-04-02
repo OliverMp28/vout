@@ -1,5 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
-import { LayoutGrid, Menu, Search } from 'lucide-react';
+import { LayoutGrid, Menu, Search, Shapes } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import AppLogoIcon from '@/components/app-logo-icon';
 import { Breadcrumbs } from '@/components/breadcrumbs';
@@ -36,6 +36,7 @@ import { useInitials } from '@/hooks/use-initials';
 import { useTranslation } from '@/hooks/use-translation';
 import { cn } from '@/lib/utils';
 import { dashboard } from '@/routes';
+import { index as catalogIndex } from '@/routes/catalog';
 import type { BreadcrumbItem, NavItem } from '@/types';
 
 type Props = {
@@ -54,6 +55,11 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
             title: t('nav.dashboard'),
             href: dashboard(),
             icon: LayoutGrid,
+        },
+        {
+            title: t('nav.catalog'),
+            href: catalogIndex(),
+            icon: Shapes,
         },
     ];
 
@@ -121,7 +127,7 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                 </div>
 
                 <Link
-                    href={dashboard()}
+                    href="/"
                     prefetch
                     className="group flex items-center space-x-2 transition-opacity hover:opacity-90"
                 >
@@ -163,24 +169,27 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                 </div>
 
                 <div className="ml-auto flex items-center space-x-3">
-                    <div className="relative flex items-center">
-                        <TooltipProvider delayDuration={0}>
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-9 w-9 text-muted-foreground hover:bg-primary/5 hover:text-primary"
-                                    >
+                    <TooltipProvider delayDuration={0}>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    asChild
+                                    variant="ghost"
+                                    size="icon"
+                                    id="btn-header-search"
+                                    aria-label={t('nav.search')}
+                                    className="h-9 w-9 text-muted-foreground hover:bg-primary/5 hover:text-primary"
+                                >
+                                    <Link href={catalogIndex()}>
                                         <Search className="h-5 w-5" />
-                                    </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                    <p>{t('nav.search')}</p>
-                                </TooltipContent>
-                            </Tooltip>
-                        </TooltipProvider>
-                    </div>
+                                    </Link>
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>{t('nav.search')}</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
 
                     <LanguageSwitcher />
 

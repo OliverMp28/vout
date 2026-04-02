@@ -256,3 +256,110 @@
 .animate-slide-up-fade {
     animation: slide-up-fade 0.5s ease-out both;
 }
+
+/*
+ * ─── Mesh Gradient Background ────────────────────────────────
+ * Dot grid pattern + radial gradient blobs for visual depth.
+ * Noticeable but professional — adds personality without noise.
+ * Apply to page wrappers (PortalLayout).
+ */
+.mesh-gradient-bg {
+    background-color: var(--background);
+    background-image:
+        /* Dot grid — violet-tinted dots on light bg */
+        radial-gradient(
+            circle,
+            oklch(0.5 0.22 280 / 0.18) 1px,
+            transparent 1px
+        ),
+        /* Top-left violet bloom */
+        radial-gradient(
+            ellipse 70% 55% at 10% 0%,
+            oklch(0.5 0.22 280 / 0.14) 0%,
+            transparent 65%
+        ),
+        /* Bottom-right purple bloom */
+        radial-gradient(
+            ellipse 60% 45% at 95% 105%,
+            oklch(0.45 0.18 310 / 0.12) 0%,
+            transparent 60%
+        ),
+        /* Center soft glow */
+        radial-gradient(
+            ellipse 50% 40% at 55% 45%,
+            oklch(0.5 0.2 285 / 0.06) 0%,
+            transparent 70%
+        );
+    background-size:
+        24px 24px,
+        100% 100%,
+        100% 100%,
+        100% 100%;
+}
+
+:is(.dark) .mesh-gradient-bg {
+    background-color: var(--background);
+    background-image:
+        /* Dot grid — brighter dots on dark bg */
+        radial-gradient(
+            circle,
+            oklch(0.65 0.2 280 / 0.22) 1px,
+            transparent 1px
+        ),
+        /* Top-left violet bloom */
+        radial-gradient(
+            ellipse 70% 55% at 10% 0%,
+            oklch(0.4 0.2 280 / 0.28) 0%,
+            transparent 65%
+        ),
+        /* Bottom-right purple bloom */
+        radial-gradient(
+            ellipse 60% 45% at 95% 105%,
+            oklch(0.35 0.15 310 / 0.22) 0%,
+            transparent 60%
+        ),
+        /* Center soft glow */
+        radial-gradient(
+            ellipse 50% 40% at 55% 45%,
+            oklch(0.4 0.18 285 / 0.12) 0%,
+            transparent 70%
+        );
+    background-size:
+        24px 24px,
+        100% 100%,
+        100% 100%,
+        100% 100%;
+}
+
+/*
+ * ─── Featured Carousel ───────────────────────────────────────
+ * Crossfade slide transitions for the Netflix-style carousel.
+ */
+@keyframes carousel-fade-in {
+    from {
+        opacity: 0;
+        transform: scale(1.02);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.carousel-slide-enter {
+    animation: carousel-fade-in 0.7s ease-out both;
+}
+
+@keyframes carousel-progress {
+    from {
+        transform: scaleX(0);
+    }
+    to {
+        transform: scaleX(1);
+    }
+}
+
+.carousel-progress-bar {
+    transform-origin: left center;
+    animation: carousel-progress 6.5s linear both;
+}

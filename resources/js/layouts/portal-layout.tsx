@@ -10,7 +10,7 @@ export default function PortalLayout({
     return (
         <AppShell
             variant="header"
-            className="flex min-h-screen flex-col bg-background"
+            className="mesh-gradient-bg flex min-h-screen flex-col"
         >
             <a
                 href="#main-content"
