@@ -2,18 +2,25 @@ import { Transition } from '@headlessui/react';
 import { Head, useForm, usePage } from '@inertiajs/react';
 import { Aperture, Paintbrush, Smile } from 'lucide-react';
 import type { FormEventHandler } from 'react';
+
 import AppearanceTabs from '@/components/appearance-tabs';
 import Heading from '@/components/heading';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import { CalibrationWizard } from '@/components/vision/calibration-wizard';
 import { useTranslation } from '@/hooks/use-translation';
 import AppLayout from '@/layouts/app-layout';
 import SettingsLayout from '@/layouts/settings/layout';
+import type { GestureConfigData } from '@/lib/mediapipe/types';
 import { edit as editAppearance } from '@/routes/appearance';
 import type { Auth, BreadcrumbItem } from '@/types';
 
-export default function Appearance() {
+type AppearanceProps = {
+    activeGestureConfig: GestureConfigData | null;
+};
+
+export default function Appearance({ activeGestureConfig }: AppearanceProps) {
     const auth = usePage().props.auth as Auth;
     const { t } = useTranslation();
 
@@ -140,6 +147,19 @@ export default function Appearance() {
                                     }
                                 />
                             </div>
+
+                            {/* Calibration Wizard (shown when gestures enabled) */}
+                            {data.gestures_enabled && (
+                                <div className="animate-in fade-in slide-in-from-top-4 duration-500">
+                                    <CalibrationWizard
+                                        saveUrl={activeGestureConfig ? `/gesture-configs/${activeGestureConfig.id}` : '/gesture-configs'}
+                                        saveMethod={activeGestureConfig ? 'put' : 'post'}
+                                        hasExistingProfile={!!activeGestureConfig}
+                                        existingProfileName={activeGestureConfig?.profile_name}
+                                        initialSensitivity={activeGestureConfig?.sensitivity ?? 5}
+                                    />
+                                </div>
+                            )}
 
                             <div className="flex items-center gap-4 pt-4">
                                 <Button disabled={processing} type="submit">
