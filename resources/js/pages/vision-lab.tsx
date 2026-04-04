@@ -1,16 +1,27 @@
 import { Head } from '@inertiajs/react';
-import { Activity, Brain, Crosshair, Eye, Gauge, Loader2, Pause, Play, RotateCcw } from 'lucide-react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { Activity, Brain, Crosshair, Eye, Gauge, Loader2, Pause, Play, RotateCcw, Zap } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
+import { Switch } from '@/components/ui/switch';
 import { CameraPreview } from '@/components/vision/camera-preview';
 import { GestureStatusIndicator } from '@/components/vision/gesture-status-indicator';
+import { useActionDispatcher } from '@/hooks/use-action-dispatcher';
 import { useCamera } from '@/hooks/use-camera';
 import { useGestureEngine } from '@/hooks/use-gesture-engine';
 import AppLayout from '@/layouts/app-layout';
+import { ALL_PRESETS, PRESET_PLATFORMER } from '@/lib/mediapipe/action-presets';
+import type { ActionTrigger, GameAction, GestureActionMapping, HeadTrackingMode } from '@/lib/mediapipe/action-types';
 import { GestureType } from '@/lib/mediapipe/types';
 import type { GestureEvent } from '@/lib/mediapipe/types';
 import { cn } from '@/lib/utils';
@@ -21,12 +32,32 @@ import { cn } from '@/lib/utils';
 
 type GestureLogEntry = GestureEvent & { id: number };
 
+type DispatchLogEntry = {
+    id: number;
+    gestureLabel: string;
+    actionLabel: string;
+    timestamp: number;
+};
+
 const GESTURE_LABELS: Record<string, string> = {
     [GestureType.BrowRaise]: 'Brow Raise',
     [GestureType.MouthOpen]: 'Mouth Open',
     [GestureType.BlinkLeft]: 'Blink Left',
     [GestureType.BlinkRight]: 'Blink Right',
+    [GestureType.Smile]: 'Smile',
+    [GestureType.BrowFrown]: 'Brow Frown',
+    [GestureType.MouthPucker]: 'Mouth Pucker',
 };
+
+function actionLabel(mapping: GestureActionMapping, gesture: ActionTrigger): string {
+    const action = mapping[gesture];
+    if (!action || action.type === 'none') return '—';
+    switch (action.type) {
+        case 'keyboard': return `⌨ ${action.key} (${action.mode})`;
+        case 'mouse_click': return `🖱 Click ${action.button}`;
+        case 'game_event': return `🎮 ${action.event}`;
+    }
+}
 
 // ---------------------------------------------------------------------------
 // Component
@@ -35,29 +66,66 @@ const GESTURE_LABELS: Record<string, string> = {
 export default function VisionLab() {
     const [sensitivity, setSensitivity] = useState(5);
     const [gestureLog, setGestureLog] = useState<GestureLogEntry[]>([]);
-    const logIdRef = useRef(0);
+    const [dispatchLog, setDispatchLog] = useState<DispatchLogEntry[]>([]);
+    const [dispatchEnabled, setDispatchEnabled] = useState(false);
+    const [selectedPresetIndex, setSelectedPresetIndex] = useState(0);
 
-    // El videoRef es propiedad de este componente — se comparte con useCamera y CameraPreview.
+    const logIdRef = useRef(0);
+    const dispatchLogIdRef = useRef(0);
+
+    // Active mapping from the selected preset — memoized to keep dispatcher stable.
+    const activeMapping = useMemo<GestureActionMapping>(
+        () => ALL_PRESETS[selectedPresetIndex]?.mapping ?? PRESET_PLATFORMER.mapping,
+        [selectedPresetIndex],
+    );
+    const activeHeadMode = useMemo<HeadTrackingMode>(
+        () => ALL_PRESETS[selectedPresetIndex]?.headTrackingMode ?? 'disabled',
+        [selectedPresetIndex],
+    );
+
+    // The videoRef is owned by this component — shared with useCamera and CameraPreview.
     const videoRef = useRef<HTMLVideoElement | null>(null);
 
     const camera = useCamera({ videoRef });
 
+    const dispatcher = useActionDispatcher({
+        mapping: activeMapping,
+        headTrackingMode: activeHeadMode,
+        enabled: dispatchEnabled,
+    });
+
     const handleGesture = useCallback((event: GestureEvent) => {
+        // Update gesture detection log.
         setGestureLog((prev) => {
             const entry = { ...event, id: ++logIdRef.current };
             const next = [entry, ...prev];
             return next.length > 20 ? next.slice(0, 20) : next;
         });
-    }, []);
+
+        // Dispatch action and add to dispatch log if enabled.
+        dispatcher.onGesture(event);
+        if (dispatchEnabled) {
+            setDispatchLog((prev) => {
+                const entry: DispatchLogEntry = {
+                    id: ++dispatchLogIdRef.current,
+                    gestureLabel: GESTURE_LABELS[event.gesture] ?? event.gesture,
+                    actionLabel: actionLabel(activeMapping, event.gesture),
+                    timestamp: event.timestamp,
+                };
+                const next = [entry, ...prev];
+                return next.length > 20 ? next.slice(0, 20) : next;
+            });
+        }
+    }, [dispatcher, dispatchEnabled, activeMapping]);
 
     const engine = useGestureEngine({
         sensitivity,
         onGesture: handleGesture,
+        onHeadMove: dispatcher.onHeadMove,
         enableBlendshapes: true,
     });
 
-    // Refs estables para cleanup sin causar re-ejecución del effect.
-    // Se sincronizan en un effect (no durante render) para cumplir react-hooks/refs.
+    // Stable refs for cleanup without causing effect re-runs.
     const engineRef = useRef(engine);
     const cameraRef = useRef(camera);
 
@@ -65,6 +133,15 @@ export default function VisionLab() {
         engineRef.current = engine;
         cameraRef.current = camera;
     });
+
+    // Release held keys whenever the engine is no longer running.
+    // Prevents inputs staying "stuck" when the user pauses or stops detection.
+    const releaseHeldKeys = dispatcher.releaseHeldKeys;
+    useEffect(() => {
+        if (engine.status !== 'running') {
+            releaseHeldKeys();
+        }
+    }, [engine.status, releaseHeldKeys]);
 
     const handleStart = useCallback(async () => {
         const stream = await camera.requestCamera();
@@ -78,8 +155,7 @@ export default function VisionLab() {
         camera.stopCamera();
     }, [engine, camera]);
 
-    // Cleanup al desmontar — capturar refs en variables locales para que
-    // el cleanup detenga la instancia correcta incluso si la ref cambia.
+    // Cleanup on unmount — capture current refs into local vars.
     useEffect(() => {
         const currentEngine = engineRef.current;
         const currentCamera = cameraRef.current;
@@ -120,7 +196,7 @@ export default function VisionLab() {
                     <GestureStatusIndicator status={engine.status} />
                 </div>
 
-                {/* Errores de cámara o motor */}
+                {/* Camera / engine errors */}
                 {(camera.error || engine.error) && (
                     <div className="rounded-lg border border-red-500/30 bg-red-500/5 px-4 py-3 text-sm text-red-600 dark:text-red-400">
                         {camera.error ?? engine.error}
@@ -132,7 +208,7 @@ export default function VisionLab() {
                     {engine.status === 'idle' || engine.status === 'error' ? (
                         <Button
                             onClick={handleStart}
-                            disabled={camera.status === 'requesting' || engine.status === 'loading'}
+                            disabled={camera.status === 'requesting'}
                         >
                             {camera.status === 'requesting' ? (
                                 <Loader2 className="size-4 animate-spin" />
@@ -162,7 +238,6 @@ export default function VisionLab() {
                                     Resume
                                 </Button>
                             ) : null}
-                            {/* Solo permitir calibración cuando el motor está corriendo */}
                             <Button
                                 variant="secondary"
                                 onClick={engine.calibrateNeutral}
@@ -204,8 +279,7 @@ export default function VisionLab() {
                                 active={camera.status === 'active'}
                             />
 
-                            {/* Virtual cursor overlay — screen-space position (not mirrored).
-                                Represents the game cursor the user would control. */}
+                            {/* Virtual cursor overlay */}
                             {engine.headTrackPosition && engine.status === 'running' && (
                                 <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-xl">
                                     <div
@@ -373,6 +447,110 @@ export default function VisionLab() {
                                 )}
                             </div>
                         </div>
+                    </div>
+                </div>
+
+                {/* ---- Action Dispatch Panel ---- */}
+                <div className="rounded-lg border border-primary/20 bg-primary/5 p-4">
+                    <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                        <h2 className="flex items-center gap-2 text-sm font-medium">
+                            <Zap className="size-4 text-primary" />
+                            Action Dispatch
+                        </h2>
+
+                        <div className="flex flex-wrap items-center gap-4">
+                            {/* Preset selector */}
+                            <div className="flex items-center gap-2">
+                                <Label className="text-xs text-muted-foreground">Preset</Label>
+                                <Select
+                                    value={String(selectedPresetIndex)}
+                                    onValueChange={(v) => setSelectedPresetIndex(Number(v))}
+                                >
+                                    <SelectTrigger size="sm" className="w-32">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {ALL_PRESETS.map((preset, i) => (
+                                            <SelectItem key={preset.nameKey} value={String(i)}>
+                                                {preset.nameKey.split('.').pop()}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            {/* Enable/disable toggle */}
+                            <div className="flex items-center gap-2">
+                                <Label htmlFor="dispatch-toggle" className="text-xs text-muted-foreground">
+                                    Dispatch enabled
+                                </Label>
+                                <Switch
+                                    id="dispatch-toggle"
+                                    checked={dispatchEnabled}
+                                    onCheckedChange={setDispatchEnabled}
+                                />
+                            </div>
+
+                            {dispatchLog.length > 0 && (
+                                <Button
+                                    variant="secondary"
+                                    size="sm"
+                                    onClick={() => setDispatchLog([])}
+                                    className="h-6 text-[10px]"
+                                >
+                                    Clear log
+                                </Button>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Active mapping summary */}
+                    <div className="mb-3 flex flex-wrap gap-1.5">
+                        {(Object.entries(activeMapping) as [ActionTrigger, GameAction | undefined][]).map(([trigger, action]) => {
+                            if (!action || action.type === 'none') return null;
+                            const label = GESTURE_LABELS[trigger] ?? trigger;
+                            const aLabel = actionLabel(activeMapping, trigger);
+                            return (
+                                <div
+                                    key={trigger}
+                                    className="flex items-center gap-1 rounded border border-border/40 bg-background/60 px-2 py-0.5 text-[10px]"
+                                >
+                                    <span className="text-muted-foreground">{label}</span>
+                                    <span className="text-primary/60">→</span>
+                                    <span className="font-mono">{aLabel}</span>
+                                </div>
+                            );
+                        })}
+                    </div>
+
+                    {/* Dispatch log */}
+                    <div className="h-40 space-y-1 overflow-y-auto rounded-lg border border-border/40 bg-background/50 p-3">
+                        {!dispatchEnabled ? (
+                            <p className="py-6 text-center text-xs text-muted-foreground">
+                                Enable dispatch to see actions fired in real-time
+                            </p>
+                        ) : dispatchLog.length === 0 ? (
+                            <p className="py-6 text-center text-xs text-muted-foreground">
+                                Waiting for gestures...
+                            </p>
+                        ) : (
+                            dispatchLog.map((entry) => (
+                                <div
+                                    key={entry.id}
+                                    className="flex items-center justify-between rounded-md px-2 py-1 text-xs animate-in fade-in slide-in-from-top-1"
+                                >
+                                    <div className="flex items-center gap-2">
+                                        <Badge variant="outline" className="font-mono text-[10px]">
+                                            {entry.gestureLabel}
+                                        </Badge>
+                                        <span className="text-primary">{entry.actionLabel}</span>
+                                    </div>
+                                    <span className="font-mono text-[10px] text-muted-foreground">
+                                        {new Date(entry.timestamp).toLocaleTimeString()}
+                                    </span>
+                                </div>
+                            ))
+                        )}
                     </div>
                 </div>
             </div>
