@@ -64,4 +64,4 @@ Vout es un servidor OAuth2 completo que garantiza una seguridad de nivel empresa
 Para la planificación de fases, seguimiento de tareas y próximos pasos detallados, consulta el archivo `docs/roadmap.md` en la raíz del proyecto.
 
 ### Nota sobre el Entorno de Ejecución
-El proyecto corre sobre **WSL2 (Ubuntu)** usando **Laravel Sail**, tambien se usa bun. ELas dependencias del SO y el binario de Chromium para el "Agente Navegador" (Playwright) **ya están instaladas**. El navegador ya funciona localmente en `http://localhost`.
+El proyecto corre sobre **WSL2 (Ubuntu)** usando **Laravel Sail**, tambien se usa bun. Las dependencias del SO y el binario de Chromium para el "Agente Navegador" (Playwright) **ya están instaladas**. El navegador ya funciona localmente en `http://localhost`.
