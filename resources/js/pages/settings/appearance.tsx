@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { CalibrationWizard } from '@/components/vision/calibration-wizard';
+import { GestureMappingEditor } from '@/components/vision/gesture-mapping-editor';
 import { useTranslation } from '@/hooks/use-translation';
 import AppLayout from '@/layouts/app-layout';
 import SettingsLayout from '@/layouts/settings/layout';
@@ -150,7 +151,7 @@ export default function Appearance({ activeGestureConfig }: AppearanceProps) {
 
                             {/* Calibration Wizard (shown when gestures enabled) */}
                             {data.gestures_enabled && (
-                                <div className="animate-in fade-in slide-in-from-top-4 duration-500">
+                                <div className="space-y-6 animate-in fade-in slide-in-from-top-4 duration-500">
                                     <CalibrationWizard
                                         saveUrl={activeGestureConfig ? `/gesture-configs/${activeGestureConfig.id}` : '/gesture-configs'}
                                         saveMethod={activeGestureConfig ? 'put' : 'post'}
@@ -158,10 +159,15 @@ export default function Appearance({ activeGestureConfig }: AppearanceProps) {
                                         existingProfileName={activeGestureConfig?.profile_name}
                                         initialSensitivity={activeGestureConfig?.sensitivity ?? 5}
                                     />
+
+                                    {/* Mapping editor: solo visible si ya existe un perfil activo */}
+                                    {activeGestureConfig && (
+                                        <GestureMappingEditor config={activeGestureConfig} />
+                                    )}
                                 </div>
                             )}
 
-                            <div className="flex items-center gap-4 pt-4">
+                            <div className="flex items-center gap-4 border-t border-border/40 pt-4">
                                 <Button disabled={processing} type="submit">
                                     {t('profile.save')}
                                 </Button>
@@ -177,6 +183,10 @@ export default function Appearance({ activeGestureConfig }: AppearanceProps) {
                                         {t('profile.saved')}
                                     </p>
                                 </Transition>
+
+                                <p className="ml-auto text-xs text-muted-foreground">
+                                    {t('appearance.save_hint')}
+                                </p>
                             </div>
                         </form>
                     </div>

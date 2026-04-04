@@ -11,8 +11,9 @@ import { GestureStatusIndicator } from '@/components/vision/gesture-status-indic
 import { useCamera } from '@/hooks/use-camera';
 import { useGestureEngine } from '@/hooks/use-gesture-engine';
 import { useTranslation } from '@/hooks/use-translation';
+import { PRESET_PLATFORMER } from '@/lib/mediapipe/action-presets';
 import { GestureType } from '@/lib/mediapipe/types';
-import type { GestureEvent, GestureMapping } from '@/lib/mediapipe/types';
+import type { GestureEvent } from '@/lib/mediapipe/types';
 import { cn } from '@/lib/utils';
 
 // ---------------------------------------------------------------------------
@@ -39,6 +40,9 @@ const GESTURE_TESTS = [
     { gesture: GestureType.MouthOpen, i18nKey: 'vision.calibration.step3.test_mouth' },
     { gesture: GestureType.BlinkLeft, i18nKey: 'vision.calibration.step3.test_blink_l' },
     { gesture: GestureType.BlinkRight, i18nKey: 'vision.calibration.step3.test_blink_r' },
+    { gesture: GestureType.Smile, i18nKey: 'vision.calibration.step3.test_smile' },
+    { gesture: GestureType.BrowFrown, i18nKey: 'vision.calibration.step3.test_brow_frown' },
+    { gesture: GestureType.MouthPucker, i18nKey: 'vision.calibration.step3.test_mouth_pucker' },
 ] as const;
 
 // ---------------------------------------------------------------------------
@@ -148,21 +152,25 @@ function CalibrationWizard({
     const handleSave = useCallback(() => {
         setSaving(true);
 
-        const mapping: GestureMapping = {};
-        for (const { gesture } of GESTURE_TESTS) {
-            mapping[gesture] = gesture;
-        }
-
+        // Usar el preset de plataformas como mapeo por defecto.
+        // El usuario puede personalizarlo después en el GestureMappingEditor.
         const data = {
             profile_name: existingProfileName ?? 'Default',
             detection_mode: 'face_landmarks',
             sensitivity,
-            gesture_mapping: mapping,
+            gesture_mapping: PRESET_PLATFORMER.mapping,
+            head_tracking_mode: PRESET_PLATFORMER.headTrackingMode,
             is_active: true,
         };
 
         router[saveMethod](saveUrl, data, {
             preserveScroll: true,
+            onSuccess: () => {
+                // Liberar cámara y motor — en modo resumen ya no hacen falta.
+                engineRef.current.stopDetection();
+                cameraRef.current.stopCamera();
+                setReconfiguring(false);
+            },
             onFinish: () => setSaving(false),
         });
     }, [saveUrl, saveMethod, sensitivity, existingProfileName]);
@@ -306,7 +314,7 @@ function CalibrationWizard({
                     <div className="flex flex-col items-start gap-5 sm:flex-row">
                         <CameraPreview ref={videoRef} active={camera.status === 'active'} compact />
 
-                        <div className="w-full space-y-3">
+                        <div className="w-full space-y-3 sm:max-h-48 sm:overflow-y-auto sm:pr-1">
                             {GESTURE_TESTS.map(({ gesture, i18nKey }) => {
                                 const detected = detectedGestures.has(gesture);
                                 return (
