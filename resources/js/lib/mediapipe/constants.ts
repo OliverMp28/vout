@@ -17,11 +17,28 @@ import { GestureType } from './types';
  * across them before comparing against the threshold.
  */
 export const GESTURE_BLENDSHAPE_MAP: Record<GestureType, string[]> = {
+    // Gestos originales
     [GestureType.BrowRaise]: ['browInnerUp', 'browOuterUpLeft', 'browOuterUpRight'],
     [GestureType.MouthOpen]: ['jawOpen'],
     [GestureType.BlinkLeft]: ['eyeBlinkLeft'],
     [GestureType.BlinkRight]: ['eyeBlinkRight'],
+    // Gestos faciales extendidos (Sesion 0 — 3.2)
+    [GestureType.Smile]: ['mouthSmileLeft', 'mouthSmileRight'],
+    [GestureType.BrowFrown]: ['browDownLeft', 'browDownRight'],
+    [GestureType.MouthPucker]: ['mouthPucker'],
 } as const;
+
+/**
+ * Per-gesture threshold multiplier (0 < scale ≤ 1).
+ *
+ * Some blendshapes have inherently low amplitude. Applying a scale < 1
+ * lowers the effective threshold without changing the user-facing sensitivity.
+ *
+ * Effective threshold = sensitivityToThreshold(sensitivity) * scale
+ *
+ * Gestures with no entry here default to scale 1.0 (no adjustment).
+ */
+export const GESTURE_THRESHOLD_SCALE: Partial<Record<GestureType, number>> = {};
 
 // ---------------------------------------------------------------------------
 // Sensitivity ↔ threshold mapping

@@ -7,6 +7,7 @@
 import {
     GESTURE_BLENDSHAPE_MAP,
     GESTURE_DEBOUNCE_MS,
+    GESTURE_THRESHOLD_SCALE,
     sensitivityToThreshold,
 } from './constants';
 import type { GestureEvent, GestureType, NeutralBaseline } from './types';
@@ -55,8 +56,9 @@ export function classifyGestures(
             raw = Math.max(0, raw - baselineMax);
         }
 
-        // Check threshold.
-        if (raw < threshold) continue;
+        // Check threshold — apply per-gesture scale for low-amplitude blendshapes.
+        const scale = GESTURE_THRESHOLD_SCALE[gestureType] ?? 1.0;
+        if (raw < threshold * scale) continue;
 
         // Debounce — skip if the same gesture fired too recently.
         const last = lastFiredAt[gestureType] ?? 0;

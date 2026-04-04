@@ -14,6 +14,9 @@ export const GestureType = {
     MouthOpen: 'MOUTH_OPEN',
     BlinkLeft: 'BLINK_LEFT',
     BlinkRight: 'BLINK_RIGHT',
+    Smile: 'SMILE',
+    BrowFrown: 'BROW_FROWN',
+    MouthPucker: 'MOUTH_PUCKER',
 } as const;
 
 export type GestureType = (typeof GestureType)[keyof typeof GestureType];
@@ -107,17 +110,20 @@ export type CameraStatus = 'idle' | 'requesting' | 'active' | 'denied' | 'error'
 // Gesture mapping (DB ↔ frontend)
 // ---------------------------------------------------------------------------
 
-/**
- * Maps a gesture type to a game action name.
- * Matches the JSON stored in `gesture_configs.gesture_mapping`.
- */
-export type GestureMapping = Partial<Record<GestureType, string>>;
+import type { GestureActionMapping, HeadTrackingMode } from './action-types';
 
+export type { GestureActionMapping, HeadTrackingMode };
+
+/**
+ * Datos del perfil de gestos tal como llegan desde el backend (Inertia props).
+ * Coincide con las columnas de la tabla `gesture_configs`.
+ */
 export type GestureConfigData = {
     id: number;
     profile_name: string;
     detection_mode: string;
     sensitivity: number;
-    gesture_mapping: GestureMapping;
+    gesture_mapping: GestureActionMapping;
+    head_tracking_mode: HeadTrackingMode;
     is_active: boolean;
 };
