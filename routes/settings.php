@@ -1,8 +1,12 @@
 <?php
 
+use App\Http\Controllers\Auth\SocialiteController;
+use App\Http\Controllers\Settings\AppearanceController;
+use App\Http\Controllers\Settings\GestureConfigController;
 use App\Http\Controllers\Settings\PasswordController;
 use App\Http\Controllers\Settings\ProfileController;
 use App\Http\Controllers\Settings\TwoFactorAuthenticationController;
+use App\Http\Controllers\Settings\UserSettingController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth'])->group(function () {
@@ -21,12 +25,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->middleware('throttle:6,1')
         ->name('user-password.update');
 
-    Route::inertia('settings/appearance', 'settings/appearance')->name('appearance.edit');
+    Route::get('settings/appearance', [AppearanceController::class, 'edit'])->name('appearance.edit');
 
     Route::get('settings/two-factor', [TwoFactorAuthenticationController::class, 'show'])
         ->name('two-factor.show');
 
-    Route::patch('settings/appearance', [\App\Http\Controllers\Settings\UserSettingController::class, 'update'])->name('user-settings.update');
+    Route::patch('settings/appearance', [UserSettingController::class, 'update'])->name('user-settings.update');
 
-    Route::delete('settings/google', [\App\Http\Controllers\Auth\SocialiteController::class, 'unlink'])->name('google.unlink');
+    Route::delete('settings/google', [SocialiteController::class, 'unlink'])->name('google.unlink');
+
+    Route::post('gesture-configs', [GestureConfigController::class, 'store'])->name('gesture-configs.store');
+    Route::put('gesture-configs/{gestureConfig}', [GestureConfigController::class, 'update'])->name('gesture-configs.update');
+    Route::delete('gesture-configs/{gestureConfig}', [GestureConfigController::class, 'destroy'])->name('gesture-configs.destroy');
 });

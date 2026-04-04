@@ -2,11 +2,12 @@
 
 namespace Database\Factories;
 
+use App\Models\GestureConfig;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\GestureConfig>
+ * @extends Factory<GestureConfig>
  */
 class GestureConfigFactory extends Factory
 {
@@ -20,7 +21,7 @@ class GestureConfigFactory extends Factory
         return [
             'user_id' => User::factory(),
             'profile_name' => fake()->words(2, true),
-            'detection_mode' => fake()->randomElement(['face_landmarks', 'face_mesh']),
+            'detection_mode' => 'face_landmarks',
             'sensitivity' => fake()->numberBetween(1, 10),
             'gesture_mapping' => [
                 'BROW_RAISE' => 'JUMP',

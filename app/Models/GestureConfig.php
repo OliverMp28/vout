@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Database\Factories\GestureConfigFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -18,7 +19,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class GestureConfig extends Model
 {
-    /** @use HasFactory<\Database\Factories\GestureConfigFactory> */
+    /** @use HasFactory<GestureConfigFactory> */
     use HasFactory;
 
     /**
@@ -27,7 +28,6 @@ class GestureConfig extends Model
      * @var list<string>
      */
     protected $fillable = [
-        'user_id',
         'profile_name',
         'detection_mode',
         'sensitivity',
