@@ -23,12 +23,13 @@ class GestureConfigFactory extends Factory
             'profile_name' => fake()->words(2, true),
             'detection_mode' => 'face_landmarks',
             'sensitivity' => fake()->numberBetween(1, 10),
+            // Formato GameAction enriquecido (Sesión 3 — 3.2).
+            // Los keys deben coincidir con GestureType o HeadDirectionType del frontend.
             'gesture_mapping' => [
-                'BROW_RAISE' => 'JUMP',
-                'MOUTH_OPEN' => 'SHOOT',
-                'HEAD_TILT_LEFT' => 'MOVE_LEFT',
-                'HEAD_TILT_RIGHT' => 'MOVE_RIGHT',
+                'BROW_RAISE' => ['type' => 'keyboard', 'key' => 'Space', 'mode' => 'press'],
+                'MOUTH_OPEN' => ['type' => 'keyboard', 'key' => 'ArrowUp', 'mode' => 'press'],
             ],
+            'head_tracking_mode' => 'cursor',
             'is_active' => false,
         ];
     }
@@ -38,7 +39,7 @@ class GestureConfigFactory extends Factory
      */
     public function active(): static
     {
-        return $this->state(fn (array $attributes): array => [
+        return $this->state(fn (): array => [
             'is_active' => true,
         ]);
     }

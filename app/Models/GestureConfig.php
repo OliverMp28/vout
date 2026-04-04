@@ -32,6 +32,7 @@ class GestureConfig extends Model
         'detection_mode',
         'sensitivity',
         'gesture_mapping',
+        'head_tracking_mode',
         'is_active',
     ];
 
