@@ -37,13 +37,17 @@ return [
     |
     */
     'scopes' => [
-        'user:read'   => 'Ver tu perfil público (nombre, usuario, avatar)',
-        'user:email'  => 'Ver tu dirección de correo electrónico',
-        'games:read'  => 'Ver tu historial y estadísticas de juegos',
+        'user:read' => 'Ver tu perfil público (nombre, usuario, avatar)',
+        'user:email' => 'Ver tu dirección de correo electrónico',
+        'games:read' => 'Ver tu historial y estadísticas de juegos',
         'games:write' => 'Guardar progreso y puntuaciones en juegos',
+        // Fase 3.3 — Token de sesión de juego (mínimo privilegio)
+        // Emitido por PlayController para el handshake READY → VOUT_AUTH.
+        // Solo permite que el receptor (iFrame) identifique al usuario.
+        // TTL: hereda `personal_access_token_ttl_months` configurado en Passport.
+        'game:play' => 'Identificarte en juegos embebidos del portal',
     ],
 
     // Scope que se asigna por defecto si la app no solicita ninguno explícitamente.
     'default_scope' => 'user:read',
 ];
-

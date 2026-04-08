@@ -63,6 +63,46 @@ class Game extends Model
     }
 
     /**
+     * Orígenes de confianza para el handshake postMessage (Fase 3.3).
+     *
+     * Extrae el scheme + host + puerto del campo `embed_url` existente.
+     * No requiere ningún campo extra en la BD: si un juego está en el catálogo
+     * con una `embed_url`, su dominio de confianza se deriva automáticamente.
+     *
+     * Diseño deliberado:
+     * - Juegos first-party / sin SSO: su `embed_url` define el único dominio
+     *   autorizado. No necesitan `RegisteredApp`.
+     * - Juegos con SSO / Developer Portal (Fase 4): cuando exista la FK
+     *   `registered_app_id` en la tabla `games`, se podrá consultar también
+     *   `RegisteredApp::allowed_origins` para dominios adicionales. Por ahora
+     *   este método cubre el 100% de los casos existentes sin columnas extra.
+     *
+     * Ejemplos:
+     *   embed_url = 'https://dino.vout.com/play' → ['https://dino.vout.com']
+     *   embed_url = 'http://localhost:8080/game'  → ['http://localhost:8080']
+     *   embed_url = null                          → []
+     *
+     * @return list<string>
+     */
+    public function getEffectiveOriginsAttribute(): array
+    {
+        if (! $this->embed_url) {
+            return [];
+        }
+
+        $parsed = parse_url($this->embed_url);
+        $scheme = $parsed['scheme'] ?? null;
+        $host = $parsed['host'] ?? null;
+        $port = isset($parsed['port']) ? ':'.$parsed['port'] : '';
+
+        if (! $scheme || ! $host) {
+            return [];
+        }
+
+        return [$scheme.'://'.$host.$port];
+    }
+
+    /**
      * Categorías a las que pertenece el juego (many-to-many).
      * Un juego puede estar etiquetado en múltiples géneros.
      */

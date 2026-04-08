@@ -34,8 +34,10 @@ yarn-error.log
 !/.ai/guidelines/vout-context.md
 /ejemplos mediapipe/*
 /public/wasm/*
+/docs/flujo-comunicacion-ecosistema.md
 /docs/plan-3.1.md
 /docs/plan-3.2.md
+/docs/plan-3.3.md
 
 # AI Instruction files
 /AGENTS.md
