@@ -100,8 +100,9 @@ export type GameToVoutMessage = GameReadyMessage | GameStateMessage;
  * - `ready`          → READY recibido y validado, a punto de enviar AUTH.
  * - `authenticated`  → AUTH enviado correctamente, sesión activa.
  * - `error`          → fallo en validación de origen, token ausente o iframe inválido.
+ * - `timeout`        → el iframe cargó pero no envió READY en el tiempo esperado.
  */
-export type HandshakeStatus = 'waiting' | 'ready' | 'authenticated' | 'error';
+export type HandshakeStatus = 'waiting' | 'ready' | 'authenticated' | 'error' | 'timeout';
 
 // ---------------------------------------------------------------------------
 // Type guards

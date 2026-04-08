@@ -78,6 +78,7 @@ const HANDSHAKE_BADGE: Record<HandshakeStatus, { color: string; key: string }> =
     ready: { color: 'bg-yellow-500', key: 'play.handshake.ready' },
     authenticated: { color: 'bg-green-500', key: 'play.handshake.authenticated' },
     error: { color: 'bg-red-500', key: 'play.handshake.error' },
+    timeout: { color: 'bg-orange-500', key: 'play.handshake.timeout' },
 };
 
 const HEAD_MODE_KEY: Record<HeadTrackingMode, string> = {
@@ -161,9 +162,11 @@ export function ControlPanel({
                         disabled={!canActivate}
                         variant={isRunning ? 'destructive' : 'default'}
                         size="lg"
+                        aria-pressed={isRunning}
                         className={cn(
-                            'h-12 w-full gap-2 text-sm font-semibold',
-                            !isRunning && 'shadow-md shadow-primary/20',
+                            'h-12 w-full gap-2 text-sm font-semibold transition-all duration-200',
+                            !isRunning && 'shadow-md shadow-primary/20 hover:shadow-lg hover:shadow-primary/30',
+                            'focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
                         )}
                     >
                         {isLoading ? (
@@ -271,7 +274,7 @@ export function ControlPanel({
                 <div
                     aria-live="polite"
                     className={cn(
-                        'relative flex min-h-[3.25rem] items-center justify-center overflow-hidden rounded-xl border px-3 py-3 text-center transition-all duration-300',
+                        'relative flex min-h-13 items-center justify-center overflow-hidden rounded-xl border px-3 py-3 text-center transition-all duration-300',
                         lastGesture
                             ? 'border-primary/40 bg-primary/8 shadow-inner shadow-primary/10'
                             : 'border-dashed border-border/60 bg-background/30',

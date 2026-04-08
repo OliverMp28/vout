@@ -67,6 +67,7 @@ export type UsePlayOrchestratorReturn = {
 
     // ── Handlers de UI ────────────────────────────────────────────────────
     handleToggleEngine: () => void;
+    handleRetryGame: () => void;
     handleAcceptPreset: (presetKey: string) => void;
     setDispatchEnabled: React.Dispatch<React.SetStateAction<boolean>>;
     setSensitivity: React.Dispatch<React.SetStateAction<number>>;
@@ -236,6 +237,13 @@ export function usePlayOrchestrator({
 
     const dismissPresetSuggestion = useCallback(() => setPresetSuggestion(null), []);
 
+    const handshakeReset = handshake.reset;
+    const handleRetryGame = useCallback(() => {
+        handshakeReset();
+        const iframe = iframeRef.current;
+        if (iframe) iframe.src = game.embed_url;
+    }, [handshakeReset, iframeRef, game.embed_url]);
+
     // ── Effects ───────────────────────────────────────────────────────────
 
     // Conectar dispatcher al iframe tras handshake.
@@ -292,6 +300,7 @@ export function usePlayOrchestrator({
         handshake,
 
         handleToggleEngine,
+        handleRetryGame,
         handleAcceptPreset,
         setDispatchEnabled,
         setSensitivity,

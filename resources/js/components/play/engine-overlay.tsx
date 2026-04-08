@@ -13,7 +13,7 @@
  * de pantalla sin interrumpir la navegación.
  */
 
-import { AlertTriangle, Loader2, Play, Sparkles } from 'lucide-react';
+import { AlertTriangle, Loader2, Play, RefreshCw, Sparkles } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { useTranslation } from '@/hooks/use-translation';
@@ -38,8 +38,10 @@ type EngineOverlayProps = {
     onActivate: () => void;
     /** Disparado cuando el usuario pulsa el CTA de configurar mapeos. */
     onConfigure: () => void;
-    /** Disparado cuando el usuario pulsa "Reintentar" tras un error. */
+    /** Disparado cuando el usuario pulsa "Reintentar" tras un error del motor. */
     onRetry: () => void;
+    /** Disparado cuando el usuario pulsa "Reintentar" tras un timeout del juego. */
+    onRetryGame: () => void;
 };
 
 /**
@@ -49,9 +51,12 @@ type EngineOverlayProps = {
 function resolveCardKind(
     engineStatus: EngineStatus,
     handshakeStatus: HandshakeStatus,
-): 'error' | 'handshake' | 'loading' | 'idle' | 'hidden' {
+): 'error' | 'timeout' | 'handshake' | 'loading' | 'idle' | 'hidden' {
     if (engineStatus === 'error' || handshakeStatus === 'error') {
         return 'error';
+    }
+    if (handshakeStatus === 'timeout') {
+        return 'timeout';
     }
     if (handshakeStatus === 'waiting') {
         return 'handshake';
@@ -73,6 +78,7 @@ export function EngineOverlay({
     onActivate,
     onConfigure,
     onRetry,
+    onRetryGame,
 }: EngineOverlayProps) {
     const { t } = useTranslation();
     const kind = resolveCardKind(engineStatus, handshakeStatus);
@@ -81,7 +87,7 @@ export function EngineOverlay({
         return null;
     }
 
-    const isError = kind === 'error';
+    const isError = kind === 'error' || kind === 'timeout';
 
     return (
         <div
@@ -161,6 +167,19 @@ export function EngineOverlay({
                                     {t('play.overlay.idle.configure')}
                                 </Button>
                             )}
+                        </>
+                    )}
+
+                    {kind === 'timeout' && (
+                        <>
+                            <IconBubble tone="destructive">
+                                <RefreshCw className="size-7 text-destructive" />
+                            </IconBubble>
+                            <OverlayHeading>{t('play.overlay.timeout.title')}</OverlayHeading>
+                            <OverlayBody>{t('play.overlay.timeout.description')}</OverlayBody>
+                            <Button onClick={onRetryGame} variant="secondary" className="mt-2">
+                                {t('play.overlay.error.retry')}
+                            </Button>
                         </>
                     )}
 

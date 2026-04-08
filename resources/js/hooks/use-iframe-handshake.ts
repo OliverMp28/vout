@@ -72,7 +72,17 @@ export type UseIframeHandshakeOptions = {
      * después de enviar VOUT_AUTH. Útil para reaccionar a `suggestedPreset`.
      */
     onReady?: (suggestedPreset?: string) => void;
-    /** Callback opcional invocado al recibir GAME_STATE válidos (futuro). */
+    /**
+     * Callback opcional invocado al recibir mensajes `GAME_STATE` válidos.
+     *
+     * @fase3.4 — Extensión prevista:
+     *   1. El juego envía `{ type: 'GAME_STATE', state, score }` al terminar o pausar.
+     *   2. Este callback actualiza la tabla pivote `game_user` vía API (play_count,
+     *      high_score, last_played_at).
+     *   3. El backend puede emitir eventos para logros o rankings en tiempo real.
+     *
+     * Por ahora el handler se registra pero ningún juego de la suite lo emite aún.
+     */
     onGameState?: (state: 'playing' | 'paused' | 'ended', score?: number) => void;
 };
 
@@ -95,6 +105,8 @@ export type UseIframeHandshakeReturn = {
      * No-op si el handshake aún no completó.
      */
     sendCursor: (x: number, y: number) => void;
+    /** Resetea el handshake a 'waiting' para reintentar la conexión. */
+    reset: () => void;
 };
 
 // ---------------------------------------------------------------------------
@@ -158,7 +170,24 @@ export function useIframeHandshake(options: UseIframeHandshakeOptions): UseIfram
     }, [onGameState]);
 
     // Listener global de message — registrado una vez en mount.
+    // Timeout: si el iframe carga pero no envía READY en 8s → 'timeout'.
     useEffect(() => {
+        let readyArrived = false;
+        let loadTimer: ReturnType<typeof setTimeout> | null = null;
+
+        function onIframeLoad() {
+            if (readyArrived) return;
+            if (loadTimer) clearTimeout(loadTimer);
+            loadTimer = setTimeout(() => {
+                if (!readyArrived) {
+                    setStatus('timeout');
+                }
+            }, 8000);
+        }
+
+        const iframe = iframeRef.current;
+        iframe?.addEventListener('load', onIframeLoad);
+
         function handleMessage(event: MessageEvent): void {
             // 1. Validar origen contra la lista permitida.
             if (!isOriginAllowed(event.origin, allowedOriginsRef.current)) {
@@ -190,6 +219,9 @@ export function useIframeHandshake(options: UseIframeHandshakeOptions): UseIfram
         }
 
         function handleReady(origin: string, suggestedPreset: string | undefined): void {
+            readyArrived = true;
+            if (loadTimer) { clearTimeout(loadTimer); loadTimer = null; }
+
             const iframe = iframeRef.current;
             const targetWindow = iframe?.contentWindow;
             const token = accessTokenRef.current;
@@ -222,6 +254,8 @@ export function useIframeHandshake(options: UseIframeHandshakeOptions): UseIfram
         window.addEventListener('message', handleMessage);
         return () => {
             window.removeEventListener('message', handleMessage);
+            iframe?.removeEventListener('load', onIframeLoad);
+            if (loadTimer) clearTimeout(loadTimer);
         };
         // iframeRef es estable (creada con useRef) — incluida solo para
         // satisfacer las reglas de hooks sin causar re-suscripciones.
@@ -260,5 +294,11 @@ export function useIframeHandshake(options: UseIframeHandshakeOptions): UseIfram
         targetWindow.postMessage(message, origin);
     }, [iframeRef]);
 
-    return { status, connectedOrigin, sendAction, sendCursor };
+    const reset = useCallback(() => {
+        setStatus('waiting');
+        setConnectedOrigin(null);
+        connectedOriginRef.current = null;
+    }, []);
+
+    return { status, connectedOrigin, sendAction, sendCursor, reset };
 }
