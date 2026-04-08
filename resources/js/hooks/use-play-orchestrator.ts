@@ -12,7 +12,7 @@
  *   detener motor y cámara al desmontar.
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { useActionDispatcher } from '@/hooks/use-action-dispatcher';
 import { useCamera } from '@/hooks/use-camera';
@@ -116,17 +116,18 @@ export function usePlayOrchestrator({
     });
 
     // ── Dispatcher ────────────────────────────────────────────────────────
-    // Solo apunta al iframe cuando el handshake está autenticado.
-    const dispatcherTarget = useMemo<EventTarget | undefined>(() => {
-        if (handshake.status !== 'authenticated') return undefined;
-        return iframeRef.current?.contentWindow ?? undefined;
-    }, [handshake.status, iframeRef]);
+    // El target no se pasa como prop (requeriría leer iframeRef.current durante
+    // render). Se conecta imperativamente en un useEffect más abajo, una vez
+    // que handshake.status cambia a 'authenticated'.
+    //
+    // enabled se deriva en render para evitar un useEffect extra que llame
+    // a setDispatchEnabled(false) cuando el handshake falla.
+    const effectiveDispatchEnabled = dispatchEnabled && handshake.status !== 'error';
 
     const dispatcher = useActionDispatcher({
         mapping: activeMapping,
         headTrackingMode,
-        enabled: dispatchEnabled,
-        target: dispatcherTarget,
+        enabled: effectiveDispatchEnabled,
         allowedOrigin: handshake.connectedOrigin,
     });
 
@@ -176,7 +177,7 @@ export function usePlayOrchestrator({
         },
         // iframeRef es estable; headTrackingMode se lee fuera del array para
         // evitar re-crear el callback al cambiar, con lectura controlada.
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+         
         [dispatcherOnHeadMove, handshakeSendCursor, headTrackingMode, iframeRef],
     );
 
@@ -237,6 +238,18 @@ export function usePlayOrchestrator({
 
     // ── Effects ───────────────────────────────────────────────────────────
 
+    // Conectar dispatcher al iframe tras handshake.
+    // setTarget es imperativo (no setState) — lee iframeRef.current en effect.
+    const dispatcherSetTarget = dispatcher.setTarget;
+    useEffect(() => {
+        if (handshake.status === 'authenticated') {
+            const win = iframeRef.current?.contentWindow;
+            if (win) dispatcherSetTarget(win);
+        } else {
+            dispatcherSetTarget(document);
+        }
+    }, [handshake.status, iframeRef, dispatcherSetTarget]);
+
     // Liberar teclas al perder foco — evita keydown bloqueados tras alt-tab.
     const releaseHeldKeys = dispatcher.releaseHeldKeys;
     useEffect(() => {
@@ -255,11 +268,6 @@ export function usePlayOrchestrator({
         if (engine.status !== 'running') releaseHeldKeys();
     }, [engine.status, releaseHeldKeys]);
 
-    // Si el handshake cae a error, deshabilitar el dispatch.
-    useEffect(() => {
-        if (handshake.status === 'error') setDispatchEnabled(false);
-    }, [handshake.status]);
-
     // Cleanup al desmontar.
     useEffect(() => {
         const eng = engineRef.current;
@@ -274,7 +282,7 @@ export function usePlayOrchestrator({
     return {
         sensitivity,
         headTrackingMode,
-        dispatchEnabled,
+        dispatchEnabled: effectiveDispatchEnabled,
         lastGesture,
         hasGestureConfig,
         presetSuggestion,
