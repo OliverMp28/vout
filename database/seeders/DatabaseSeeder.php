@@ -20,6 +20,7 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call([
+            PassportPersonalAccessClientSeeder::class,
             CategorySeeder::class,
             CatalogSeeder::class,
         ]);

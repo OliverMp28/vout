@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vout Test Game (Dev)</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: monospace;
+            background: #0d0d14;
+            color: #e2e8f0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding: 1rem;
+            gap: 0.75rem;
+        }
+
+        #status-bar {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            background: #1a1a2e;
+            border: 1px solid #2d2d4a;
+            border-radius: 8px;
+            padding: 0.6rem 1rem;
+            font-size: 0.8rem;
+        }
+
+        #dot {
+            width: 10px; height: 10px;
+            border-radius: 50%;
+            background: #4a4a6a;
+            transition: background 0.3s;
+            flex-shrink: 0;
+        }
+        #dot.ready   { background: #22c55e; box-shadow: 0 0 8px #22c55e80; }
+        #dot.waiting { background: #eab308; animation: pulse 1.2s ease-in-out infinite; }
+        #dot.error   { background: #ef4444; }
+
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+        #status-text { flex: 1; }
+        #username-badge {
+            background: #7c3aed20;
+            border: 1px solid #7c3aed60;
+            color: #a78bfa;
+            border-radius: 4px;
+            padding: 0.15rem 0.5rem;
+            font-size: 0.75rem;
+        }
+
+        /* Cursor virtual del juego — punto sólido naranja/ámbar para
+           distinguirse del cursor retícula blanco del portal Vout */
+        #game-cursor {
+            position: fixed;
+            width: 10px; height: 10px;
+            border-radius: 50%;
+            background: rgba(251, 146, 60, 0.9);
+            border: 1.5px solid rgba(255,255,255,0.8);
+            box-shadow: 0 0 8px rgba(251, 146, 60, 0.7);
+            pointer-events: none;
+            transform: translate(-50%, -50%);
+            transition: left 0.05s linear, top 0.05s linear;
+            left: 50%; top: 50%;
+            z-index: 100;
+            display: none;
+        }
+
+        /* Área principal de acción */
+        #game-area {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.75rem;
+            min-height: 0;
+        }
+
+        .panel {
+            background: #1a1a2e;
+            border: 1px solid #2d2d4a;
+            border-radius: 8px;
+            padding: 0.75rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            overflow: hidden;
+        }
+
+        .panel h2 {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: #7c3aed;
+            border-bottom: 1px solid #2d2d4a;
+            padding-bottom: 0.4rem;
+            margin-bottom: 0.2rem;
+            flex-shrink: 0;
+        }
+
+        #log {
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .log-entry {
+            display: flex;
+            gap: 0.5rem;
+            font-size: 0.72rem;
+            padding: 0.2rem 0.3rem;
+            border-radius: 4px;
+            animation: slide-in 0.15s ease-out;
+        }
+        @keyframes slide-in { from { opacity:0; transform: translateY(-4px); } }
+
+        .log-entry .time  { color: #4a5568; flex-shrink: 0; }
+        .log-entry .type  { flex-shrink: 0; font-weight: bold; min-width: 80px; }
+        .log-entry .value { color: #94a3b8; word-break: break-all; }
+
+        .log-entry.auth     { background: #1a3a2a; } .log-entry.auth .type     { color: #22c55e; }
+        .log-entry.action   { background: #1a1a3a; } .log-entry.action .type   { color: #60a5fa; }
+        .log-entry.cursor   { background: #2a1a2a; } .log-entry.cursor .type   { color: #c084fc; }
+        .log-entry.keyboard { background: #1a2a1a; } .log-entry.keyboard .type { color: #86efac; }
+        .log-entry.mouse    { background: #2a2a1a; } .log-entry.mouse .type    { color: #fbbf24; }
+        .log-entry.system   { background: #1a1a1a; } .log-entry.system .type   { color: #64748b; }
+
+        /* Auth card */
+        #auth-card {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        .auth-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.75rem;
+        }
+        .auth-row .label { color: #64748b; }
+        .auth-row .value { color: #e2e8f0; word-break: break-all; text-align: right; max-width: 60%; }
+
+        #token-preview {
+            font-size: 0.65rem;
+            color: #4a5568;
+            word-break: break-all;
+            border: 1px dashed #2d2d4a;
+            border-radius: 4px;
+            padding: 0.4rem;
+            max-height: 80px;
+            overflow-y: auto;
+        }
+
+        #clear-btn {
+            align-self: flex-end;
+            background: transparent;
+            border: 1px solid #2d2d4a;
+            color: #64748b;
+            border-radius: 4px;
+            padding: 0.2rem 0.5rem;
+            font-size: 0.65rem;
+            cursor: pointer;
+            font-family: monospace;
+            flex-shrink: 0;
+        }
+        #clear-btn:hover { border-color: #4a4a6a; color: #94a3b8; }
+    </style>
+</head>
+<body>
+
+    <!-- Estado de la conexión -->
+    <div id="status-bar">
+        <div id="dot" class="waiting"></div>
+        <span id="status-text">Enviando READY a Vout...</span>
+        <span id="username-badge" style="display:none"></span>
+    </div>
+
+    <!-- Cursor virtual recibido por VOUT_CURSOR -->
+    <div id="game-cursor"></div>
+
+    <!-- Área principal -->
+    <div id="game-area">
+
+        <!-- Datos de autenticación recibidos -->
+        <div class="panel">
+            <h2>Identidad recibida (VOUT_AUTH)</h2>
+            <div id="auth-card">
+                <div class="auth-row"><span class="label">Estado</span><span class="value" id="auth-status">Esperando...</span></div>
+                <div class="auth-row"><span class="label">username</span><span class="value" id="auth-username">—</span></div>
+                <div class="auth-row"><span class="label">vout_id</span><span class="value" id="auth-voutid">—</span></div>
+                <div class="auth-row" style="align-items:flex-start"><span class="label">token (primeros 40 chars)</span></div>
+                <div id="token-preview">—</div>
+            </div>
+        </div>
+
+        <!-- Log de eventos -->
+        <div class="panel">
+            <div style="display:flex;justify-content:space-between;align-items:center;flex-shrink:0">
+                <h2 style="border:none;margin:0;padding:0">Log de eventos</h2>
+                <button id="clear-btn" onclick="clearLog()">Limpiar</button>
+            </div>
+            <div id="log"></div>
+        </div>
+
+    </div>
+
+<script>
+    'use strict';
+
+    // ── Estado interno ────────────────────────────────────────────────────────
+    let cursorVisible = false;
+
+    // ── Helpers de UI ─────────────────────────────────────────────────────────
+    function now() {
+        return new Date().toLocaleTimeString('es', { hour12: false });
+    }
+
+    function addLog(type, typeLabel, value) {
+        const el = document.createElement('div');
+        el.className = 'log-entry ' + type;
+        el.innerHTML =
+            '<span class="time">' + now() + '</span>' +
+            '<span class="type">' + typeLabel + '</span>' +
+            '<span class="value">' + String(value) + '</span>';
+
+        const log = document.getElementById('log');
+        log.prepend(el);
+
+        // Mantener máximo 80 entradas para no crecer sin límite
+        while (log.children.length > 80) {
+            log.removeChild(log.lastChild);
+        }
+    }
+
+    function clearLog() {
+        document.getElementById('log').innerHTML = '';
+    }
+
+    function setStatus(text, state) {
+        document.getElementById('status-text').textContent = text;
+        const dot = document.getElementById('dot');
+        dot.className = '';
+        dot.classList.add(state);
+    }
+
+    // ── Protocolo Vout ────────────────────────────────────────────────────────
+    // 1. Enviar READY al padre en cuanto el DOM está listo.
+    //    suggestedPreset le dice a Vout qué preset aplicar por defecto.
+    window.parent.postMessage(
+        { type: 'READY', suggestedPreset: 'platformer' },
+        '*'
+    );
+    addLog('system', 'READY →', 'Enviado a parent. suggestedPreset=platformer');
+    setStatus('Enviando READY a Vout…', 'waiting');
+
+    // 2. Escuchar respuestas de Vout
+    window.addEventListener('message', function(e) {
+        const data = e.data;
+        if (!data || !data.type) return;
+
+        switch (data.type) {
+
+            case 'VOUT_AUTH': {
+                document.getElementById('auth-status').textContent  = '✓ Autenticado';
+                document.getElementById('auth-username').textContent = data.username ?? '—';
+                document.getElementById('auth-voutid').textContent  = data.voutId   ?? '—';
+                document.getElementById('token-preview').textContent =
+                    data.token ? data.token.substring(0, 40) + '…' : '—';
+
+                const badge = document.getElementById('username-badge');
+                badge.textContent = data.username ?? '';
+                badge.style.display = 'block';
+
+                setStatus('Sesión activa · ' + (data.username ?? ''), 'ready');
+                addLog('auth', 'VOUT_AUTH', 'username=' + data.username + ' | voutId=' + data.voutId);
+                break;
+            }
+
+            case 'VOUT_ACTION': {
+                addLog('action', 'VOUT_ACTION', data.event ?? '?');
+                break;
+            }
+
+            case 'VOUT_CURSOR': {
+                const cursor = document.getElementById('game-cursor');
+                if (!cursorVisible) {
+                    cursor.style.display = 'block';
+                    cursorVisible = true;
+                }
+                cursor.style.left = (data.x * window.innerWidth)  + 'px';
+                cursor.style.top  = (data.y * window.innerHeight) + 'px';
+                // Solo loguear 1 de cada 10 para no saturar el log
+                if (Math.random() < 0.1) {
+                    addLog('cursor', 'VOUT_CURSOR', 'x=' + data.x.toFixed(3) + ' y=' + data.y.toFixed(3));
+                }
+                break;
+            }
+        }
+    });
+
+    // 3. Escuchar eventos de teclado (despachados por el ActionDispatcher de Vout)
+    document.addEventListener('keydown', function(e) {
+        addLog('keyboard', 'KEYDOWN ↓', e.key + ' (code: ' + e.code + ')');
+    });
+
+    document.addEventListener('keyup', function(e) {
+        addLog('keyboard', 'KEYUP ↑', e.key + ' (code: ' + e.code + ')');
+    });
+
+    document.addEventListener('mousedown', function(e) {
+        addLog('mouse', 'MOUSEDOWN', 'button: ' + e.button);
+    });
+
+    document.addEventListener('mouseup', function(e) {
+        addLog('mouse', 'MOUSEUP', 'button: ' + e.button);
+    });
+</script>
+</body>
+</html>
