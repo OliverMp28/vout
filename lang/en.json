@@ -217,8 +217,12 @@
 
     "play.back_to_catalog": "Back to catalog",
     "play.now_playing": "Now playing",
+    "play.iframe.aria_label": "Embedded game: :game",
     "play.panel.title": "Control panel",
+    "play.panel.title_hint": "Tweak face control without leaving the game",
     "play.panel.toggle": "Panel",
+    "play.panel.open_panel": "Open control panel",
+    "play.panel.close_panel": "Close control panel",
     "play.panel.status": "Status",
     "play.panel.handshake": "Connection",
     "play.panel.engine": "Engine",
@@ -237,6 +241,7 @@
 
     "play.engine.idle": "Idle",
     "play.engine.loading": "Loading model…",
+    "play.engine.ready": "Ready",
     "play.engine.running": "Active",
     "play.engine.paused": "Paused",
     "play.engine.error": "Error",
@@ -245,6 +250,7 @@
     "play.handshake.ready": "Ready",
     "play.handshake.authenticated": "Authenticated",
     "play.handshake.error": "Error",
+    "play.handshake.timeout": "No response",
 
     "play.head_mode.cursor": "Cursor",
     "play.head_mode.gesture": "Directional keys",
@@ -262,8 +268,13 @@
     "play.overlay.error.title": "Something went wrong",
     "play.overlay.error.description": "Face control encountered a problem. Please try again.",
     "play.overlay.error.retry": "Retry",
+    "play.overlay.timeout.title": "Game not responding",
+    "play.overlay.timeout.description": "The game took too long to connect. It may be down or the URL may be invalid.",
 
     "play.preset_suggestion.text": "This game suggests the \":preset\" preset. Apply it?",
     "play.preset_suggestion.accept": "Apply",
-    "play.preset_suggestion.dismiss": "Dismiss"
+    "play.preset_suggestion.dismiss": "Dismiss",
+
+    "play.skip_to_game": "Skip to game",
+    "play.a11y.gesture_detected": "Gesture detected: :gesture"
 }

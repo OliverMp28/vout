@@ -217,8 +217,12 @@
 
     "play.back_to_catalog": "Volver al catálogo",
     "play.now_playing": "Jugando ahora",
+    "play.iframe.aria_label": "Juego embebido: :game",
     "play.panel.title": "Panel de control",
+    "play.panel.title_hint": "Ajusta el control facial sin salir del juego",
     "play.panel.toggle": "Panel",
+    "play.panel.open_panel": "Abrir panel de control",
+    "play.panel.close_panel": "Cerrar panel de control",
     "play.panel.status": "Estado",
     "play.panel.handshake": "Conexión",
     "play.panel.engine": "Motor",
@@ -237,6 +241,7 @@
 
     "play.engine.idle": "Inactivo",
     "play.engine.loading": "Cargando modelo…",
+    "play.engine.ready": "Preparado",
     "play.engine.running": "Activo",
     "play.engine.paused": "En pausa",
     "play.engine.error": "Error",
@@ -245,6 +250,7 @@
     "play.handshake.ready": "Listo",
     "play.handshake.authenticated": "Autenticado",
     "play.handshake.error": "Error",
+    "play.handshake.timeout": "Sin respuesta",
 
     "play.head_mode.cursor": "Cursor",
     "play.head_mode.gesture": "Teclas direccionales",
@@ -262,8 +268,13 @@
     "play.overlay.error.title": "Algo no funcionó",
     "play.overlay.error.description": "El control facial encontró un problema. Vuelve a intentarlo.",
     "play.overlay.error.retry": "Reintentar",
+    "play.overlay.timeout.title": "El juego no responde",
+    "play.overlay.timeout.description": "El juego tardó demasiado en conectar. Es posible que esté caído o que la URL no sea válida.",
 
     "play.preset_suggestion.text": "Este juego sugiere el preset \":preset\". ¿Aplicarlo?",
     "play.preset_suggestion.accept": "Aplicar",
-    "play.preset_suggestion.dismiss": "Descartar"
+    "play.preset_suggestion.dismiss": "Descartar",
+
+    "play.skip_to_game": "Ir al juego",
+    "play.a11y.gesture_detected": "Gesto detectado: :gesture"
 }

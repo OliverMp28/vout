@@ -51,6 +51,12 @@ class PlayController extends Controller
             scopes: ['game:play'],
         )->accessToken;
 
+        // @fase3.4 — Incrementar play_count en game_user aquí, justo antes de renderizar.
+        // Usar un Job en cola para no bloquear la respuesta:
+        //   IncrementPlayCount::dispatch($user, $game);
+        // El Job actualiza la tabla pivote game_user (play_count++, last_played_at=now()).
+        // Alternativa más precisa: incrementar al recibir GAME_STATE desde el iframe.
+
         return Inertia::render('play/game', [
             // Datos públicos del juego que el frontend necesita para el iFrame.
             // No usamos GameResource porque las props de juego aquí son distintas

@@ -82,6 +82,7 @@ export default function PlayGame({ game, activeGestureConfig, accessToken }: Pla
         engine,
         handshake,
         handleToggleEngine,
+        handleRetryGame,
         handleAcceptPreset,
         setDispatchEnabled,
         setSensitivity,
@@ -118,6 +119,14 @@ export default function PlayGame({ game, activeGestureConfig, accessToken }: Pla
         <AppLayout>
             <Head title={game.name} />
 
+            {/* Enlace de salto para usuarios de teclado — visualmente oculto, visible al recibir foco */}
+            <a
+                href="#game-frame"
+                className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-primary focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-primary-foreground focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
+            >
+                {t('play.skip_to_game')}
+            </a>
+
             <NowPlayingHeader
                 gameName={game.name}
                 gameDescription={game.description}
@@ -139,6 +148,7 @@ export default function PlayGame({ game, activeGestureConfig, accessToken }: Pla
 
                 {/* ── Contenedor del iframe ───────────────────────────────── */}
                 <div
+                    id="game-frame"
                     className={cn(
                         'group relative aspect-video w-full overflow-hidden rounded-2xl border bg-black transition-all duration-500',
                         engine.status === 'running'
@@ -158,13 +168,27 @@ export default function PlayGame({ game, activeGestureConfig, accessToken }: Pla
                         />
                     )}
 
+                    {/* Skeleton shimmer solo mientras esperamos el handshake READY */}
+                    {handshake.status === 'waiting' && (
+                        <div
+                            aria-hidden="true"
+                            className="pointer-events-none absolute inset-0 z-10 bg-[radial-gradient(circle_at_center,color-mix(in_oklch,var(--primary)_10%,transparent),transparent_70%)]"
+                        >
+                            <div className="iframe-shimmer absolute inset-0" />
+                        </div>
+                    )}
+
                     <iframe
                         ref={iframeRef}
                         src={game.embed_url}
                         title={game.name}
+                        aria-label={t('play.iframe.aria_label', { game: game.name })}
                         sandbox="allow-scripts allow-same-origin"
                         allow="autoplay; fullscreen"
-                        className="absolute inset-0 size-full border-0"
+                        className={cn(
+                            'absolute inset-0 size-full border-0 transition-opacity duration-700 ease-out',
+                            handshake.status === 'authenticated' ? 'opacity-100' : 'opacity-0',
+                        )}
                     />
 
                     {/* Cursor de head-tracking (actualización imperativa — sin re-renders React) */}
@@ -180,17 +204,43 @@ export default function PlayGame({ game, activeGestureConfig, accessToken }: Pla
                         onActivate={handleToggleEngine}
                         onConfigure={() => { window.location.href = appearance.edit.url(); }}
                         onRetry={handleToggleEngine}
+                        onRetryGame={handleRetryGame}
                     />
                 </div>
 
                 {/* ── Panel desktop (oculto en < lg) ─────────────────────── */}
+                {/* El `key={lastGesture}` remonta el wrapper al llegar un gesto, */}
+                {/* lo que reinicia la animación `gesture-pulse` (feedback visual). */}
                 <aside
                     aria-label={t('play.panel.title')}
-                    className="hidden rounded-2xl border border-border/60 bg-card/70 p-5 shadow-xl shadow-black/5 backdrop-blur-md lg:block dark:bg-card/40 dark:shadow-black/20"
+                    className="hidden lg:block"
                 >
-                    {panelContent}
+                    <div
+                        key={lastGesture ?? 'idle'}
+                        className={cn(
+                            'h-full rounded-2xl border border-border/60 bg-card/70 p-5 shadow-xl shadow-black/5 backdrop-blur-md dark:bg-card/40 dark:shadow-black/20',
+                            lastGesture && 'motion-safe:animate-gesture-pulse',
+                        )}
+                    >
+                        {panelContent}
+                    </div>
                 </aside>
             </div>
+
+            {/* ── Anuncio a11y para cambios de estado del motor ──────────── */}
+            {/* Región live polite, visualmente oculta pero leída por SR */}
+            <div role="status" aria-live="polite" aria-atomic="true" className="sr-only">
+                {t(`play.engine.${engine.status}`)}
+            </div>
+
+            {/* ── Anuncio a11y de gestos detectados ─────────────────────── */}
+            {/* Solo activo cuando el dispatch está habilitado — evita spam de SR */}
+            {/* cuando el usuario no usa control facial activamente.              */}
+            {dispatchEnabled && lastGesture && (
+                <div role="alert" aria-live="assertive" aria-atomic="true" className="sr-only">
+                    {t('play.a11y.gesture_detected', { gesture: lastGesture })}
+                </div>
+            )}
 
             {/* <video> oculto — alimenta el motor de visión sin mostrarse al usuario */}
             <video
