@@ -47,6 +47,14 @@ type UseActionDispatcherOptions = {
      * Nota 3.3: pasar iframe.contentWindow tras el handshake READY.
      */
     target?: EventTarget;
+    /**
+     * Origen validado del iframe (resultado del handshake READY) usado como
+     * `targetOrigin` en los `postMessage` de `game_event`. Si es undefined o
+     * null, los `game_event` usan el fallback `CustomEvent` local.
+     *
+     * Nota 3.3: nunca usar `'*'` — sería una fuga de credenciales.
+     */
+    allowedOrigin?: string | null;
 };
 
 type UseActionDispatcherReturn = {
@@ -70,6 +78,11 @@ type UseActionDispatcherReturn = {
      */
     setTarget: (target: EventTarget) => void;
     /**
+     * Cambia el origen permitido para los `postMessage` de `game_event`.
+     * Pasar `null` revierte al fallback `CustomEvent` local.
+     */
+    setAllowedOrigin: (origin: string | null) => void;
+    /**
      * Libera todas las teclas retenidas inmediatamente sin desactivar el dispatcher.
      * Llamar cuando el motor se pause o detenga para evitar inputs bloqueados.
      */
@@ -85,6 +98,7 @@ export function useActionDispatcher({
     headTrackingMode,
     enabled,
     target,
+    allowedOrigin,
 }: UseActionDispatcherOptions): UseActionDispatcherReturn {
     // Instancia del dispatcher — creada una vez, actualizada vía métodos.
     // No se re-crea entre renders para evitar liberar teclas retenidas o
@@ -128,6 +142,13 @@ export function useActionDispatcher({
         dispatcherRef.current.setTarget(target ?? document);
     }, [target]);
 
+    // Sincronizar el origen permitido para postMessage. Se ejecuta después del
+    // effect de target para que el orden sea consistente: primero apuntamos al
+    // iframe, luego habilitamos los envíos por postMessage con su origen.
+    useEffect(() => {
+        dispatcherRef.current.setAllowedOrigin(allowedOrigin ?? null);
+    }, [allowedOrigin]);
+
     // Cleanup al desmontar: liberar teclas retenidas y cancelar timers.
     useEffect(() => {
         const dispatcher = dispatcherRef.current;
@@ -166,9 +187,21 @@ export function useActionDispatcher({
         dispatcherRef.current.setTarget(newTarget);
     }, []);
 
+    const setAllowedOrigin = useCallback((newOrigin: string | null) => {
+        dispatcherRef.current.setAllowedOrigin(newOrigin);
+    }, []);
+
     const releaseHeldKeys = useCallback(() => {
         dispatcherRef.current.destroy();
     }, []);
 
-    return { onGesture, onHeadMove, setMapping, setEnabled, setTarget, releaseHeldKeys };
+    return {
+        onGesture,
+        onHeadMove,
+        setMapping,
+        setEnabled,
+        setTarget,
+        setAllowedOrigin,
+        releaseHeldKeys,
+    };
 }
