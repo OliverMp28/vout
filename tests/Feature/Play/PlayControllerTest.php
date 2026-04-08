@@ -7,6 +7,8 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
+beforeEach(fn () => test()->withoutVite());
+
 // Registrar el cliente personal de Passport antes de cada test.
 // PlayController llama a $user->createToken(), que requiere un cliente personal
 // en la BD. Con RefreshDatabase los clientes se limpian entre tests.
