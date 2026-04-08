@@ -20,6 +20,7 @@ import { cn } from '@/lib/utils';
 import { index as catalogIndex } from '@/routes/catalog';
 import { toggle as toggleFavorite } from '@/routes/catalog/favorite';
 import { toggle as toggleSaved } from '@/routes/catalog/saved';
+import { show as playShow } from '@/routes/play';
 import type { CatalogShowProps } from '@/types';
 
 export default function CatalogShow({
@@ -146,9 +147,11 @@ export default function CatalogShow({
                         {/* Actions */}
                         <div className="mt-auto flex flex-col gap-2">
                             {game.embed_url && (
-                                <Button size="lg" className="w-full">
-                                    <Play className="mr-2 size-4" />
-                                    {t('catalog.play')}
+                                <Button size="lg" className="w-full" asChild>
+                                    <Link href={playShow.url(game.slug)}>
+                                        <Play className="mr-2 size-4" />
+                                        {t('catalog.play')}
+                                    </Link>
                                 </Button>
                             )}
 
