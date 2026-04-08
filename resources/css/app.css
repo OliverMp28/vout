@@ -258,6 +258,80 @@
 }
 
 /*
+ * ─── Gesture feedback pulse ──────────────────────────────────
+ * Brief border flash on the control panel when a gesture fires.
+ * Intentionally short (600ms) so it never distracts from the game.
+ * Trigger by remounting via React `key={lastGesture}`.
+ */
+@keyframes gesture-pulse {
+    0% {
+        box-shadow:
+            0 0 0 0 color-mix(in oklch, var(--primary) 55%, transparent),
+            0 0 0 0 color-mix(in oklch, var(--primary) 25%, transparent);
+    }
+    60% {
+        box-shadow:
+            0 0 0 4px color-mix(in oklch, var(--primary) 0%, transparent),
+            0 0 24px 6px color-mix(in oklch, var(--primary) 18%, transparent);
+    }
+    100% {
+        box-shadow:
+            0 0 0 0 transparent,
+            0 0 0 0 transparent;
+    }
+}
+
+.animate-gesture-pulse {
+    animation: gesture-pulse 0.65s ease-out both;
+}
+
+/*
+ * ─── Iframe shimmer skeleton ─────────────────────────────────
+ * Subtle diagonal sheen for the iframe loading state — premium
+ * feel without the clinical gray of typical skeletons.
+ */
+@keyframes iframe-shimmer {
+    0% {
+        background-position: -200% 0;
+    }
+    100% {
+        background-position: 200% 0;
+    }
+}
+
+.iframe-shimmer {
+    background-image: linear-gradient(
+        110deg,
+        transparent 30%,
+        color-mix(in oklch, var(--primary) 10%, transparent) 45%,
+        color-mix(in oklch, var(--primary) 18%, transparent) 50%,
+        color-mix(in oklch, var(--primary) 10%, transparent) 55%,
+        transparent 70%
+    );
+    background-size: 200% 100%;
+    animation: iframe-shimmer 2.4s ease-in-out infinite;
+}
+
+/*
+ * ─── Reduced motion ──────────────────────────────────────────
+ * Respect user OS preference. Keeps opacity/fade transitions
+ * (they're informative), kills looped transforms and shimmers.
+ */
+@media (prefers-reduced-motion: reduce) {
+    .animate-float,
+    .animate-float-slow,
+    .animate-glow-pulse,
+    .animate-gesture-pulse,
+    .iframe-shimmer {
+        animation: none !important;
+    }
+
+    .animate-slide-up-fade {
+        animation-duration: 0.01ms !important;
+    }
+}
+
+/*
  * ─── Mesh Gradient Background ────────────────────────────────
  * Dot grid pattern + radial gradient blobs for visual depth.
  * Noticeable but professional — adds personality without noise.

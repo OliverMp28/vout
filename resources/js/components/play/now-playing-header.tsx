@@ -9,7 +9,15 @@ import { Link } from '@inertiajs/react';
 import { ArrowLeft, Settings2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import {
+    Sheet,
+    SheetContent,
+    SheetDescription,
+    SheetHeader,
+    SheetTitle,
+    SheetTrigger,
+} from '@/components/ui/sheet';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { useTranslation } from '@/hooks/use-translation';
 import catalog from '@/routes/catalog';
 
@@ -30,6 +38,9 @@ export function NowPlayingHeader({
     panelContent,
 }: NowPlayingHeaderProps) {
     const { t } = useTranslation();
+    const isMobile = useIsMobile();
+
+    const panelId = 'play-control-panel-sheet';
 
     return (
         <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
@@ -63,6 +74,8 @@ export function NowPlayingHeader({
             </div>
 
             {/* Trigger del panel — solo visible en tablet/móvil */}
+            {/* En móvil (<md) el sheet sale por abajo — UX natural con el pulgar. */}
+            {/* En tablet (md..lg) sale por la derecha como drawer lateral. */}
             <div className="lg:hidden">
                 <Sheet open={panelOpen} onOpenChange={onPanelOpenChange}>
                     <SheetTrigger asChild>
@@ -70,17 +83,33 @@ export function NowPlayingHeader({
                             id="play-panel-trigger"
                             variant="secondary"
                             size="sm"
-                            className="gap-2"
+                            className="gap-2 shadow-sm transition-all duration-200 hover:shadow-md"
+                            aria-expanded={panelOpen}
+                            aria-controls={panelId}
+                            aria-label={panelOpen ? t('play.panel.close_panel') : t('play.panel.open_panel')}
                         >
                             <Settings2 className="size-4" />
                             {t('play.panel.toggle')}
                         </Button>
                     </SheetTrigger>
-                    <SheetContent side="right" className="w-full sm:max-w-sm">
-                        <SheetHeader>
-                            <SheetTitle>{t('play.panel.title')}</SheetTitle>
+                    <SheetContent
+                        id={panelId}
+                        side={isMobile ? 'bottom' : 'right'}
+                        className={
+                            isMobile
+                                ? 'max-h-[85vh] rounded-t-2xl border-t-border/60 bg-card/95 backdrop-blur-xl'
+                                : 'w-full border-l-border/60 bg-card/95 backdrop-blur-xl sm:max-w-sm'
+                        }
+                    >
+                        <SheetHeader className="border-b border-border/50 pb-4">
+                            <SheetTitle className="text-lg tracking-tight">
+                                {t('play.panel.title')}
+                            </SheetTitle>
+                            <SheetDescription className="text-xs">
+                                {t('play.panel.title_hint')}
+                            </SheetDescription>
                         </SheetHeader>
-                        <div className="px-4 pb-4">{panelContent}</div>
+                        <div className="overflow-y-auto px-4 pb-6 pt-2">{panelContent}</div>
                     </SheetContent>
                 </Sheet>
             </div>
