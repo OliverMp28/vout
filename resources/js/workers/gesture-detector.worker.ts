@@ -19,7 +19,13 @@
 // type-safety sin crear una dependencia runtime sobre node_modules.
 import type { FaceLandmarker as FaceLandmarkerInstance } from '@mediapipe/tasks-vision';
 
-import { CALIBRATION_FRAME_COUNT, DEFAULT_DETECTION_CONFIG, MEDIAPIPE_CDN_BASE } from '@/lib/mediapipe/constants';
+import {
+    CALIBRATION_FRAME_COUNT,
+    DEFAULT_DETECTION_CONFIG,
+    HEAD_POSE_GESTURE_GATE,
+    MEDIAPIPE_CDN_BASE,
+    USED_BLENDSHAPE_KEYS,
+} from '@/lib/mediapipe/constants';
 import { classifyGestures, resetDebouncers } from '@/lib/mediapipe/gesture-classifier';
 import { extractHeadPose } from '@/lib/mediapipe/head-pose';
 import { PerformanceAdapter } from '@/lib/mediapipe/performance-adapter';
@@ -65,14 +71,28 @@ function post(msg: WorkerOutMessage): void {
     self.postMessage(msg);
 }
 
+/**
+ * Convierte las categorías crudas de MediaPipe en un diccionario `{nombre: score}`.
+ *
+ * @param blendshapes Array devuelto por `detectForVideo().faceBlendshapes`.
+ * @param includeAll  Si `true`, devuelve las 52 categorías (modo Vision Lab).
+ *                    Si `false`, devuelve sólo las claves que el classifier
+ *                    realmente consume (ver `USED_BLENDSHAPE_KEYS`). Sesión 3.4 §4.2
+ *                    — reduce ~80% el tamaño del record por frame y el coste
+ *                    de serialización del postMessage `BLENDSHAPES`, y el
+ *                    recálculo del baseline en calibración.
+ */
 function blendshapeMapFromResult(
     blendshapes: { categories: { categoryName: string; score: number }[] }[],
+    includeAll: boolean,
 ): Record<string, number> {
     const map: Record<string, number> = {};
     if (blendshapes.length === 0) return map;
 
     for (const cat of blendshapes[0].categories) {
-        map[cat.categoryName] = cat.score;
+        if (includeAll || USED_BLENDSHAPE_KEYS.has(cat.categoryName)) {
+            map[cat.categoryName] = cat.score;
+        }
     }
     return map;
 }
@@ -129,7 +149,11 @@ async function handleInit(modelPath: string, wasmPath: string, cfg: WorkerConfig
             outputFacialTransformationMatrixes: DEFAULT_DETECTION_CONFIG.outputFacialTransformationMatrixes,
         });
 
-        console.log('[GestureWorker] FaceLandmarker created (GPU). Sending READY.');
+        // Nota (Sesión 3.4 §4.4): el primer `detectForVideo` incluye la
+        // compilación del shader GPU (≈200-500ms) que queda fuera de la ventana
+        // deslizante del PerformanceAdapter porque arranca con muestras limpias.
+        // No hay que alarmarse si el primer `inferenceMs` es un outlier alto.
+        console.log('[GestureWorker] FaceLandmarker created (delegate=GPU). Sending READY.');
         post({ type: 'READY' });
     } catch (gpuErr) {
         // El delegado GPU puede fallar en algunos dispositivos — reintentar con CPU.
@@ -152,7 +176,7 @@ async function handleInit(modelPath: string, wasmPath: string, cfg: WorkerConfig
                 outputFacialTransformationMatrixes: DEFAULT_DETECTION_CONFIG.outputFacialTransformationMatrixes,
             });
 
-            console.log('[GestureWorker] FaceLandmarker created (CPU). Sending READY.');
+            console.log('[GestureWorker] FaceLandmarker created (delegate=CPU fallback). Sending READY.');
             post({ type: 'READY' });
         } catch (cpuErr) {
             console.error('[GestureWorker] CPU init also failed:', cpuErr);
@@ -192,7 +216,10 @@ function handleFrame(bitmap: ImageBitmap, timestamp: number): void {
     if (!result.faceLandmarks || result.faceLandmarks.length === 0) return;
 
     // -- Blendshapes --
-    const bsMap = blendshapeMapFromResult(result.faceBlendshapes ?? []);
+    // En modo Vision Lab necesitamos las 52 categorías para el panel de debug.
+    // En modo juego basta con las 11 que consume `classifyGestures` — ver
+    // `USED_BLENDSHAPE_KEYS` en constants.ts (Sesión 3.4 §4.2).
+    const bsMap = blendshapeMapFromResult(result.faceBlendshapes ?? [], config.enableBlendshapes);
 
     // Modo calibración: acumular muestras.
     if (isCalibrating) {
@@ -203,15 +230,24 @@ function handleFrame(bitmap: ImageBitmap, timestamp: number): void {
         return;
     }
 
-    // -- Clasificación de gestos --
-    const gestures = classifyGestures(bsMap, config.sensitivity, baseline, timestamp);
-
-    // -- Pose de cabeza --
+    // -- Pose de cabeza (extraer ANTES de clasificar gestos) --
     let headPose = null;
     if (result.facialTransformationMatrixes && result.facialTransformationMatrixes.length > 0) {
         const matrix = result.facialTransformationMatrixes[0].data;
         headPose = extractHeadPose(matrix, timestamp);
     }
+
+    // -- Clasificación de gestos --
+    // Sesión 3.4 §6.5 — Suprimir clasificación cuando la cabeza está muy
+    // rotada. En posiciones extremas la red neuronal distorsiona los
+    // blendshapes frontales (ej. mirar arriba → falso BROW_RAISE, mirar
+    // abajo → falso MOUTH_OPEN). El head tracking sigue funcionando.
+    const headExtremeRotation = headPose != null
+        && (Math.abs(headPose.pitch) > HEAD_POSE_GESTURE_GATE
+            || Math.abs(headPose.roll) > HEAD_POSE_GESTURE_GATE);
+    const gestures = headExtremeRotation
+        ? []
+        : classifyGestures(bsMap, config.sensitivity, baseline, timestamp);
 
     // -- Enviar resultados --
     if (gestures.length > 0 || headPose) {
@@ -223,14 +259,20 @@ function handleFrame(bitmap: ImageBitmap, timestamp: number): void {
         post({ type: 'BLENDSHAPES', values: bsMap });
     }
 
-    // -- Métricas de rendimiento (cada 60 frames) --
+    // -- Métricas de rendimiento (cada 20 frames ≈ 333ms a 60fps) --
+    // Sesión 3.4 — cambio de 60 → 20 frames para reaccionar rápido a
+    // cambios de carga (degradación o recuperación). El mensaje es pequeño
+    // y no está en la ruta caliente de inferencia.
     frameCounter++;
-    if (frameCounter % 60 === 0) {
+    if (frameCounter % 20 === 0) {
         const metrics = perf.record(inferenceMs);
         post({ type: 'PERFORMANCE', metrics });
     } else {
         perf.record(inferenceMs);
     }
+
+    // -- Telemetría pura (cada frame) --
+    post({ type: 'TELEMETRY', inferenceMs, frameTimestamp: timestamp });
 }
 
 // ---------------------------------------------------------------------------
