@@ -15,7 +15,7 @@
  */
 
 import { Head, usePage } from '@inertiajs/react';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { ControlPanel } from '@/components/play/control-panel';
 import { CursorOverlay } from '@/components/play/cursor-overlay';
@@ -61,9 +61,22 @@ export default function PlayGame({ game, activeGestureConfig, accessToken }: Pla
     const videoRef = useRef<HTMLVideoElement | null>(null);
     const cursorRef = useRef<CursorOverlayHandle | null>(null);
 
-    // ── Estado mínimo de UI del componente ─────────────────────────────────
     // Solo lo que NO pertenece al orquestador (estado de layout puro).
     const [panelOpen, setPanelOpen] = useState(false);
+    const [showTelemetry, setShowTelemetry] = useState(false);
+    const [telemetrySnap, setTelemetrySnap] = useState<any>(null);
+
+    // ── Hotkey para telemetría (Ctrl+M) ────────────────────────────────────
+    useEffect(() => {
+        const handler = (e: KeyboardEvent) => {
+            if (e.ctrlKey && e.key.toLowerCase() === 'm') {
+                e.preventDefault();
+                setShowTelemetry(prev => !prev);
+            }
+        };
+        window.addEventListener('keydown', handler);
+        return () => window.removeEventListener('keydown', handler);
+    }, []);
 
     // ── Callback imperativo para el cursor (evita setState a 30fps) ────────
     const handleCursorMove = useCallback((x: number, y: number, visible: boolean) => {
@@ -96,6 +109,15 @@ export default function PlayGame({ game, activeGestureConfig, accessToken }: Pla
         videoRef,
         onCursorMove: handleCursorMove,
     });
+
+    // ── Loop de telemetría in-game ─────────────────────────────────────────
+    useEffect(() => {
+        if (!showTelemetry || engine.status !== 'running') return;
+        const interval = setInterval(() => {
+            setTelemetrySnap(engine.telemetry.snapshot());
+        }, 500);
+        return () => clearInterval(interval);
+    }, [showTelemetry, engine.status, engine.telemetry]);
 
     // ── Panel — el mismo contenido se usa en desktop y en el Sheet móvil ──
     const panelContent = (
@@ -194,6 +216,27 @@ export default function PlayGame({ game, activeGestureConfig, accessToken }: Pla
                     {/* Cursor de head-tracking (actualización imperativa — sin re-renders React) */}
                     {headTrackingMode === 'cursor' && (
                         <CursorOverlay ref={cursorRef} />
+                    )}
+
+                    {/* Overlay debug de Telemetría */}
+                    {showTelemetry && telemetrySnap && (
+                        <div className="absolute top-4 left-4 z-50 rounded-lg border border-white/10 bg-black/80 p-3 text-white shadow-xl backdrop-blur-md pointer-events-none">
+                            <div className="text-xs font-bold mb-2 flex items-center justify-between border-b border-white/20 pb-1">
+                                <span>Telemetry</span>
+                                <span className="opacity-50 font-normal ml-4">Ctrl+M to hide</span>
+                            </div>
+                            <div className="space-y-1 font-mono text-[10px]">
+                                {Object.entries(telemetrySnap).sort().map(([key, stats]: any) => (
+                                    <div key={key} className="flex justify-between gap-6">
+                                        <span className="opacity-70">{key}</span>
+                                        <span>
+                                            <span className="opacity-50">p50:</span> {stats.p50.toFixed(1)}
+                                            <span className="opacity-50 ml-1">avg:</span> {stats.avg.toFixed(1)}
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
                     )}
 
                     <EngineOverlay

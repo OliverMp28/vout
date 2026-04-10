@@ -8,15 +8,25 @@
  * juego (que suelen ser puntos sólidos).
  *
  * **API imperativa:** el componente expone `setPosition(x, y, visible)` vía
- * `useImperativeHandle` para que el orquestador actualice la posición a
- * ~30fps sin pasar por estado React, evitando reconciliaciones innecesarias
- * en el árbol padre.
+ * `useImperativeHandle` para que el orquestador actualice la posición sin
+ * pasar por estado React, evitando reconciliaciones innecesarias en el árbol
+ * padre.
  *
- * - Coordenadas en [0, 1] relativas al contenedor padre (position:relative).
+ * **Estrategia de render (Sesión 3.4 §2.1):**
+ *
+ * - Posicionamiento mediante `transform: translate3d(px, px, 0)` — activa
+ *   el compositor GPU y evita layout/paint en cada frame. Antes usábamos
+ *   `left/top` en %, lo que forzaba layout y, junto a una `transition` CSS
+ *   de 75ms, era el principal responsable del lag visual percibido.
+ * - Las dimensiones del contenedor se cachean en una ref alimentada por
+ *   `ResizeObserver` para no leer `clientWidth/clientHeight` en cada
+ *   `setPosition()` (esa lectura puede forzar layout síncrono).
+ * - Coordenadas de entrada en [0, 1] relativas al contenedor padre
+ *   (position:relative).
  * - `pointer-events-none` para no interceptar eventos del iframe.
  */
 
-import { forwardRef, useImperativeHandle, useRef } from 'react';
+import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
 
 export type CursorOverlayHandle = {
     /** Actualiza la posición y visibilidad del cursor sin re-render React. */
@@ -24,28 +34,64 @@ export type CursorOverlayHandle = {
 };
 
 export const CursorOverlay = forwardRef<CursorOverlayHandle>(function CursorOverlay(_, ref) {
+    const containerRef = useRef<HTMLDivElement | null>(null);
     const dotRef = useRef<HTMLDivElement | null>(null);
+    const sizeRef = useRef({ width: 0, height: 0 });
+
+    // Cachear el tamaño del contenedor — evita layout síncrono en setPosition.
+    useEffect(() => {
+        const container = containerRef.current;
+        if (!container) return;
+
+        const update = () => {
+            sizeRef.current = {
+                width: container.clientWidth,
+                height: container.clientHeight,
+            };
+        };
+
+        update();
+        const ro = new ResizeObserver(update);
+        ro.observe(container);
+
+        return () => ro.disconnect();
+    }, []);
 
     useImperativeHandle(ref, () => ({
         setPosition(x: number, y: number, visible: boolean) {
             const el = dotRef.current;
             if (!el) return;
-            el.style.left = `${x * 100}%`;
-            el.style.top = `${y * 100}%`;
+
+            const { width, height } = sizeRef.current;
+            // Antes de que ResizeObserver dispare la primera medida el tamaño
+            // es 0 — evitar pintar en (0,0).
+            if (width === 0 || height === 0) {
+                el.style.opacity = '0';
+                return;
+            }
+
+            const px = x * width;
+            const py = y * height;
+            // translate3d activa el compositor GPU. No fuerza layout ni paint —
+            // solo compositing — y se mueve a velocidad de pantalla.
+            el.style.transform = `translate3d(${px}px, ${py}px, 0)`;
             el.style.opacity = visible ? '1' : '0';
         },
     }));
 
     return (
         <div
+            ref={containerRef}
             aria-hidden="true"
             className="pointer-events-none absolute inset-0 z-10 overflow-hidden rounded-xl"
         >
-            {/* Posición inicial fuera de pantalla — se actualiza imperativamente */}
+            {/* Anchor de 0×0 en el origen — los hijos ya se centran sobre el
+                punto con sus propias `-translate-x-1/2 -translate-y-1/2`. La
+                posición real la inyecta `setPosition()` vía transform. */}
             <div
                 ref={dotRef}
-                className="absolute -translate-x-1/2 -translate-y-1/2 transition-[left,top,opacity] duration-75"
-                style={{ left: '-100%', top: '-100%', opacity: 0 }}
+                className="absolute left-0 top-0 will-change-transform"
+                style={{ transform: 'translate3d(-9999px, -9999px, 0)', opacity: 0 }}
             >
                 {/* Anillo exterior fino — identifica el cursor del portal */}
                 <div

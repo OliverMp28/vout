@@ -96,6 +96,7 @@ export type WorkerOutMessage =
     | { type: 'BLENDSHAPES'; values: Record<string, number> }
     | { type: 'PERFORMANCE'; metrics: PerformanceMetrics }
     | { type: 'CALIBRATED'; baseline: NeutralBaseline }
+    | { type: 'TELEMETRY'; inferenceMs: number; frameTimestamp: number }
     | { type: 'ERROR'; code: string; message: string };
 
 // ---------------------------------------------------------------------------

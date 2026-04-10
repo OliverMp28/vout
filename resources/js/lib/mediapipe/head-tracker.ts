@@ -96,15 +96,31 @@ export class HeadTracker {
         const rawX = (directedX + 1) / 2;
         const rawY = (directedY + 1) / 2;
 
-        // 4. Suavizado EMA.
-        //    En el primer sample, posicionar directamente para evitar animación desde el centro.
+        // 4. Suavizado EMA Dinámico (Smart Dynamic Smoothing)
         if (!this.initialized) {
             this.smoothedX = rawX;
             this.smoothedY = rawY;
             this.initialized = true;
         } else {
-            this.smoothedX = smoothing * this.smoothedX + (1 - smoothing) * rawX;
-            this.smoothedY = smoothing * this.smoothedY + (1 - smoothing) * rawY;
+            // Calcular la distancia subyacente entre la posición actual y el nuevo objetivo
+            const deltaX = rawX - this.smoothedX;
+            const deltaY = rawY - this.smoothedY;
+            const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+            
+            // Umbral de salto rápido. Si recorre más del 8% de la pantalla en un frame, es crítico
+            const fastMotionThreshold = 0.08; 
+            const speedFactor = Math.min(distance / fastMotionThreshold, 1.0);
+            
+            // Interpolar entre el smoothing estático (de precisión/reposo) y un fast-follow
+            // smoothing: 0-1. Si el usuario configuró smoothing en 0.6 (base).
+            // Cuando la velocidad es máxima (speedFactor=1), el smoothing bajará a actionSmoothing (ej 0.15)
+            // dándonos un seguimiento ultrarrápido y recortando latencia.
+            const actionSmoothing = 0.15;
+            const fallbackSmoothing = Math.max(smoothing, 0.5); // Limitar mínimo para reposo
+            const dynamicSmoothing = fallbackSmoothing - (speedFactor * (fallbackSmoothing - actionSmoothing));
+
+            this.smoothedX = dynamicSmoothing * this.smoothedX + (1 - dynamicSmoothing) * rawX;
+            this.smoothedY = dynamicSmoothing * this.smoothedY + (1 - dynamicSmoothing) * rawY;
         }
 
         return { x: this.smoothedX, y: this.smoothedY };

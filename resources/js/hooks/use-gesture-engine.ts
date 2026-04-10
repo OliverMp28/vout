@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { CAPTURE_HEIGHT, CAPTURE_WIDTH, DEFAULT_MODEL_PATH, WASM_CDN_PATH } from '@/lib/mediapipe/constants';
 import { HeadTracker } from '@/lib/mediapipe/head-tracker';
 import type { HeadTrackerConfig, HeadTrackPosition } from '@/lib/mediapipe/head-tracker';
+import { TelemetryCollector } from '@/lib/mediapipe/telemetry';
 import type {
     EngineStatus,
     GestureEvent,
@@ -150,6 +151,7 @@ type UseGestureEngineReturn = {
     performance: PerformanceMetrics | null;
     baseline: NeutralBaseline | null;
     error: string | null;
+    telemetry: TelemetryCollector;
 };
 
 // ---------------------------------------------------------------------------
@@ -169,6 +171,8 @@ export function useGestureEngine(options: UseGestureEngineOptions = {}): UseGest
     const [error, setError] = useState<string | null>(null);
 
     const headTrackerRef = useRef(new HeadTracker(headTrackerConfig));
+    const telemetry = useMemo(() => new TelemetryCollector(), []);
+    const lastTelemetryTimeRef = useRef(0);
     const workerRef = useRef<Worker | null>(null);
     const blobUrlRef = useRef<string | null>(null); // Blob URL del shim (solo dev)
     const internalVideoRef = useRef<HTMLVideoElement | null>(null);
@@ -178,7 +182,13 @@ export function useGestureEngine(options: UseGestureEngineOptions = {}): UseGest
     const rafRef = useRef(0);
     const initTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const lastFrameTimeRef = useRef(0);
-    const intervalMsRef = useRef(1000 / 30);
+    // Sesión 3.2 — arranque optimista a 60fps. El PerformanceAdapter del
+    // worker degrada a un tier inferior si el device no sostiene el ritmo.
+    const intervalMsRef = useRef(1000 / 60);
+    // Sesión 3.6 — ref que espeja `status` para que el capture loop pueda
+    // consultarlo sin depender de closures stale. Gated a 10fps mientras el
+    // motor está cargando (MediaPipe aún no procesa frames).
+    const statusRef = useRef<EngineStatus>('idle');
 
     // Refs estables para valores que cambian pero que no deben re-crear callbacks.
     // Se sincronizan en un effect (no durante render) para cumplir react-hooks/refs.
@@ -196,6 +206,7 @@ export function useGestureEngine(options: UseGestureEngineOptions = {}): UseGest
         onHeadPoseRef.current = onHeadPose;
         onHeadMoveRef.current = onHeadMove;
         onCalibratedRef.current = onCalibrated;
+        statusRef.current = status;
     });
 
     // -----------------------------------------------------------------------
@@ -231,22 +242,39 @@ export function useGestureEngine(options: UseGestureEngineOptions = {}): UseGest
                 setBlendshapes(msg.values);
                 break;
 
-            case 'PERFORMANCE':
+            case 'PERFORMANCE': {
                 setPerf(msg.metrics);
+                // El PerformanceAdapter del worker aplica histéresis (±10%) y
+                // camina los FPS_TIERS de constants.ts — la lógica vive en un
+                // único lugar. Aquí solo consumimos el resultado.
                 intervalMsRef.current = 1000 / msg.metrics.targetFps;
                 break;
+            }
 
             case 'CALIBRATED':
                 setBaseline(msg.baseline);
                 onCalibratedRef.current?.(msg.baseline);
                 break;
 
+            case 'TELEMETRY': {
+                const now = performance.now();
+                telemetry.push('inferenceMs', msg.inferenceMs);
+                telemetry.push('e2eCursorLatencyMs', now - msg.frameTimestamp);
+                
+                const lastTelemetry = lastTelemetryTimeRef.current;
+                if (lastTelemetry > 0 && now > lastTelemetry) {
+                    telemetry.push('engineFps', 1000 / (now - lastTelemetry));
+                }
+                lastTelemetryTimeRef.current = now;
+                break;
+            }
+
             case 'ERROR':
                 setError(msg.message);
                 setStatus('error');
                 break;
         }
-    }, []);
+    }, [telemetry]);
 
     // Ref para el loop de captura — se define dentro de startDetection y se
     // reutiliza en resumeDetection. Evita el antipatrón de useCallback auto-referencial.
@@ -299,7 +327,9 @@ export function useGestureEngine(options: UseGestureEngineOptions = {}): UseGest
 
             const workerConfig: WorkerConfig = {
                 sensitivity: sensitivityRef.current,
-                targetFps: 30,
+                // Sesión 3.2 — arrancar optimista. El PerformanceAdapter del
+                // worker degrada si el device no sostiene el ritmo.
+                targetFps: 60,
                 enableBlendshapes: enableBlendshapesRef.current,
             };
 
@@ -323,9 +353,19 @@ export function useGestureEngine(options: UseGestureEngineOptions = {}): UseGest
                 }
 
                 const now = performance.now();
-                if (now - lastFrameTimeRef.current < intervalMsRef.current) {
+                // Sesión 3.6 — durante `loading` el worker no procesa frames
+                // (espera READY). Bajamos a 10fps para no malgastar CPU
+                // creando ImageBitmaps que se descartan.
+                const effectiveInterval = statusRef.current === 'loading' ? 100 : intervalMsRef.current;
+                if (now - lastFrameTimeRef.current < effectiveInterval) {
+                    telemetry.push('frameDropRate', 1);
                     rafRef.current = requestAnimationFrame(loop);
                     return;
+                }
+                
+                telemetry.push('frameDropRate', 0);
+                if (lastFrameTimeRef.current > 0) {
+                    telemetry.push('captureFps', 1000 / (now - lastFrameTimeRef.current));
                 }
                 lastFrameTimeRef.current = now;
 
@@ -369,7 +409,7 @@ export function useGestureEngine(options: UseGestureEngineOptions = {}): UseGest
             };
             worker.addEventListener('message', onReady);
         },
-        [handleWorkerMessage, clearInitTimeout, videoRef],
+        [handleWorkerMessage, clearInitTimeout, videoRef, telemetry],
     );
 
     const stopDetection = useCallback(() => {
@@ -469,5 +509,6 @@ export function useGestureEngine(options: UseGestureEngineOptions = {}): UseGest
         performance: perf,
         baseline,
         error,
+        telemetry,
     };
 }
