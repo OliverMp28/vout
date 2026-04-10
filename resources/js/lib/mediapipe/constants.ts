@@ -29,6 +29,22 @@ export const GESTURE_BLENDSHAPE_MAP: Record<GestureType, string[]> = {
 } as const;
 
 /**
+ * Whitelist de blendshapes que el classifier realmente consume (Sesión 3.4 §4.2).
+ *
+ * MediaPipe devuelve 52 categorías por frame. Solo 11 se usan para clasificar
+ * gestos — el resto son desperdicio (copia de objeto, serialización postMessage,
+ * recálculo del baseline en calibración). En modo Vision Lab (`enableBlendshapes`)
+ * seguimos devolviendo el set completo para poder depurar; en modo juego
+ * filtramos a este subconjunto.
+ *
+ * Se deriva automáticamente del `GESTURE_BLENDSHAPE_MAP` para que añadir un
+ * gesto nuevo propague a la whitelist sin tocar dos sitios.
+ */
+export const USED_BLENDSHAPE_KEYS: ReadonlySet<string> = new Set(
+    Object.values(GESTURE_BLENDSHAPE_MAP).flat(),
+);
+
+/**
  * Per-gesture threshold multiplier (0 < scale ≤ 1).
  *
  * Some blendshapes have inherently low amplitude. Applying a scale < 1
@@ -68,6 +84,18 @@ export const GESTURE_DEBOUNCE_MS = 300;
 // Head pose
 // ---------------------------------------------------------------------------
 
+/**
+ * Umbral normalizado [-1,1] por encima del cual los blendshapes se distorsionan
+ * lo suficiente como para generar falsos positivos de gestos. Cuando
+ * |headPose.pitch| o |headPose.roll| superan este valor se suprime la
+ * clasificación de gestos (pero NO el head tracking). Sesión 3.4 §4/§6.5.
+ *
+ * Equivalencias en grados físicos (head-pose.ts normaliza yaw/45° y roll/30°):
+ *   Giro horizontal (code `pitch` = yaw físico): 0.45 × 45° ≈ 20°
+ *   Cabeceo vertical (code `roll` = pitch físico): 0.45 × 30° ≈ 13.5°
+ */
+export const HEAD_POSE_GESTURE_GATE = 0.45;
+
 /** Landmark indices used as fallback when transformation matrix is unavailable. */
 export const HEAD_POSE_LANDMARKS = {
     noseTip: 1,
@@ -83,8 +111,19 @@ export const HEAD_POSE_LANDMARKS = {
 // Performance tiers
 // ---------------------------------------------------------------------------
 
-/** Target FPS thresholds keyed by average inference time (ms). */
+/**
+ * Target FPS thresholds keyed by average inference time (ms).
+ *
+ * Orden: del más rápido al más lento. El `PerformanceAdapter` empieza en el
+ * tier 0 (60fps optimista) y degrada cuando `inferenceMs` supera el límite
+ * con histéresis del 10% — ver `performance-adapter.ts`.
+ *
+ * 60fps = 16.6ms por frame. Para sostenerlo la inferencia debe ocupar <14ms,
+ * dejando ~3ms para captura + postMessage.
+ */
 export const FPS_TIERS = [
+    { maxInferenceMs: 14, targetFps: 60 },
+    { maxInferenceMs: 22, targetFps: 45 },
     { maxInferenceMs: 33, targetFps: 30 },
     { maxInferenceMs: 50, targetFps: 20 },
     { maxInferenceMs: 100, targetFps: 15 },
@@ -105,7 +144,12 @@ export const CALIBRATION_FRAME_COUNT = 30;
 // Frame capture
 // ---------------------------------------------------------------------------
 
-/** Resolution used for the ImageBitmap sent to the worker (saves bandwidth). */
+/**
+ * Resolución del ImageBitmap que se transfiere al worker.
+ *
+ * Se probó 256×192 (Sesión 3.4 §4.1) pero inferenceMs p50 subió de 51→56ms.
+ * MediaPipe parece ya optimizado para este tamaño. Revertido a 320×240.
+ */
 export const CAPTURE_WIDTH = 320;
 export const CAPTURE_HEIGHT = 240;
 
