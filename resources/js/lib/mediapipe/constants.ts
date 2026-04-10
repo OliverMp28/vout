@@ -77,8 +77,15 @@ export function sensitivityToThreshold(sensitivity: number): number {
 // Gesture debounce
 // ---------------------------------------------------------------------------
 
-/** Minimum ms between two consecutive events of the **same** gesture. */
-export const GESTURE_DEBOUNCE_MS = 300;
+/**
+ * Minimum ms between two consecutive events of the **same** gesture.
+ *
+ * Sesión 3.4 §5.1 — rebajado de 300→180ms. El onset/repetición ya se
+ * distingue en ActionDispatcher.trackGestureActive (GESTURE_INACTIVITY_MS=750),
+ * así que la reducción solo acelera las renovaciones del hold-timer y permite
+ * re-triggers más frecuentes en modo press sin riesgo de doble-onset.
+ */
+export const GESTURE_DEBOUNCE_MS = 180;
 
 // ---------------------------------------------------------------------------
 // Head pose

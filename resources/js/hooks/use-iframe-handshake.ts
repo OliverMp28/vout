@@ -281,20 +281,60 @@ export function useIframeHandshake(options: UseIframeHandshakeOptions): UseIfram
         targetWindow.postMessage(message, origin);
     }, [iframeRef]);
 
+    // Sesión 3.4 §5.2 — Coalescing de cursor postMessage.
+    //
+    // El motor de gestos puede generar 15–60 head-move events por segundo.
+    // Cada uno invocaba sendCursor → postMessage individual. El juego embebido
+    // no puede reaccionar a más de 1 posición por frame de su propio rAF, así
+    // que los mensajes intermedios son desperdicio puro (serialización + IPC).
+    //
+    // Solución: almacenar la última posición y flushear una sola vez por
+    // requestAnimationFrame del main thread. Resultado: máximo 60 postMessages/s
+    // (o menos si el motor corre a fps inferior), sin pérdida de posición
+    // porque siempre enviamos el valor más reciente.
+    const pendingCursorRef = useRef<{ x: number; y: number } | null>(null);
+    const cursorRafRef = useRef(0);
+
     const sendCursor = useCallback((x: number, y: number) => {
-        const iframe = iframeRef.current;
-        const targetWindow = iframe?.contentWindow;
-        const origin = connectedOriginRef.current;
+        pendingCursorRef.current = { x, y };
 
-        if (!targetWindow || !origin) {
-            return;
-        }
+        // Si ya hay un rAF pendiente, no programar otro — el flush usará
+        // el valor más reciente de pendingCursorRef cuando se ejecute.
+        if (cursorRafRef.current) return;
 
-        const message: VoutToGameMessage = { type: 'VOUT_CURSOR', x, y };
-        targetWindow.postMessage(message, origin);
+        cursorRafRef.current = requestAnimationFrame(() => {
+            cursorRafRef.current = 0;
+            const pending = pendingCursorRef.current;
+            if (!pending) return;
+
+            const iframe = iframeRef.current;
+            const targetWindow = iframe?.contentWindow;
+            const origin = connectedOriginRef.current;
+
+            if (!targetWindow || !origin) return;
+
+            const message: VoutToGameMessage = { type: 'VOUT_CURSOR', x: pending.x, y: pending.y };
+            targetWindow.postMessage(message, origin);
+        });
     }, [iframeRef]);
 
+    // Cancelar rAF pendiente del cursor al desmontar.
+    useEffect(() => {
+        return () => {
+            if (cursorRafRef.current) {
+                cancelAnimationFrame(cursorRafRef.current);
+                cursorRafRef.current = 0;
+            }
+        };
+    }, []);
+
     const reset = useCallback(() => {
+        // Cancelar cursor pendiente — no enviar mensajes a un iframe que se va a recargar.
+        if (cursorRafRef.current) {
+            cancelAnimationFrame(cursorRafRef.current);
+            cursorRafRef.current = 0;
+        }
+        pendingCursorRef.current = null;
         setStatus('waiting');
         setConnectedOrigin(null);
         connectedOriginRef.current = null;
