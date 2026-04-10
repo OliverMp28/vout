@@ -149,6 +149,35 @@ export function usePlayOrchestrator({
         onCursorMoveRef.current = onCursorMove;
     });
 
+    // Sesión 3.4 §2.3 — cachear el rect del iframe.
+    //
+    // `getBoundingClientRect()` puede forzar layout síncrono cada vez que algo
+    // cambia en el DOM. Llamarlo a 60fps en `handleHeadMove` añadía ms ocultos
+    // a la latencia del cursor. Lo cacheamos en una ref alimentada por
+    // ResizeObserver + listeners de scroll/resize, así la ruta caliente del
+    // cursor solo lee la ref (sin layout síncrono).
+    const iframeRectRef = useRef<DOMRect | null>(null);
+    useEffect(() => {
+        const iframe = iframeRef.current;
+        if (!iframe) return;
+
+        const updateRect = () => {
+            iframeRectRef.current = iframe.getBoundingClientRect();
+        };
+
+        updateRect();
+        const ro = new ResizeObserver(updateRect);
+        ro.observe(iframe);
+        window.addEventListener('scroll', updateRect, { passive: true });
+        window.addEventListener('resize', updateRect);
+
+        return () => {
+            ro.disconnect();
+            window.removeEventListener('scroll', updateRect);
+            window.removeEventListener('resize', updateRect);
+        };
+    }, [iframeRef]);
+
     const dispatcherOnHeadMove = dispatcher.onHeadMove;
     const handshakeSendCursor = handshake.sendCursor;
     const handleHeadMove = useCallback(
@@ -160,10 +189,10 @@ export function usePlayOrchestrator({
                 return;
             }
 
-            const iframe = iframeRef.current;
-            if (!iframe) return;
+            // Lectura barata — el rect ya está cacheado por el effect anterior.
+            const rect = iframeRectRef.current;
+            if (!rect) return;
 
-            const rect = iframe.getBoundingClientRect();
             const transformed = transformCursorToIframe(
                 position,
                 rect,
@@ -172,14 +201,12 @@ export function usePlayOrchestrator({
             );
 
             // Actualización imperativa — no pasa por setState, evita reconciliación
-            // React a ~30fps solo por mover el cursor.
+            // React a 60fps solo por mover el cursor.
             onCursorMoveRef.current?.(transformed.x, transformed.y, true);
             handshakeSendCursor(transformed.x, transformed.y);
         },
-        // iframeRef es estable; headTrackingMode se lee fuera del array para
-        // evitar re-crear el callback al cambiar, con lectura controlada.
-         
-        [dispatcherOnHeadMove, handshakeSendCursor, headTrackingMode, iframeRef],
+        // headTrackingMode se incluye como dep porque se lee dentro del callback.
+        [dispatcherOnHeadMove, handshakeSendCursor, headTrackingMode],
     );
 
     // ── Motor y cámara ────────────────────────────────────────────────────

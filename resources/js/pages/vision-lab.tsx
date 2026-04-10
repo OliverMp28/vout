@@ -1,5 +1,5 @@
 import { Head } from '@inertiajs/react';
-import { Activity, Brain, Crosshair, Eye, Gauge, Loader2, Pause, Play, RotateCcw, Zap } from 'lucide-react';
+import { Activity, Brain, Crosshair, Download, Eye, Gauge, Loader2, Pause, Play, RotateCcw, Zap } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { Badge } from '@/components/ui/badge';
@@ -22,6 +22,7 @@ import { useGestureEngine } from '@/hooks/use-gesture-engine';
 import AppLayout from '@/layouts/app-layout';
 import { ALL_PRESETS, PRESET_PLATFORMER } from '@/lib/mediapipe/action-presets';
 import type { ActionTrigger, GameAction, GestureActionMapping, HeadTrackingMode } from '@/lib/mediapipe/action-types';
+import type { TelemetrySnapshot } from '@/lib/mediapipe/telemetry';
 import { GestureType } from '@/lib/mediapipe/types';
 import type { GestureEvent } from '@/lib/mediapipe/types';
 import { cn } from '@/lib/utils';
@@ -69,6 +70,7 @@ export default function VisionLab() {
     const [dispatchLog, setDispatchLog] = useState<DispatchLogEntry[]>([]);
     const [dispatchEnabled, setDispatchEnabled] = useState(false);
     const [selectedPresetIndex, setSelectedPresetIndex] = useState(0);
+    const [telemetrySnap, setTelemetrySnap] = useState<TelemetrySnapshot | null>(null);
 
     const logIdRef = useRef(0);
     const dispatchLogIdRef = useRef(0);
@@ -142,6 +144,26 @@ export default function VisionLab() {
             releaseHeldKeys();
         }
     }, [engine.status, releaseHeldKeys]);
+    
+    // Telemetry display loop
+    useEffect(() => {
+        if (engine.status !== 'running' && engine.status !== 'paused') return;
+        const interval = setInterval(() => {
+            setTelemetrySnap(engine.telemetry.snapshot());
+        }, 500);
+        return () => clearInterval(interval);
+    }, [engine.status, engine.telemetry]);
+
+    const handleExportTelemetry = useCallback(() => {
+        const csv = engine.telemetry.export();
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `vout_telemetry_${Date.now()}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+    }, [engine.telemetry]);
 
     const handleStart = useCallback(async () => {
         const stream = await camera.requestCamera();
@@ -368,8 +390,47 @@ export default function VisionLab() {
                         </div>
                     </div>
 
-                    {/* Right panel: performance + gesture log */}
+                    {/* Right panel: telemetry, performance + gesture log */}
                     <div className="space-y-4">
+                        {/* Telemetry */}
+                        <div className="space-y-3">
+                            <div className="flex items-center justify-between">
+                                <h2 className="flex items-center gap-2 text-sm font-medium">
+                                    <Activity className="size-4" />
+                                    Telemetry
+                                </h2>
+                                <div className="flex gap-2">
+                                    <Button variant="secondary" size="sm" className="h-6 text-[10px]" onClick={() => { engine.telemetry.reset(); setTelemetrySnap(null); }}>Reset</Button>
+                                    <Button variant="secondary" size="sm" className="h-6 text-[10px]" onClick={handleExportTelemetry} disabled={!telemetrySnap || Object.keys(telemetrySnap).length === 0}>
+                                        <Download className="size-3 mr-1" />
+                                        CSV
+                                    </Button>
+                                </div>
+                            </div>
+                            <div className="rounded-lg border border-border/50 bg-background/50 p-3">
+                                {telemetrySnap && Object.keys(telemetrySnap).length > 0 ? (
+                                    <div className="space-y-3">
+                                        <div className="grid grid-cols-4 gap-2 text-center text-[10px] uppercase tracking-wider text-muted-foreground border-b border-border/30 pb-1">
+                                            <div className="text-left font-semibold">Metric</div>
+                                            <div className="font-semibold">P50</div>
+                                            <div className="font-semibold">P95</div>
+                                            <div className="font-semibold">Avg</div>
+                                        </div>
+                                        {Object.entries(telemetrySnap).sort().map(([key, stats]) => (
+                                            <div key={key} className="grid grid-cols-4 gap-2 text-center font-mono text-xs items-center">
+                                                <div className="text-left truncate text-muted-foreground font-sans text-[11px]" title={key}>{key}</div>
+                                                <div className={key === 'inferenceMs' && stats.p50 > 30 ? 'text-red-400 font-medium' : ''}>{stats.p50.toFixed(1)}</div>
+                                                <div className={key === 'inferenceMs' && stats.p95 > 50 ? 'text-red-400 font-medium' : ''}>{stats.p95.toFixed(1)}</div>
+                                                <div>{stats.avg.toFixed(1)}</div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <p className="py-2 text-center text-xs text-muted-foreground">No telemetry data</p>
+                                )}
+                            </div>
+                        </div>
+
                         {/* Performance */}
                         <div className="space-y-3">
                             <h2 className="flex items-center gap-2 text-sm font-medium">
