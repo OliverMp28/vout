@@ -142,6 +142,7 @@ type UseGestureEngineReturn = {
     startDetection: (video: HTMLVideoElement) => void;
     stopDetection: () => void;
     calibrateNeutral: () => void;
+    recenterCursor: (targetX?: number, targetY?: number) => void;
     pauseDetection: () => void;
     resumeDetection: () => void;
     lastGesture: GestureEvent | null;
@@ -171,6 +172,8 @@ export function useGestureEngine(options: UseGestureEngineOptions = {}): UseGest
     const [error, setError] = useState<string | null>(null);
 
     const headTrackerRef = useRef(new HeadTracker(headTrackerConfig));
+    /** Últimos valores raw pasados a HeadTracker.update(), necesarios para recenter(). */
+    const lastRawHeadRef = useRef({ horizontal: 0, vertical: 0 });
     const telemetry = useMemo(() => new TelemetryCollector(), []);
     const lastTelemetryTimeRef = useRef(0);
     const workerRef = useRef<Worker | null>(null);
@@ -218,10 +221,24 @@ export function useGestureEngine(options: UseGestureEngineOptions = {}): UseGest
 
         switch (msg.type) {
             case 'READY':
-                setStatus('running');
+                // Modelo cargado — el warm-up frame se envía desde el listener
+                // onReady de startDetection. NO seteamos 'running' aquí: la
+                // primera llamada a detectForVideo compila shaders GPU
+                // (~200-500ms). Status se mantiene en 'loading' hasta que el
+                // primer RESULT confirme que el pipeline está listo.
                 break;
 
             case 'RESULT':
+                // Warm-up completo: el primer RESULT mientras 'loading' confirma
+                // que los shaders GPU están compilados. Arrancar el capture loop
+                // real y transicionar a 'running'.
+                if (statusRef.current === 'loading') {
+                    statusRef.current = 'running';
+                    setStatus('running');
+                    if (captureLoopRef.current) {
+                        rafRef.current = requestAnimationFrame(captureLoopRef.current);
+                    }
+                }
                 for (const gesture of msg.gestures) {
                     setLastGesture(gesture);
                     onGestureRef.current?.(gesture);
@@ -232,7 +249,10 @@ export function useGestureEngine(options: UseGestureEngineOptions = {}): UseGest
 
                     // Mapear orientación de cabeza a coordenadas de pantalla suavizadas.
                     // Negaciones empíricamente verificadas — ver comentario en HeadTracker.update().
-                    const pos = headTrackerRef.current.update(-msg.headPose.pitch, -msg.headPose.roll);
+                    const rawH = -msg.headPose.pitch;
+                    const rawV = -msg.headPose.roll;
+                    lastRawHeadRef.current = { horizontal: rawH, vertical: rawV };
+                    const pos = headTrackerRef.current.update(rawH, rawV);
                     setHeadTrackPosition(pos);
                     onHeadMoveRef.current?.(pos);
                 }
@@ -397,13 +417,42 @@ export function useGestureEngine(options: UseGestureEngineOptions = {}): UseGest
                 }
             }, INIT_TIMEOUT_MS);
 
-            // Iniciar loop de captura cuando el worker señale READY.
-            // READY ya se procesa en handleWorkerMessage (setStatus('running')),
-            // aquí solo iniciamos el rAF loop y limpiamos el timeout.
+            // Warm-up: al recibir READY, enviamos UN solo frame para que el
+            // worker compile los shaders GPU (~200-500ms). El capture loop
+            // real no arranca hasta que el primer RESULT confirme que el
+            // pipeline está listo (ver handleWorkerMessage RESULT case).
+            //
+            // ¿Por qué no arrancar el loop a 10fps como antes?
+            // Incluso a 10fps, durante la compilación de shaders se acumulan
+            // 2-5 frames. Cada uno se procesa secuencialmente al terminar la
+            // compilación, provocando un breve "catch-up" con movimientos
+            // retrasados. Un solo frame = cero acumulación = transición limpia.
+            const sendWarmupFrame = () => {
+                const vid = videoRef.current;
+                const w = workerRef.current;
+                if (!vid || !w || vid.readyState < 2) {
+                    rafRef.current = requestAnimationFrame(sendWarmupFrame);
+                    return;
+                }
+                createImageBitmap(vid, {
+                    resizeWidth: CAPTURE_WIDTH,
+                    resizeHeight: CAPTURE_HEIGHT,
+                })
+                    .then((bitmap) => {
+                        w.postMessage(
+                            { type: 'FRAME', bitmap, timestamp: performance.now() } satisfies WorkerInMessage,
+                            [bitmap],
+                        );
+                    })
+                    .catch(() => {
+                        rafRef.current = requestAnimationFrame(sendWarmupFrame);
+                    });
+            };
+
             const onReady = (e: MessageEvent<WorkerOutMessage>) => {
                 if (e.data.type === 'READY') {
                     clearInitTimeout();
-                    rafRef.current = requestAnimationFrame(loop);
+                    sendWarmupFrame();
                     worker.removeEventListener('message', onReady);
                 }
             };
@@ -443,6 +492,17 @@ export function useGestureEngine(options: UseGestureEngineOptions = {}): UseGest
 
     const calibrateNeutral = useCallback(() => {
         workerRef.current?.postMessage({ type: 'CALIBRATE_NEUTRAL' } satisfies WorkerInMessage);
+    }, []);
+
+    /**
+     * Recentra el cursor de head-tracking usando la posición actual como nuevo centro.
+     *
+     * @param targetX  Posición X destino en viewport [0, 1] (default 0.5).
+     * @param targetY  Posición Y destino en viewport [0, 1] (default 0.5).
+     */
+    const recenterCursor = useCallback((targetX?: number, targetY?: number) => {
+        const { horizontal, vertical } = lastRawHeadRef.current;
+        headTrackerRef.current.recenter(horizontal, vertical, targetX, targetY);
     }, []);
 
     const pauseDetection = useCallback(() => {
@@ -500,6 +560,7 @@ export function useGestureEngine(options: UseGestureEngineOptions = {}): UseGest
         startDetection,
         stopDetection,
         calibrateNeutral,
+        recenterCursor,
         pauseDetection,
         resumeDetection,
         lastGesture,

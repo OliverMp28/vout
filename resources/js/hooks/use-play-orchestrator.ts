@@ -68,6 +68,8 @@ export type UsePlayOrchestratorReturn = {
     // ── Handlers de UI ────────────────────────────────────────────────────
     handleToggleEngine: () => void;
     handleRetryGame: () => void;
+    /** Recentra el cursor al centro del iframe (no del viewport). */
+    recenterCursor: () => void;
     handleAcceptPreset: (presetKey: string) => void;
     setDispatchEnabled: React.Dispatch<React.SetStateAction<boolean>>;
     setSensitivity: React.Dispatch<React.SetStateAction<number>>;
@@ -246,7 +248,7 @@ export function usePlayOrchestrator({
     }, [camera, engine]);
 
     const handleToggleEngine = useCallback(() => {
-        if (engine.status === 'running') {
+        if (engine.status === 'running' || engine.status === 'loading') {
             handleStopEngine();
         } else {
             void handleActivateEngine();
@@ -263,6 +265,26 @@ export function usePlayOrchestrator({
     }, []);
 
     const dismissPresetSuggestion = useCallback(() => setPresetSuggestion(null), []);
+
+    // ── Recenter cursor al centro del iframe (no del viewport) ───────────
+    // HeadTracker trabaja en espacio de viewport [0, 1]. Para que el cursor
+    // salte al centro del iframe, calculamos qué coordenada viewport
+    // corresponde al centro del iframe y la pasamos como target.
+    const engineRecenterCursor = engine.recenterCursor;
+    const recenterCursor = useCallback(() => {
+        const rect = iframeRectRef.current;
+        if (rect && rect.width > 0 && rect.height > 0) {
+            const targetX = (rect.left + rect.width / 2) / window.innerWidth;
+            const targetY = (rect.top + rect.height / 2) / window.innerHeight;
+            engineRecenterCursor(targetX, targetY);
+            // Actualización imperativa inmediata — el cursor salta al centro
+            // sin esperar al siguiente frame del worker.
+            onCursorMoveRef.current?.(0.5, 0.5, true);
+            handshakeSendCursor(0.5, 0.5);
+        } else {
+            engineRecenterCursor();
+        }
+    }, [engineRecenterCursor, handshakeSendCursor]);
 
     const handshakeReset = handshake.reset;
     const handleRetryGame = useCallback(() => {
@@ -328,6 +350,7 @@ export function usePlayOrchestrator({
 
         handleToggleEngine,
         handleRetryGame,
+        recenterCursor,
         handleAcceptPreset,
         setDispatchEnabled,
         setSensitivity,

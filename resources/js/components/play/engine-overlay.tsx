@@ -1,19 +1,19 @@
 /**
  * Overlay semitransparente sobre el iframe del juego.
  *
- * Se muestra mientras:
- *  - El iframe aún no ha enviado READY (esperando juego).
- *  - El motor de visión está cargando el modelo.
- *  - El motor está en error.
- *  - El usuario aún no ha activado el motor (estado idle).
+ * Principio rector de Fase 3.5: el overlay NUNCA debe bloquear al usuario
+ * cuando el juego ya está listo para jugar. Solo se muestra en situaciones
+ * que impiden la jugabilidad (handshake en curso, motor cargando, error,
+ * timeout). Si el motor está idle pero el handshake está autenticado, el
+ * usuario ya puede jugar con teclado/ratón y el overlay debe ceder el paso
+ * — el CTA de activación vive ahora exclusivamente en el panel lateral.
  *
- * Cuando todo está corriendo, el overlay desaparece para no estorbar
- * la jugabilidad. Es totalmente accesible: usa `role="status"` y
- * `aria-live="polite"` para anunciar cambios de estado a lectores
- * de pantalla sin interrumpir la navegación.
+ * Es totalmente accesible: usa `role="status"` y `aria-live="polite"` para
+ * anunciar cambios de estado a lectores de pantalla sin interrumpir la
+ * navegación.
  */
 
-import { AlertTriangle, Loader2, Play, RefreshCw, Sparkles } from 'lucide-react';
+import { AlertTriangle, Loader2, RefreshCw } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { useTranslation } from '@/hooks/use-translation';
@@ -28,16 +28,6 @@ type EngineOverlayProps = {
     handshakeStatus: HandshakeStatus;
     /** Mensaje de error del motor o de la cámara, si existe. */
     errorMessage?: string | null;
-    /**
-     * Si true, el usuario tiene una configuración de gestos guardada y
-     * por tanto puede activar el motor. Si false, mostramos un CTA hacia
-     * los ajustes en lugar del botón de activación.
-     */
-    hasGestureConfig: boolean;
-    /** Disparado cuando el usuario pulsa "Activar control facial". */
-    onActivate: () => void;
-    /** Disparado cuando el usuario pulsa el CTA de configurar mapeos. */
-    onConfigure: () => void;
     /** Disparado cuando el usuario pulsa "Reintentar" tras un error del motor. */
     onRetry: () => void;
     /** Disparado cuando el usuario pulsa "Reintentar" tras un timeout del juego. */
@@ -47,11 +37,16 @@ type EngineOverlayProps = {
 /**
  * Resuelve qué tarjeta debe mostrarse según el estado combinado del
  * handshake y el motor. La prioridad es: error > handshake > engine.
+ *
+ * Regla crítica (Fase 3.5.1): si el motor está `idle` pero el handshake
+ * está `authenticated`, devolvemos `hidden`. El juego es inmediatamente
+ * jugable con teclado/ratón y el CTA de activar control facial sigue
+ * disponible en el panel lateral sin bloquear la pantalla.
  */
 function resolveCardKind(
     engineStatus: EngineStatus,
     handshakeStatus: HandshakeStatus,
-): 'error' | 'timeout' | 'handshake' | 'loading' | 'idle' | 'hidden' {
+): 'error' | 'timeout' | 'handshake' | 'loading' | 'hidden' {
     if (engineStatus === 'error' || handshakeStatus === 'error') {
         return 'error';
     }
@@ -64,9 +59,6 @@ function resolveCardKind(
     if (engineStatus === 'loading') {
         return 'loading';
     }
-    if (engineStatus === 'idle') {
-        return 'idle';
-    }
     return 'hidden';
 }
 
@@ -74,9 +66,6 @@ export function EngineOverlay({
     engineStatus,
     handshakeStatus,
     errorMessage,
-    hasGestureConfig,
-    onActivate,
-    onConfigure,
     onRetry,
     onRetryGame,
 }: EngineOverlayProps) {
@@ -135,38 +124,6 @@ export function EngineOverlay({
                             </IconBubble>
                             <OverlayHeading>{t('play.overlay.loading.title')}</OverlayHeading>
                             <OverlayBody>{t('play.overlay.loading.description')}</OverlayBody>
-                        </>
-                    )}
-
-                    {kind === 'idle' && (
-                        <>
-                            <IconBubble tone="primary" glow>
-                                <Sparkles className="size-7 text-primary" />
-                            </IconBubble>
-                            <OverlayHeading>{t('play.overlay.idle.title')}</OverlayHeading>
-                            <OverlayBody>
-                                {hasGestureConfig
-                                    ? t('play.overlay.idle.description')
-                                    : t('play.overlay.idle.no_config')}
-                            </OverlayBody>
-                            {hasGestureConfig ? (
-                                <Button
-                                    onClick={onActivate}
-                                    size="lg"
-                                    className="mt-2 gap-2 px-6 shadow-lg shadow-primary/25 transition-all duration-200 hover:shadow-xl hover:shadow-primary/40"
-                                >
-                                    <Play className="size-4 fill-current" />
-                                    {t('play.overlay.idle.activate')}
-                                </Button>
-                            ) : (
-                                <Button
-                                    onClick={onConfigure}
-                                    variant="secondary"
-                                    className="mt-2"
-                                >
-                                    {t('play.overlay.idle.configure')}
-                                </Button>
-                            )}
                         </>
                     )}
 

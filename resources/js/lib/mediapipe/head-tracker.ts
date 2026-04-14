@@ -55,6 +55,24 @@ export class HeadTracker {
     private smoothedY = 0.5;
     private initialized = false;
 
+    /** Offsets de recentrado — se restan de la entrada raw antes de todo procesamiento. */
+    private offsetX = 0;
+    private offsetY = 0;
+
+    /**
+     * Bias de salida — desplaza el punto neutral de la salida.
+     *
+     * Sin bias, la cabeza neutral produce (0.5, 0.5) = centro del viewport.
+     * Cuando el iframe no ocupa todo el viewport, el centro del viewport ≠
+     * centro del iframe. El bias desplaza la salida para que la cabeza neutral
+     * apunte al centro del iframe (o cualquier target que el consumidor elija).
+     *
+     * biasX = targetX - 0.5, biasY = targetY - 0.5.
+     * Se suma a la salida después del EMA y se clampea a [0, 1].
+     */
+    private biasX = 0;
+    private biasY = 0;
+
     constructor(config?: Partial<HeadTrackerConfig>) {
         this.config = { ...DEFAULT_CONFIG, ...config };
     }
@@ -81,11 +99,17 @@ export class HeadTracker {
     update(horizontal: number, vertical: number): HeadTrackPosition {
         const { deadZone, smoothing, invertX, invertY } = this.config;
 
+        // 0. Aplicar offset de recentrado (la posición neutral del usuario).
+        //    Esto ocurre ANTES de todo procesamiento para que la zona muerta,
+        //    la inversión y el suavizado trabajen con coordenadas centradas.
+        const centeredH = horizontal - this.offsetX;
+        const centeredV = vertical - this.offsetY;
+
         // 1. Zona muerta con remapeo continuo.
         //    Valores dentro de la zona muerta colapsan a 0. Los externos se escalan
         //    para que el movimiento comience suavemente en el borde de la zona muerta.
-        const remappedX = applyDeadZone(horizontal, deadZone);
-        const remappedY = applyDeadZone(vertical, deadZone);
+        const remappedX = applyDeadZone(centeredH, deadZone);
+        const remappedY = applyDeadZone(centeredV, deadZone);
 
         // 2. Inversión de ejes (preferencia del usuario).
         const directedX = invertX ? -remappedX : remappedX;
@@ -123,7 +147,47 @@ export class HeadTracker {
             this.smoothedY = dynamicSmoothing * this.smoothedY + (1 - dynamicSmoothing) * rawY;
         }
 
-        return { x: this.smoothedX, y: this.smoothedY };
+        // 5. Aplicar bias de salida y clampear a [0, 1].
+        //    Sin bias (default), neutral = 0.5 = centro del viewport.
+        //    Con bias, neutral se desplaza al centro del iframe.
+        return {
+            x: clamp01(this.smoothedX + this.biasX),
+            y: clamp01(this.smoothedY + this.biasY),
+        };
+    }
+
+    /**
+     * Recentra la posición neutral de la cabeza.
+     *
+     * Guarda los valores raw actuales como offset de entrada (la cabeza actual
+     * se convierte en el nuevo punto neutral). Adicionalmente, calcula un bias
+     * de salida para que el punto neutral apunte a `targetX`/`targetY` en
+     * espacio de viewport, en lugar del hardcodeado (0.5, 0.5).
+     *
+     * Caso de uso: webcam en ángulo → cursor empieza desplazado. El iframe
+     * del juego no ocupa todo el viewport (hay header + panel lateral), así
+     * que (0.5, 0.5) en viewport no es el centro del juego. Al pulsar
+     * "Centrar cursor", el offset corrige la entrada y el bias desplaza la
+     * salida para que el cursor apunte al centro del iframe.
+     *
+     * @param rawHorizontal  Último valor horizontal raw recibido por update().
+     * @param rawVertical    Último valor vertical raw recibido por update().
+     * @param targetX        Posición X destino en viewport [0, 1] (default 0.5).
+     * @param targetY        Posición Y destino en viewport [0, 1] (default 0.5).
+     */
+    recenter(rawHorizontal: number, rawVertical: number, targetX = 0.5, targetY = 0.5): void {
+        this.offsetX = rawHorizontal;
+        this.offsetY = rawVertical;
+
+        // Bias de salida: la diferencia entre el target y el centro natural (0.5).
+        // Se suma a la salida de update() para desplazar el punto neutral.
+        this.biasX = targetX - 0.5;
+        this.biasY = targetY - 0.5;
+
+        // Internamente el EMA vuelve a 0.5 (neutral). El bias desplaza la
+        // salida para que el cursor aparezca en targetX/targetY.
+        this.smoothedX = 0.5;
+        this.smoothedY = 0.5;
     }
 
     /** Actualiza la configuración en tiempo de ejecución (ej. el usuario cambió un slider). */
@@ -131,10 +195,14 @@ export class HeadTracker {
         Object.assign(this.config, partial);
     }
 
-    /** Reinicia el estado suavizado — llamar al detener la detección. */
+    /** Reinicia el estado suavizado, offsets y bias — llamar al detener la detección. */
     reset(): void {
         this.smoothedX = 0.5;
         this.smoothedY = 0.5;
+        this.offsetX = 0;
+        this.offsetY = 0;
+        this.biasX = 0;
+        this.biasY = 0;
         this.initialized = false;
     }
 }
@@ -142,6 +210,13 @@ export class HeadTracker {
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+/** Clampea un valor al rango [0, 1]. */
+function clamp01(value: number): number {
+    if (value < 0) return 0;
+    if (value > 1) return 1;
+    return value;
+}
 
 /**
  * Aplica zona muerta con remapeo continuo.

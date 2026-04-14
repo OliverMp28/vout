@@ -1,25 +1,38 @@
 /**
- * Panel lateral del reproductor de juego.
+ * Panel lateral del reproductor de juego (Fase 3.5 — Sesión 3).
  *
- * Expone los controles esenciales que el jugador puede tocar sin salir
- * de la página: arranque/parada del motor de visión, sensibilidad,
- * recalibración, y un acceso rápido al editor de mapeos. El panel es
- * intencionalmente compacto — la configuración profunda sigue viviendo
- * en `/settings/appearance` para no duplicar superficie.
+ * El componente actúa como router condicional que renderiza uno de tres
+ * sub-paneles según el contexto del usuario:
  *
- * Patrones de UX seguidos:
- * - El componente es 100% controlado: todo el estado vive en la página
- *   `play/game.tsx`. Esto evita drift entre la UI y el dispatcher.
- * - Estado visible: badges y colores reflejan en qué fase está cada
- *   subsistema (handshake / motor) sin abrumar al usuario.
- * - Accesibilidad: cada control tiene `<Label htmlFor>` o `aria-label`,
- *   los grupos colapsables siguen el patrón Disclosure de Radix.
+ *  - `UnconfiguredPanel` → Sin configuración de gestos guardada.
+ *    Muestra un CTA invitador hacia Ajustes; no expone controles inútiles.
  *
- * El componente NO conoce el iframe ni el ActionDispatcher: es puro UI.
+ *  - `IdlePanel` → Tiene config pero el motor no está corriendo.
+ *    Muestra estado, CTA de activación y enlace a personalizar controles.
+ *
+ *  - `RunningPanel` → Motor activo.
+ *    Panel completo: dispatch, sensibilidad, calibración, último gesto, FPS.
+ *
+ * Regla de UX: el control facial es ADITIVO, nunca restrictivo. Un usuario
+ * que solo quiere jugar con teclado no ve sliders ni métricas de FPS.
+ *
+ * El componente es 100% controlado: todo el estado vive en `play/game.tsx`
+ * vía `usePlayOrchestrator`. Esto evita drift entre la UI y el dispatcher.
  */
 
 import { Link } from '@inertiajs/react';
-import { Crosshair, Gauge, Loader2, Play, RotateCcw, Settings2, Square } from 'lucide-react';
+import {
+    ChevronDown,
+    Crosshair,
+    Gauge,
+    Hand,
+    Loader2,
+    Play,
+    RotateCcw,
+    Settings2,
+    Square,
+} from 'lucide-react';
+import { useState } from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -33,6 +46,10 @@ import type { HeadTrackingMode } from '@/lib/mediapipe/action-types';
 import type { EngineStatus, GestureType } from '@/lib/mediapipe/types';
 import { cn } from '@/lib/utils';
 import appearance from '@/routes/appearance';
+
+// ---------------------------------------------------------------------------
+// Props
+// ---------------------------------------------------------------------------
 
 type ControlPanelProps = {
     /** Estado actual del motor de visión. */
@@ -58,12 +75,10 @@ type ControlPanelProps = {
     onCalibrate: () => void;
 };
 
-/**
- * Mapea EngineStatus a un par {color, key i18n} para el badge superior.
- * Mantiene la presentación de estados consistente con `GestureStatusIndicator`
- * pero sin reusar ese componente directamente — aquí queremos un layout
- * más rico (texto + acción).
- */
+// ---------------------------------------------------------------------------
+// Constantes
+// ---------------------------------------------------------------------------
+
 const ENGINE_BADGE: Record<EngineStatus, { color: string; key: string }> = {
     idle: { color: 'bg-muted-foreground/40', key: 'play.engine.idle' },
     loading: { color: 'bg-yellow-500', key: 'play.engine.loading' },
@@ -73,24 +88,132 @@ const ENGINE_BADGE: Record<EngineStatus, { color: string; key: string }> = {
     error: { color: 'bg-red-500', key: 'play.engine.error' },
 };
 
-const HANDSHAKE_BADGE: Record<HandshakeStatus, { color: string; key: string }> = {
-    waiting: { color: 'bg-muted-foreground/40', key: 'play.handshake.waiting' },
-    ready: { color: 'bg-yellow-500', key: 'play.handshake.ready' },
-    authenticated: { color: 'bg-green-500', key: 'play.handshake.authenticated' },
-    error: { color: 'bg-red-500', key: 'play.handshake.error' },
-    timeout: { color: 'bg-orange-500', key: 'play.handshake.timeout' },
-};
-
 const HEAD_MODE_KEY: Record<HeadTrackingMode, string> = {
     cursor: 'play.head_mode.cursor',
     gesture: 'play.head_mode.gesture',
     disabled: 'play.head_mode.disabled',
 };
 
-export function ControlPanel({
+// ---------------------------------------------------------------------------
+// Router principal
+// ---------------------------------------------------------------------------
+
+export function ControlPanel(props: ControlPanelProps) {
+    const { hasGestureConfig, engineStatus } = props;
+    const isRunning = engineStatus === 'running';
+    const isLoading = engineStatus === 'loading';
+
+    if (!hasGestureConfig) {
+        return <UnconfiguredPanel />;
+    }
+
+    if (isRunning || isLoading) {
+        return <RunningPanel {...props} />;
+    }
+
+    return <IdlePanel {...props} />;
+}
+
+// ---------------------------------------------------------------------------
+// UnconfiguredPanel — usuario sin perfil de gestos
+// ---------------------------------------------------------------------------
+
+function UnconfiguredPanel() {
+    const { t } = useTranslation();
+
+    return (
+        <div className="flex h-full flex-col items-center justify-center gap-5 p-1 text-center">
+            <div className="flex size-14 items-center justify-center rounded-2xl bg-primary/10 ring-1 ring-primary/20">
+                <Hand className="size-7 text-primary" />
+            </div>
+
+            <div className="space-y-2">
+                <h3 className="text-base font-semibold tracking-tight text-foreground">
+                    {t('play.panel.unconfigured.title')}
+                </h3>
+                <p className="max-w-[240px] text-xs leading-relaxed text-muted-foreground">
+                    {t('play.panel.unconfigured.description')}
+                </p>
+            </div>
+
+            <Button asChild variant="default" size="sm" className="gap-2">
+                <Link href={appearance.edit.url()}>
+                    <Settings2 className="size-4" />
+                    {t('play.panel.unconfigured.cta')}
+                </Link>
+            </Button>
+        </div>
+    );
+}
+
+// ---------------------------------------------------------------------------
+// IdlePanel — configurado, motor detenido
+// ---------------------------------------------------------------------------
+
+function IdlePanel({
+    engineStatus,
+    onToggleEngine,
+}: Pick<ControlPanelProps, 'engineStatus' | 'onToggleEngine'>) {
+    const { t } = useTranslation();
+    const engineBadge = ENGINE_BADGE[engineStatus];
+
+    return (
+        <div className="flex h-full flex-col gap-6 overflow-y-auto p-1">
+            {/* Estado */}
+            <section aria-labelledby="play-status-heading" className="space-y-3">
+                <SectionLabel id="play-status-heading">{t('play.panel.status')}</SectionLabel>
+                <div className="relative overflow-hidden rounded-xl border border-border/60 bg-linear-to-b from-background/80 to-background/40 p-3.5 shadow-sm">
+                    <StatusRow
+                        label={t('play.panel.engine')}
+                        color={engineBadge.color}
+                        text={t(engineBadge.key)}
+                    />
+                </div>
+            </section>
+
+            {/* CTA de activación — hero con anillo primario */}
+            <section className="space-y-2">
+                <div className="rounded-xl bg-linear-to-b from-primary/40 to-primary/10 p-px shadow-lg shadow-primary/10">
+                    <Button
+                        id="play-engine-toggle"
+                        onClick={onToggleEngine}
+                        size="lg"
+                        className="h-12 w-full gap-2 text-sm font-semibold shadow-md shadow-primary/20 transition-all duration-200 hover:shadow-lg hover:shadow-primary/30 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    >
+                        <Play className="size-4 fill-current" />
+                        {t('play.panel.start')}
+                    </Button>
+                </div>
+            </section>
+
+            <Separator />
+
+            {/* Enlace a personalizar controles */}
+            <section className="mt-auto pt-2">
+                <Button
+                    asChild
+                    id="play-configure-mappings"
+                    variant="outline"
+                    size="sm"
+                    className="w-full gap-2"
+                >
+                    <Link href={appearance.edit.url()}>
+                        <Settings2 className="size-4" />
+                        {t('play.panel.configure_mappings')}
+                    </Link>
+                </Button>
+            </section>
+        </div>
+    );
+}
+
+// ---------------------------------------------------------------------------
+// RunningPanel — motor activo o cargando
+// ---------------------------------------------------------------------------
+
+function RunningPanel({
     engineStatus,
     handshakeStatus,
-    hasGestureConfig,
     dispatchEnabled,
     sensitivity,
     headTrackingMode,
@@ -102,102 +225,55 @@ export function ControlPanel({
     onCalibrate,
 }: ControlPanelProps) {
     const { t } = useTranslation();
+    const [advancedOpen, setAdvancedOpen] = useState(false);
 
     const engineBadge = ENGINE_BADGE[engineStatus];
-    const handshakeBadge = HANDSHAKE_BADGE[handshakeStatus];
-
     const isRunning = engineStatus === 'running';
     const isLoading = engineStatus === 'loading';
     const canCalibrate = isRunning;
-    const canActivate = hasGestureConfig && engineStatus !== 'loading';
 
     return (
         <div className="flex h-full flex-col gap-6 overflow-y-auto p-1">
-            {/* ── Estado de los subsistemas ──────────────────────────────────── */}
+            {/* ── Estado del motor ─────────────────────────────────────────── */}
             <section aria-labelledby="play-status-heading" className="space-y-3">
                 <SectionLabel id="play-status-heading">{t('play.panel.status')}</SectionLabel>
-
-                {/* Card con borde sutil + leve gradiente vertical para dar profundidad sin pesar */}
                 <div className="relative overflow-hidden rounded-xl border border-border/60 bg-linear-to-b from-background/80 to-background/40 p-3.5 shadow-sm">
-                    <div className="space-y-2.5">
-                        <StatusRow
-                            label={t('play.panel.handshake')}
-                            color={handshakeBadge.color}
-                            text={t(handshakeBadge.key)}
-                        />
-                        <StatusRow
-                            label={t('play.panel.engine')}
-                            color={engineBadge.color}
-                            text={t(engineBadge.key)}
-                            pulse={isRunning || isLoading}
-                        />
-                        {fps !== null && isRunning && (
-                            <div className="mt-1 flex items-center justify-between border-t border-border/50 pt-2.5">
-                                <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                                    <Gauge className="size-3.5" />
-                                    {t('play.panel.fps')}
-                                </span>
-                                <span className="font-mono text-xs font-medium tabular-nums text-foreground">
-                                    {fps}
-                                </span>
-                            </div>
-                        )}
-                    </div>
+                    <StatusRow
+                        label={t('play.panel.engine')}
+                        color={engineBadge.color}
+                        text={t(engineBadge.key)}
+                        pulse={isRunning || isLoading}
+                    />
                 </div>
             </section>
 
-            {/* ── Acción principal: arrancar / parar el motor ────────────────── */}
-            {/* Hero CTA: cuando idle está envuelto en un anillo primario sutil */}
-            {/* para destacar visualmente sobre el resto de controles. */}
-            <section className="space-y-2">
-                <div
-                    className={cn(
-                        'rounded-xl p-px transition-all duration-300',
-                        !isRunning && canActivate && 'bg-linear-to-b from-primary/40 to-primary/10 shadow-lg shadow-primary/10',
-                    )}
+            {/* ── Parar motor ──────────────────────────────────────────────── */}
+            <section>
+                <Button
+                    id="play-engine-toggle"
+                    onClick={onToggleEngine}
+                    variant={isRunning ? 'destructive' : 'default'}
+                    size="lg"
+                    aria-pressed={isRunning}
+                    className="h-12 w-full gap-2 text-sm font-semibold transition-all duration-200 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 >
-                    <Button
-                        id="play-engine-toggle"
-                        onClick={onToggleEngine}
-                        disabled={!canActivate}
-                        variant={isRunning ? 'destructive' : 'default'}
-                        size="lg"
-                        aria-pressed={isRunning}
-                        className={cn(
-                            'h-12 w-full gap-2 text-sm font-semibold transition-all duration-200',
-                            !isRunning && 'shadow-md shadow-primary/20 hover:shadow-lg hover:shadow-primary/30',
-                            'focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
-                        )}
-                    >
-                        {isLoading ? (
-                            <>
-                                <Loader2 className="size-4 animate-spin" />
-                                {t('play.engine.loading')}
-                            </>
-                        ) : isRunning ? (
-                            <>
-                                <Square className="size-4 fill-current" />
-                                {t('play.panel.stop')}
-                            </>
-                        ) : (
-                            <>
-                                <Play className="size-4 fill-current" />
-                                {t('play.panel.start')}
-                            </>
-                        )}
-                    </Button>
-                </div>
-
-                {!hasGestureConfig && (
-                    <p className="text-xs leading-relaxed text-muted-foreground">
-                        {t('play.panel.no_config_hint')}
-                    </p>
-                )}
+                    {isLoading ? (
+                        <>
+                            <Loader2 className="size-4 animate-spin" />
+                            {t('play.engine.loading')}
+                        </>
+                    ) : (
+                        <>
+                            <Square className="size-4 fill-current" />
+                            {t('play.panel.stop')}
+                        </>
+                    )}
+                </Button>
             </section>
 
             <Separator />
 
-            {/* ── Toggle dispatch (envío real al juego) ──────────────────────── */}
+            {/* ── Toggle dispatch ──────────────────────────────────────────── */}
             <section className="space-y-3">
                 <div className="flex items-center justify-between gap-3">
                     <div className="flex flex-col">
@@ -218,7 +294,7 @@ export function ControlPanel({
                 </div>
             </section>
 
-            {/* ── Sensibilidad ───────────────────────────────────────────────── */}
+            {/* ── Sensibilidad ─────────────────────────────────────────────── */}
             <section className="space-y-3">
                 <div className="flex items-center justify-between">
                     <Label htmlFor="play-sensitivity" className="text-sm font-medium">
@@ -239,7 +315,7 @@ export function ControlPanel({
                 />
             </section>
 
-            {/* ── Modo de head tracking + recalibrar ─────────────────────────── */}
+            {/* ── Modo de cabeza + centrar cursor ──────────────────────────── */}
             <section className="space-y-3">
                 <div className="flex items-center justify-between gap-2 rounded-xl border border-border/60 bg-background/50 px-3 py-2.5">
                     <span className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
@@ -266,9 +342,7 @@ export function ControlPanel({
 
             <Separator />
 
-            {/* ── Último gesto detectado (feedback inmediato) ────────────────── */}
-            {/* Monitor en vivo: cuando llega un gesto, la card se ilumina con */}
-            {/* un acento primario y el texto en mono — feedback satisfactorio. */}
+            {/* ── Último gesto detectado ───────────────────────────────────── */}
             <section className="space-y-2">
                 <SectionLabel>{t('play.panel.last_gesture')}</SectionLabel>
                 <div
@@ -295,7 +369,40 @@ export function ControlPanel({
                 </div>
             </section>
 
-            {/* ── Acceso al editor completo de mapeos ────────────────────────── */}
+            {/* ── Bloque "Avanzado" colapsable ─────────────────────────────── */}
+            {isRunning && fps !== null && (
+                <section className="space-y-2">
+                    <details
+                        className="group rounded-xl border border-border/60 bg-background/40 transition-colors hover:bg-background/60 open:bg-background/60"
+                        onToggle={(e) => setAdvancedOpen((e.target as HTMLDetailsElement).open)}
+                    >
+                        <summary className="flex cursor-pointer list-none items-center justify-between gap-2 rounded-xl px-3 py-2.5 text-xs font-medium text-muted-foreground transition-all focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none">
+                            <span className="flex items-center gap-1.5">
+                                <Gauge className="size-3.5" />
+                                {t('play.panel.advanced')}
+                            </span>
+                            <ChevronDown
+                                className={cn(
+                                    'size-3.5 transition-transform duration-200',
+                                    advancedOpen && 'rotate-180',
+                                )}
+                            />
+                        </summary>
+                        <div className="border-t border-border/50 px-3 py-2.5">
+                            <div className="flex items-center justify-between text-xs">
+                                <span className="text-muted-foreground">
+                                    {t('play.panel.fps')}
+                                </span>
+                                <span className="font-mono font-medium tabular-nums text-foreground">
+                                    {fps}
+                                </span>
+                            </div>
+                        </div>
+                    </details>
+                </section>
+            )}
+
+            {/* ── Personalizar controles ───────────────────────────────────── */}
             <section className="mt-auto pt-2">
                 <Button
                     asChild
@@ -313,6 +420,10 @@ export function ControlPanel({
         </div>
     );
 }
+
+// ---------------------------------------------------------------------------
+// Subcomponentes compartidos
+// ---------------------------------------------------------------------------
 
 function SectionLabel({ id, children }: { id?: string; children: React.ReactNode }) {
     return (
@@ -356,4 +467,3 @@ function StatusRow({
         </div>
     );
 }
-

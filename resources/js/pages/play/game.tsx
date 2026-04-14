@@ -28,7 +28,6 @@ import { useTranslation } from '@/hooks/use-translation';
 import AppLayout from '@/layouts/app-layout';
 import type { GestureConfigData } from '@/lib/mediapipe/types';
 import { cn } from '@/lib/utils';
-import appearance from '@/routes/appearance';
 import type { Auth } from '@/types/auth';
 
 // ---------------------------------------------------------------------------
@@ -97,6 +96,7 @@ export default function PlayGame({ game, activeGestureConfig, accessToken }: Pla
         handleToggleEngine,
         handleRetryGame,
         handleAcceptPreset,
+        recenterCursor,
         setDispatchEnabled,
         setSensitivity,
         dismissPresetSuggestion,
@@ -133,7 +133,10 @@ export default function PlayGame({ game, activeGestureConfig, accessToken }: Pla
             onToggleEngine={handleToggleEngine}
             onToggleDispatch={setDispatchEnabled}
             onSensitivityChange={setSensitivity}
-            onCalibrate={engine.calibrateNeutral}
+            onCalibrate={() => {
+                engine.calibrateNeutral();
+                recenterCursor();
+            }}
         />
     );
 
@@ -243,9 +246,6 @@ export default function PlayGame({ game, activeGestureConfig, accessToken }: Pla
                         engineStatus={engine.status}
                         handshakeStatus={handshake.status}
                         errorMessage={errorMessage}
-                        hasGestureConfig={hasGestureConfig}
-                        onActivate={handleToggleEngine}
-                        onConfigure={() => { window.location.href = appearance.edit.url(); }}
                         onRetry={handleToggleEngine}
                         onRetryGame={handleRetryGame}
                     />
