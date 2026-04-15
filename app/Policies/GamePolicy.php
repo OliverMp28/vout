@@ -18,6 +18,17 @@ use App\Models\User;
 class GamePolicy
 {
     /**
+     * Bypass global para administradores (Fase 4.2): un admin puede revisar,
+     * editar (corregir typos antes de publicar) y eliminar cualquier juego
+     * del catálogo desde el panel interno. Devolver `null` deja que la
+     * decisión recaiga en los métodos siguientes para usuarios normales.
+     */
+    public function before(User $user, string $ability): ?bool
+    {
+        return $user->is_admin ? true : null;
+    }
+
+    /**
      * Cualquier usuario autenticado puede ver su propio listado de juegos enviados.
      */
     public function viewAny(User $user): bool

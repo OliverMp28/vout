@@ -30,6 +30,7 @@ class Game extends Model
      */
     protected $fillable = [
         'submitted_by_user_id',
+        'registered_app_id',
         'name',
         'slug',
         'description',
@@ -78,29 +79,27 @@ class Game extends Model
     ];
 
     /**
-     * Orígenes de confianza para el handshake postMessage (Fase 3.3).
+     * Orígenes de confianza para el handshake postMessage (Fase 3.3 + 4.2).
      *
-     * Extrae el scheme + host + puerto del campo `embed_url` existente.
-     * No requiere ningún campo extra en la BD: si un juego está en el catálogo
-     * con una `embed_url`, su dominio de confianza se deriva automáticamente.
-     *
-     * Diseño deliberado:
-     * - Juegos first-party / sin SSO: su `embed_url` define el único dominio
-     *   autorizado. No necesitan `RegisteredApp`.
-     * - Juegos con SSO / Developer Portal (Fase 4): cuando exista la FK
-     *   `registered_app_id` en la tabla `games`, se podrá consultar también
-     *   `RegisteredApp::allowed_origins` para dominios adicionales. Por ahora
-     *   este método cubre el 100% de los casos existentes sin columnas extra.
-     *
-     * Ejemplos:
-     *   embed_url = 'https://dino.vout.com/play' → ['https://dino.vout.com']
-     *   embed_url = 'http://localhost:8080/game'  → ['http://localhost:8080']
-     *   embed_url = null                          → []
+     * Estrategia:
+     * 1. Si el juego está vinculado a una `RegisteredApp` (Fase 4.2), se
+     *    devuelven los `allowed_origins` declarados por el dev en su panel.
+     *    Esto cubre apps multi-dominio (staging + producción, etc.).
+     * 2. Fallback: si no hay app vinculada (juegos seedeados), se deriva
+     *    el origen único del campo `embed_url`. Garantiza compatibilidad
+     *    retro con todo el catálogo curado internamente.
+     * 3. Si no hay ni app ni embed_url, lista vacía.
      *
      * @return list<string>
      */
     public function getEffectiveOriginsAttribute(): array
     {
+        $appOrigins = $this->registeredApp?->allowed_origins ?? [];
+
+        if (! empty($appOrigins)) {
+            return array_values(array_unique($appOrigins));
+        }
+
         if (! $this->embed_url) {
             return [];
         }
@@ -115,6 +114,17 @@ class Game extends Model
         }
 
         return [$scheme.'://'.$host.$port];
+    }
+
+    /**
+     * App OAuth del Developer Portal a la que pertenece el juego (Fase 4.2).
+     *
+     * Nullable: los juegos curados internamente no están vinculados a ninguna
+     * `RegisteredApp` y obtienen sus orígenes directamente de `embed_url`.
+     */
+    public function registeredApp(): BelongsTo
+    {
+        return $this->belongsTo(RegisteredApp::class);
     }
 
     /**
@@ -173,6 +183,14 @@ class Game extends Model
     public function scopeSubmittedBy(Builder $query, User $user): Builder
     {
         return $query->where('submitted_by_user_id', $user->id);
+    }
+
+    /**
+     * Scope: juegos pendientes de revisión por el panel admin (Fase 4.2).
+     */
+    public function scopePendingReview(Builder $query): Builder
+    {
+        return $query->where('status', GameStatus::PendingReview->value);
     }
 
     /**

@@ -16,6 +16,16 @@ use App\Models\User;
 class RegisteredAppPolicy
 {
     /**
+     * Bypass global para administradores (Fase 4.2): un admin puede ver,
+     * editar y eliminar cualquier app del ecosistema desde el panel interno.
+     * Devolver `null` deja que la decisión recaiga en los métodos siguientes.
+     */
+    public function before(User $user, string $ability): ?bool
+    {
+        return $user->is_admin ? true : null;
+    }
+
+    /**
      * Cualquier usuario autenticado puede ver su propio listado.
      */
     public function viewAny(User $user): bool

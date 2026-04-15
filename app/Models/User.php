@@ -46,6 +46,7 @@ class User extends Authenticatable implements OAuthenticatable
         'avatar',
         'bio',
         'google_id',
+        'is_admin',
     ];
 
     /**
@@ -83,6 +84,7 @@ class User extends Authenticatable implements OAuthenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'two_factor_confirmed_at' => 'datetime',
+            'is_admin' => 'boolean',
         ];
     }
 
@@ -154,5 +156,13 @@ class User extends Authenticatable implements OAuthenticatable
     public function scopeWithGoogle(Builder $query): Builder
     {
         return $query->whereNotNull('google_id');
+    }
+
+    /**
+     * Scope: solo usuarios con privilegios administrativos (Fase 4.2).
+     */
+    public function scopeAdmins(Builder $query): Builder
+    {
+        return $query->where('is_admin', true);
     }
 }

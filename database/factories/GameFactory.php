@@ -4,6 +4,7 @@ namespace Database\Factories;
 
 use App\Enums\GameStatus;
 use App\Models\Game;
+use App\Models\RegisteredApp;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
@@ -95,6 +96,20 @@ class GameFactory extends Factory
     {
         return $this->state(fn (array $attributes): array => [
             'submitted_by_user_id' => $user->id,
+        ]);
+    }
+
+    /**
+     * Estado: juego vinculado a una `RegisteredApp` del Developer Portal (Fase 4.2).
+     *
+     * Garantiza coherencia entre `submitted_by_user_id` y `registered_app_id.user_id`
+     * heredando el dueño de la app al campo del submitter cuando proceda.
+     */
+    public function forApp(RegisteredApp $app): static
+    {
+        return $this->state(fn (array $attributes): array => [
+            'registered_app_id' => $app->id,
+            'submitted_by_user_id' => $app->user_id ?? $attributes['submitted_by_user_id'] ?? null,
         ]);
     }
 }

@@ -48,15 +48,16 @@ class HandleInertiaRequests extends Middleware
                     'avatar' => $request->user()->avatar,
                     'vout_id' => $request->user()->vout_id,
                     'google_id' => $request->user()->google_id,
-                    'has_password' => !empty($request->user()->getAuthPassword()),
+                    'has_password' => ! empty($request->user()->getAuthPassword()),
                     'email_verified_at' => $request->user()->email_verified_at,
+                    'is_admin' => (bool) $request->user()->is_admin,
                     'settings' => $request->user()->settings,
                 ] : null,
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
             'locale' => app()->getLocale(),
-            'translations' => file_exists(base_path('lang/' . app()->getLocale() . '.json'))
-                ? json_decode(file_get_contents(base_path('lang/' . app()->getLocale() . '.json')), true)
+            'translations' => file_exists(base_path('lang/'.app()->getLocale().'.json'))
+                ? json_decode(file_get_contents(base_path('lang/'.app()->getLocale().'.json')), true)
                 : [],
         ];
     }

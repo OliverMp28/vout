@@ -3,9 +3,11 @@
 namespace App\Providers;
 
 use App\Models\Passport\Client;
+use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
 use Laravel\Passport\Passport;
@@ -27,6 +29,19 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->configureDefaults();
         $this->configurePassport();
+        $this->configureGates();
+    }
+
+    /**
+     * Vout Admin: Gates globales del Panel de Administración (Fase 4.2).
+     *
+     * El gate `admin` es el contrato canónico para condicionar UI o lógica
+     * según el rol. Las policies usan `before()` por su cuenta para que el
+     * admin pase cualquier comprobación de propiedad.
+     */
+    protected function configureGates(): void
+    {
+        Gate::define('admin', fn (User $user): bool => $user->is_admin === true);
     }
 
     /**
@@ -79,4 +94,3 @@ class AppServiceProvider extends ServiceProvider
         );
     }
 }
-
