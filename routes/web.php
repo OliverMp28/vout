@@ -33,3 +33,4 @@ if (app()->environment('local')) {
 
 require __DIR__.'/settings.php';
 require __DIR__.'/catalog.php';
+require __DIR__.'/developers.php';
