@@ -274,5 +274,71 @@
     "play.preset_suggestion.dismiss": "Descartar",
 
     "play.skip_to_game": "Ir al juego",
-    "play.a11y.gesture_detected": "Gesto detectado: :gesture"
+    "play.a11y.gesture_detected": "Gesto detectado: :gesture",
+
+    "developers.nav.aria": "Navegación del Developer Portal",
+    "developers.nav.overview": "Mis aplicaciones",
+    "developers.nav.docs": "Documentación",
+    "developers.nav.landing": "Portal público",
+
+    "developers.docs.integration_guide.title": "Guía de integración",
+    "developers.docs.back": "Volver al portal",
+    "developers.docs.locale_label": "Idioma",
+    "developers.docs.locale.es": "Español",
+    "developers.docs.locale.en": "English",
+
+    "developers.landing.hero.eyebrow": "Developer Portal",
+    "developers.landing.hero.title": "La identidad que impulsa todo el ecosistema Vout",
+    "developers.landing.hero.subtitle": "Un solo login para tu app. OAuth 2.1, PKCE, control facial opcional — y tus usuarios identificados en segundos.",
+    "developers.landing.hero.cta_auth": "Ir al dashboard",
+    "developers.landing.hero.cta_guest": "Crear mi cuenta",
+    "developers.landing.hero.cta_secondary": "Leer la guía",
+
+    "developers.landing.features.heading": "Por qué integrarte con Vout",
+    "developers.landing.features.identity.title": "Identidad unificada",
+    "developers.landing.features.identity.desc": "Un único pasaporte para todos los juegos y apps del ecosistema. Adiós a los registros duplicados.",
+    "developers.landing.features.fast.title": "Integración en minutos",
+    "developers.landing.features.fast.desc": "OAuth 2.1 estándar con PKCE. Compatible con cualquier SDK que hable JWT.",
+    "developers.landing.features.privacy.title": "Privacidad AEPD-first",
+    "developers.landing.features.privacy.desc": "Procesamiento local, sin biometría almacenada. Tus usuarios no salen de su dispositivo.",
+
+    "developers.landing.steps.heading": "Cómo empezar",
+    "developers.landing.steps.subheading": "Cuatro pasos, sin llamadas comerciales.",
+    "developers.landing.steps.step_1.title": "Crea tu cuenta",
+    "developers.landing.steps.step_1.desc": "Regístrate gratis en Vout con tu email o con Google.",
+    "developers.landing.steps.step_2.title": "Registra tu aplicación",
+    "developers.landing.steps.step_2.desc": "Declara nombre, URL, orígenes permitidos y redirects de OAuth.",
+    "developers.landing.steps.step_3.title": "Copia tus credenciales",
+    "developers.landing.steps.step_3.desc": "Recibe el client_id y el client_secret generados por Passport.",
+    "developers.landing.steps.step_4.title": "Integra y publica",
+    "developers.landing.steps.step_4.desc": "Sigue la guía técnica y lanza «Entrar con Vout» en tu app.",
+
+    "developers.landing.guides.heading": "Documentación técnica",
+    "developers.landing.guides.subheading": "Guías pensadas para ir al grano: sin relleno, con ejemplos copiables.",
+    "developers.landing.guides.cta": "Leer guía",
+
+    "developers.landing.faq.heading": "Preguntas frecuentes",
+    "developers.landing.faq.q1": "¿Necesito aprobación para publicar mi app?",
+    "developers.landing.faq.a1": "No. Cualquier cuenta registrada puede crear apps desde el dashboard. Los clients se emiten al instante.",
+    "developers.landing.faq.q2": "¿Qué scopes puedo solicitar?",
+    "developers.landing.faq.a2": "user:read, user:email, games:read, games:write y game:play. Puedes combinarlos según el flujo que necesite tu app.",
+    "developers.landing.faq.q3": "¿Puedo usar Vout sin Passport en mi backend?",
+    "developers.landing.faq.a3": "Sí. Vout es un servidor OAuth 2.1 estándar. Cualquier librería JWT (lcobucci/jwt, jose, etc.) valida los tokens contra nuestra clave pública.",
+    "developers.landing.faq.q4": "¿Qué pasa si pierdo el client_secret?",
+    "developers.landing.faq.a4": "Puedes regenerarlo desde el dashboard. El anterior queda invalidado al instante; Vout no guarda el secreto en claro.",
+
+    "developers.landing.final_cta.heading": "¿Listo para integrar Vout?",
+    "developers.landing.final_cta.description": "Crea tu primera aplicación en menos de un minuto. Sin tarjetas de crédito, sin aprobaciones.",
+    "developers.landing.final_cta.cta_auth": "Abrir mi dashboard",
+    "developers.landing.final_cta.cta_guest": "Empezar gratis",
+
+    "developers.secret.title": "Credenciales de tu aplicación",
+    "developers.secret.description": "Guarda estos valores en un lugar seguro antes de cerrar esta ventana.",
+    "developers.secret.warning_title": "No podrás volver a ver este secreto",
+    "developers.secret.warning_body": "Vout almacena el client_secret cifrado. Si lo pierdes tendrás que regenerarlo, y eso invalidará el anterior.",
+    "developers.secret.client_id_label": "Client ID",
+    "developers.secret.secret_label": "Client Secret",
+    "developers.secret.copy": "Copiar",
+    "developers.secret.copied": "¡Copiado!",
+    "developers.secret.close": "Ya lo he guardado"
 }
