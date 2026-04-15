@@ -10,12 +10,8 @@ import {
     Sparkles,
     Trash2,
 } from 'lucide-react';
-import {
-    type FormEventHandler,
-    type ReactNode,
-    useEffect,
-    useState,
-} from 'react';
+import { useState } from 'react';
+import type { ReactNode, SubmitEvent } from 'react';
 import { CopyButton } from '@/components/developers/copy-button';
 import { DynamicUrlList } from '@/components/developers/dynamic-url-list';
 import { SecretRevealDialog } from '@/components/developers/secret-reveal-dialog';
@@ -65,17 +61,17 @@ export default function DevelopersDashboardShow({
 }: DevelopersAppShowProps) {
     const { t } = useTranslation();
     const [activeTab, setActiveTab] = useState<TabKey>('overview');
-    const [secretShown, setSecretShown] = useState<string | null>(
-        created_client_secret,
-    );
 
-    // Sincroniza con el prop si el backend devuelve un nuevo secreto
-    // (flujo: regenerar desde la tab Credenciales → render con flash).
-    useEffect(() => {
-        if (created_client_secret !== null) {
-            setSecretShown(created_client_secret);
-        }
-    }, [created_client_secret]);
+    // Estado derivado: mostrar el secreto mientras exista en la flash prop y
+    // el usuario no lo haya descartado. `dismissedSecret` guarda el último
+    // valor cerrado para que, si el backend devuelve otro distinto (flujo
+    // regenerar), el Dialog vuelva a abrirse sin efectos.
+    const [dismissedSecret, setDismissedSecret] = useState<string | null>(null);
+    const secretShown =
+        created_client_secret !== null &&
+        created_client_secret !== dismissedSecret
+            ? created_client_secret
+            : null;
 
     const hasClient = client !== null;
     const availableTabs: readonly TabKey[] = hasClient
@@ -195,7 +191,7 @@ export default function DevelopersDashboardShow({
                 secret={secretShown}
                 clientId={client?.id ?? null}
                 onClose={() => {
-                    setSecretShown(null);
+                    setDismissedSecret(created_client_secret);
                     // Fuerza al backend a re-rendear sin el flash. Si el usuario
                     // recarga la página, `created_client_secret` ya habrá sido
                     // consumido por la sesión — pero mantenemos esta llamada
@@ -405,7 +401,7 @@ function OriginsPanel({ app, redirectUris, requiresAuth }: OriginsPanelProps) {
                 redirectUris !== null ? [...redirectUris] : [],
         });
 
-    const handleSubmit: FormEventHandler<HTMLFormElement> = (event) => {
+    const handleSubmit = (event: SubmitEvent<HTMLFormElement>): void => {
         event.preventDefault();
         put(appsRoutes.update(app.slug).url, {
             preserveScroll: true,

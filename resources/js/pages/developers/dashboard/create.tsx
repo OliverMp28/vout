@@ -1,6 +1,7 @@
 import { Head, Link, useForm } from '@inertiajs/react';
 import { ArrowLeft, ShieldCheck, Sparkles } from 'lucide-react';
-import { type FormEventHandler, type ReactNode, useMemo } from 'react';
+import { useMemo } from 'react';
+import type { ReactNode, SubmitEvent } from 'react';
 import { DynamicUrlList } from '@/components/developers/dynamic-url-list';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
@@ -67,7 +68,7 @@ export default function DevelopersDashboardCreate() {
         }
     };
 
-    const handleSubmit: FormEventHandler<HTMLFormElement> = (event) => {
+    const handleSubmit = (event: SubmitEvent<HTMLFormElement>): void => {
         event.preventDefault();
         post(appsRoutes.store().url, {
             preserveScroll: true,
@@ -313,7 +314,7 @@ export default function DevelopersDashboardCreate() {
                     </div>
 
                     <aside
-                        className="order-first h-fit space-y-4 rounded-2xl border border-border bg-card p-6 text-sm shadow-sm lg:order-none lg:sticky lg:top-24"
+                        className="order-first h-fit space-y-4 rounded-2xl border border-border bg-card p-6 text-sm shadow-sm lg:order-0 lg:sticky lg:top-24"
                         aria-label={t('developers.dashboard.create.help.heading')}
                     >
                         <h2 className="text-base font-semibold tracking-tight">
