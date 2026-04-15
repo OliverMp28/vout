@@ -2,10 +2,12 @@
 
 namespace App\Models;
 
+use App\Enums\GameStatus;
 use Database\Factories\GameFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Facades\DB;
 
@@ -27,6 +29,7 @@ class Game extends Model
      * @var list<string>
      */
     protected $fillable = [
+        'submitted_by_user_id',
         'name',
         'slug',
         'description',
@@ -37,6 +40,7 @@ class Game extends Model
         'play_count',
         'is_active',
         'is_featured',
+        'status',
     ];
 
     /**
@@ -59,8 +63,19 @@ class Game extends Model
             'is_active' => 'boolean',
             'is_featured' => 'boolean',
             'play_count' => 'integer',
+            'status' => GameStatus::class,
         ];
     }
+
+    /**
+     * Valor por defecto del estado de moderación al crear el modelo.
+     * Refleja el default de la migración para coherencia entre BD y modelo.
+     *
+     * @var array<string, mixed>
+     */
+    protected $attributes = [
+        'status' => 'published',
+    ];
 
     /**
      * Orígenes de confianza para el handshake postMessage (Fase 3.3).
@@ -138,6 +153,35 @@ class Game extends Model
     public function scopeActive(Builder $query): Builder
     {
         return $query->where('is_active', true);
+    }
+
+    /**
+     * Scope: solo juegos publicados en el catálogo (estado de moderación).
+     *
+     * Combinable con `active()`: el catálogo público filtra por
+     * `published()->active()` aprovechando el índice compuesto
+     * `games_status_active_idx`.
+     */
+    public function scopePublished(Builder $query): Builder
+    {
+        return $query->where('status', GameStatus::Published->value);
+    }
+
+    /**
+     * Scope: juegos enviados por el usuario indicado (Developer Portal).
+     */
+    public function scopeSubmittedBy(Builder $query, User $user): Builder
+    {
+        return $query->where('submitted_by_user_id', $user->id);
+    }
+
+    /**
+     * Desarrollador que envió el juego desde el Developer Portal (Fase 4.1).
+     * Nullable: los juegos curados internamente no tienen `submitted_by_user_id`.
+     */
+    public function submittedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'submitted_by_user_id');
     }
 
     /**

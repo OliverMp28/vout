@@ -2,11 +2,14 @@
 
 namespace Database\Factories;
 
+use App\Models\Passport\Client;
+use App\Models\RegisteredApp;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\RegisteredApp>
+ * @extends Factory<RegisteredApp>
  */
 class RegisteredAppFactory extends Factory
 {
@@ -20,6 +23,7 @@ class RegisteredAppFactory extends Factory
         $name = fake()->unique()->words(2, true);
 
         return [
+            'user_id' => null,
             'name' => ucwords($name),
             'slug' => Str::slug($name),
             'app_url' => fake()->url(),
@@ -39,5 +43,38 @@ class RegisteredAppFactory extends Factory
         return $this->state(fn (array $attributes): array => [
             'is_active' => false,
         ]);
+    }
+
+    /**
+     * Estado: app vinculada a un usuario propietario (Developer Portal).
+     */
+    public function forUser(User $user): static
+    {
+        return $this->state(fn (array $attributes): array => [
+            'user_id' => $user->id,
+        ]);
+    }
+
+    /**
+     * Estado: la app crea también un Passport Client real y lo enlaza
+     * via `oauth_client_id`. Útil para tests del flujo de regeneración
+     * de secreto y de revocación.
+     */
+    public function withClient(): static
+    {
+        return $this->afterCreating(function ($app): void {
+            $client = Client::create([
+                'id' => (string) Str::uuid(),
+                'owner_type' => $app->user_id ? User::class : null,
+                'owner_id' => $app->user_id,
+                'name' => $app->name,
+                'secret' => Str::random(40),
+                'redirect_uris' => json_encode([$app->app_url]),
+                'grant_types' => json_encode(['authorization_code', 'refresh_token']),
+                'revoked' => false,
+            ]);
+
+            $app->forceFill(['oauth_client_id' => $client->id])->save();
+        });
     }
 }

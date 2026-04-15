@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -24,8 +25,9 @@ use Laravel\Passport\HasApiTokens;
  */
 class User extends Authenticatable implements OAuthenticatable
 {
-    /** @use HasFactory<\Database\Factories\UserFactory> */
+    /** @use HasFactory<UserFactory> */
     use HasApiTokens;
+
     use HasFactory;
     use Notifiable;
     use TwoFactorAuthenticatable;
@@ -113,6 +115,24 @@ class User extends Authenticatable implements OAuthenticatable
         return $this->belongsToMany(Game::class)
             ->withPivot('is_favorite', 'is_saved', 'play_count', 'best_score', 'last_played_at')
             ->withTimestamps();
+    }
+
+    /**
+     * Aplicaciones del ecosistema OAuth registradas por el usuario
+     * desde el Developer Portal (Fase 4.1).
+     */
+    public function registeredApps(): HasMany
+    {
+        return $this->hasMany(RegisteredApp::class);
+    }
+
+    /**
+     * Juegos que el usuario ha enviado al catálogo desde el Developer Portal
+     * (Fase 4.1). No confundir con `games()` (interacción/historial).
+     */
+    public function submittedGames(): HasMany
+    {
+        return $this->hasMany(Game::class, 'submitted_by_user_id');
     }
 
     // ─── Accessors ───────────────────────────────────────────
