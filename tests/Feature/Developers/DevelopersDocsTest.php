@@ -12,13 +12,6 @@ it('sirve la guía de integración en markdown', function (): void {
             ->has('available_locales'));
 });
 
-it('sirve la guía del flujo del ecosistema', function (): void {
-    get(route('developers.docs', ['slug' => 'flujo-comunicacion-ecosistema']))
-        ->assertOk()
-        ->assertInertia(fn ($page) => $page->component('developers/docs', false)
-            ->where('slug', 'flujo-comunicacion-ecosistema'));
-});
-
 it('responde 404 a slugs fuera de la whitelist', function (): void {
     get(route('developers.docs', ['slug' => 'desconocida']))->assertNotFound();
 });

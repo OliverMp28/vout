@@ -13,7 +13,7 @@ it('sirve la landing de developers sin autenticación', function (): void {
     get(route('developers.landing'))
         ->assertOk()
         ->assertInertia(fn ($page) => $page->component('developers/landing', false)
-            ->has('guides', 2)
+            ->has('guides', 1)
             ->where('is_authenticated', false));
 });
 

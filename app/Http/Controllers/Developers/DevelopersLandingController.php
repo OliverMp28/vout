@@ -33,13 +33,6 @@ class DevelopersLandingController extends Controller
                 'en' => 'integration-guide.en.md',
             ],
         ],
-        'flujo-comunicacion-ecosistema' => [
-            'title_key' => 'developers.docs.ecosystem_flow.title',
-            'files' => [
-                'es' => 'flujo-comunicacion-ecosistema.md',
-                'en' => 'flujo-comunicacion-ecosistema.md',
-            ],
-        ],
     ];
 
     /**
