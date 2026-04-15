@@ -405,6 +405,12 @@ export function useGestureEngine(options: UseGestureEngineOptions = {}): UseGest
 
                 rafRef.current = requestAnimationFrame(loop);
             };
+            // Puente entre callbacks hermanos: handleWorkerMessage (case RESULT)
+            // y resumeDetection necesitan acceder a este closure local.
+            // La regla react-hooks/immutability es formalmente estricta aquí
+            // pero no detecta un bug real — la asignación ocurre síncronamente
+            // antes de que cualquier message del worker pueda leer el ref.
+            // eslint-disable-next-line react-hooks/immutability
             captureLoopRef.current = loop;
 
             // Timeout de seguridad: si READY no llega en INIT_TIMEOUT_MS, asumir
