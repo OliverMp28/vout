@@ -22,6 +22,15 @@ type SubnavItem = {
     labelKey: string;
     href: ReturnType<typeof dashboard> | ReturnType<typeof landing>;
     icon: typeof LayoutGrid;
+    /**
+     * `exact` — sólo resalta si la URL coincide con `href` al carácter.
+     * `prefix` — resalta la pestaña también para rutas hijas (p.ej. `/developers/dashboard/*`).
+     *
+     * Landing vive en `/developers` y es padre de todo lo demás; usar `prefix`
+     * aquí haría que cualquier página del portal marque "Portal público" como
+     * activa a la vez que la pestaña real.
+     */
+    match: 'exact' | 'prefix';
 };
 
 /**
@@ -38,7 +47,13 @@ export default function DevelopersLayout({
     showSubnav = true,
 }: DevelopersLayoutProps) {
     const { t } = useTranslation();
-    const { isCurrentOrParentUrl } = useCurrentUrl();
+    const { currentUrl, isCurrentUrl, isCurrentOrParentUrl } = useCurrentUrl();
+
+    // La pestaña "Mis aplicaciones" cubre el dashboard y todo el CRUD de
+    // `/developers/apps/*` (crear, detalle, edición). Sin esta extensión,
+    // al entrar al detalle de una app la pestaña se apagaría y el usuario
+    // perdería el anclaje visual de sección.
+    const isInAppsFlow = currentUrl.startsWith('/developers/apps');
 
     const subnavItems: SubnavItem[] = [
         {
@@ -46,18 +61,21 @@ export default function DevelopersLayout({
             labelKey: 'developers.nav.overview',
             href: dashboard(),
             icon: LayoutGrid,
+            match: 'prefix',
         },
         {
             key: 'docs',
             labelKey: 'developers.nav.docs',
             href: docs({ slug: 'integration-guide' }),
             icon: BookOpen,
+            match: 'prefix',
         },
         {
             key: 'landing',
             labelKey: 'developers.nav.landing',
             href: landing(),
             icon: Sparkles,
+            match: 'exact',
         },
     ];
 
@@ -70,7 +88,13 @@ export default function DevelopersLayout({
                 >
                     {subnavItems.map((item) => {
                         const Icon = item.icon;
-                        const active = isCurrentOrParentUrl(item.href);
+                        const baseActive =
+                            item.match === 'exact'
+                                ? isCurrentUrl(item.href)
+                                : isCurrentOrParentUrl(item.href);
+                        const active =
+                            baseActive ||
+                            (item.key === 'overview' && isInAppsFlow);
 
                         return (
                             <Link
