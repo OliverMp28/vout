@@ -10,13 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
+import { NativeSelect } from '@/components/ui/native-select';
 import { Textarea } from '@/components/ui/textarea';
 import { useTranslation } from '@/hooks/use-translation';
 import { cn } from '@/lib/utils';
@@ -104,7 +98,7 @@ export function GameForm({
         <form
             onSubmit={onSubmit}
             noValidate
-            className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_320px]"
+            className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_320px] contain-[layout]"
         >
             <div className="space-y-6">
                 {!hasApps && mode === 'create' && (
@@ -213,49 +207,37 @@ export function GameForm({
                                 </p>
                             </InfoHint>
                         </span>
-                        <Select
+                        <NativeSelect
+                            id="game-app"
+                            aria-invalid={
+                                errors.registered_app_id !== undefined ||
+                                undefined
+                            }
+                            placeholder={t(
+                                'developers.games.form.app.empty_option',
+                            )}
                             value={
                                 data.registered_app_id !== null
                                     ? String(data.registered_app_id)
-                                    : undefined
+                                    : ''
                             }
-                            onValueChange={(value) =>
+                            onChange={(e) =>
                                 onChange(
                                     'registered_app_id',
-                                    value ? Number(value) : null,
+                                    e.target.value
+                                        ? Number(e.target.value)
+                                        : null,
                                 )
                             }
                             disabled={isLocked || !hasApps}
-                        >
-                            <SelectTrigger
-                                id="game-app"
-                                aria-invalid={
-                                    errors.registered_app_id !== undefined ||
-                                    undefined
-                                }
-                                className="w-full"
-                            >
-                                <SelectValue
-                                    placeholder={t(
-                                        'developers.games.form.app.empty_option',
-                                    )}
-                                />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {apps.map((app) => (
-                                    <SelectItem
-                                        key={app.id}
-                                        value={String(app.id)}
-                                        disabled={!app.is_active}
-                                    >
-                                        {app.name}
-                                        {!app.is_active
-                                            ? ` — ${t('developers.dashboard.index.status.paused')}`
-                                            : ''}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
+                            options={apps.map((app) => ({
+                                value: String(app.id),
+                                label: app.is_active
+                                    ? app.name
+                                    : `${app.name} — ${t('developers.dashboard.index.status.paused')}`,
+                                disabled: !app.is_active,
+                            }))}
+                        />
                         <p className="text-xs text-muted-foreground">
                             {t('developers.games.form.app.hint')}
                         </p>
@@ -450,7 +432,7 @@ export function GameForm({
             </div>
 
             <aside
-                className="order-first h-fit space-y-4 rounded-2xl border border-border bg-card p-6 text-sm shadow-sm lg:order-0 lg:sticky lg:top-24"
+                className="order-first h-fit space-y-4 rounded-2xl border border-border bg-card p-6 text-sm shadow-sm lg:order-0"
                 aria-label={t('developers.games.form.help.heading')}
             >
                 <h2 className="text-base font-semibold tracking-tight">

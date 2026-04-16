@@ -8,7 +8,7 @@ export function AppFooter() {
     const { t } = useTranslation();
 
     return (
-        <footer className="border-t border-border/40 bg-background/50 backdrop-blur-sm">
+        <footer className="border-t border-border/40 bg-background/90">
             <div className="mx-auto max-w-7xl px-4 py-12 md:px-6 lg:px-8">
                 <div className="xl:grid xl:grid-cols-3 xl:gap-8">
                     <div className="space-y-8">

@@ -98,7 +98,7 @@ export default function DevelopersLayout({
             {showSubnav && (
                 <nav
                     aria-label={t('developers.nav.aria')}
-                    className="mb-8 flex flex-wrap gap-1 rounded-xl border border-border/60 bg-card/40 p-1 backdrop-blur-sm"
+                    className="mb-8 flex flex-wrap gap-1 rounded-xl border border-border/60 bg-card/80 p-1"
                 >
                     {subnavItems.map((item) => {
                         const Icon = item.icon;
