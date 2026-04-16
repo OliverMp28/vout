@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -18,7 +19,7 @@ use Illuminate\Support\Facades\DB;
  * Cada juego puede pertenecer a múltiples categorías, tener múltiples
  * desarrolladores y ser jugado por múltiples usuarios.
  *
- * @property \Illuminate\Support\Carbon|null $release_date
+ * @property Carbon|null $release_date
  */
 class Game extends Model
 {
@@ -44,6 +45,7 @@ class Game extends Model
         'is_active',
         'is_featured',
         'status',
+        'rejection_reason',
     ];
 
     /**

@@ -279,6 +279,7 @@ class DeveloperGameController extends Controller
             'description' => $game->description,
             'release_date' => $game->release_date?->toDateString(),
             'repo_url' => $game->repo_url,
+            'rejection_reason' => $game->rejection_reason,
             'is_editable' => $game->status->isEditable(),
             'is_deletable' => $game->status !== GameStatus::Published,
             'category_ids' => $game->categories->pluck('id')->values()->all(),
