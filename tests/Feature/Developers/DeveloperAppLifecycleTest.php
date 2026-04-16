@@ -79,7 +79,7 @@ it('alterna is_active entre activo y pausado', function (): void {
     expect($app->fresh()->is_active)->toBeTrue();
 });
 
-it('elimina la app y revoca el client OAuth asociado', function (): void {
+it('elimina la app y el client OAuth asociado', function (): void {
     $user = User::factory()->create();
     $app = RegisteredApp::factory()->forUser($user)->withClient()->create();
     $clientId = $app->oauth_client_id;
@@ -88,10 +88,7 @@ it('elimina la app y revoca el client OAuth asociado', function (): void {
         ->assertRedirect(route('developers.dashboard'));
 
     expect(RegisteredApp::query()->find($app->id))->toBeNull();
-
-    $client = Passport::client()->newQuery()->find($clientId);
-    expect($client)->not->toBeNull()
-        ->and((bool) $client->revoked)->toBeTrue();
+    expect(Passport::client()->newQuery()->find($clientId))->toBeNull();
 });
 
 it('el listado del dashboard solo muestra las apps del propietario', function (): void {

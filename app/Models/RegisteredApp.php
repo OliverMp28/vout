@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Database\Factories\RegisteredAppFactory;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -32,6 +33,8 @@ class RegisteredApp extends Model
         'app_url',
         'allowed_origins',
         'is_active',
+        'suspended_at',
+        'suspension_reason',
         'oauth_client_id',
         'is_first_party',
         'requires_auth',
@@ -49,6 +52,7 @@ class RegisteredApp extends Model
             'is_active' => 'boolean',
             'is_first_party' => 'boolean',
             'requires_auth' => 'boolean',
+            'suspended_at' => 'datetime',
         ];
     }
 
@@ -78,11 +82,48 @@ class RegisteredApp extends Model
     }
 
     /**
+     * Scope: aplicaciones suspendidas por un admin.
+     */
+    public function scopeSuspended(Builder $query): Builder
+    {
+        return $query->whereNotNull('suspended_at');
+    }
+
+    // ─── Relaciones ──────────────────────────────────────────
+
+    /**
      * Usuario propietario de la aplicación (creador desde el Developer Portal).
      * Nullable para apps creadas vía seed antes de la Fase 4.1.
      */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    // ─── Accessors ───────────────────────────────────────────
+
+    /**
+     * Indica si la app está suspendida por un admin.
+     */
+    public function isSuspended(): bool
+    {
+        return $this->suspended_at !== null;
+    }
+
+    /**
+     * Estado derivado para UI: `active`, `paused` o `suspended`.
+     *
+     * Prioridad: suspended > paused > active. Suspendida prevalece sobre
+     * el flag `is_active` porque fue impuesta por un admin.
+     */
+    protected function effectiveStatus(): Attribute
+    {
+        return Attribute::get(function (): string {
+            if ($this->isSuspended()) {
+                return 'suspended';
+            }
+
+            return $this->is_active ? 'active' : 'paused';
+        });
     }
 }

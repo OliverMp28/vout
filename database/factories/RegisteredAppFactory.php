@@ -56,6 +56,18 @@ class RegisteredAppFactory extends Factory
     }
 
     /**
+     * Estado: app suspendida por un admin con motivo y timestamp.
+     */
+    public function suspended(): static
+    {
+        return $this->state(fn (array $attributes): array => [
+            'is_active' => false,
+            'suspended_at' => now(),
+            'suspension_reason' => 'Violación de términos de servicio (test).',
+        ]);
+    }
+
+    /**
      * Estado: la app crea también un Passport Client real y lo enlaza
      * via `oauth_client_id`. Útil para tests del flujo de regeneración
      * de secreto y de revocación.

@@ -122,7 +122,8 @@ class DeveloperAppController extends Controller
             'app' => $app->only([
                 'id', 'name', 'slug', 'app_url', 'allowed_origins',
                 'is_active', 'requires_auth', 'is_first_party',
-                'oauth_client_id', 'created_at', 'updated_at',
+                'oauth_client_id', 'suspended_at', 'suspension_reason',
+                'created_at', 'updated_at',
             ]),
             'client' => $client ? [
                 'id' => $client->id,
@@ -173,6 +174,7 @@ class DeveloperAppController extends Controller
     {
         $this->authorize('update', $app);
 
+        abort_if($app->isSuspended(), 403, __('developers.apps.suspended_blocked'));
         abort_unless($app->oauth_client_id !== null, 404);
 
         $client = $this->loadClient($app);
@@ -193,6 +195,8 @@ class DeveloperAppController extends Controller
     {
         $this->authorize('update', $app);
 
+        abort_if($app->isSuspended(), 403, __('developers.apps.suspended_blocked'));
+
         $app->update(['is_active' => ! $app->is_active]);
 
         return back()->with(
@@ -203,16 +207,17 @@ class DeveloperAppController extends Controller
 
     /**
      * Elimina la app y revoca el client OAuth asociado si existe.
-     * `ClientRepository::delete` revoca el client y sus tokens.
+     * Elimina físicamente el client OAuth y sus tokens.
      */
-    public function destroy(RegisteredApp $app, ClientRepository $clientRepo): RedirectResponse
+    public function destroy(RegisteredApp $app): RedirectResponse
     {
         $this->authorize('delete', $app);
 
-        DB::transaction(function () use ($app, $clientRepo): void {
+        DB::transaction(function () use ($app): void {
             $client = $this->loadClient($app);
             if ($client !== null) {
-                $clientRepo->delete($client);
+                $client->tokens()->delete();
+                $client->delete();
             }
             $app->delete();
         });
