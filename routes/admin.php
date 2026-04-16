@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\Admin\AdminAppController;
+use App\Http\Controllers\Admin\AdminCategoryController;
+use App\Http\Controllers\Admin\AdminDeveloperController;
 use App\Http\Controllers\Admin\AdminGameController;
 use Illuminate\Support\Facades\Route;
 
@@ -45,3 +47,31 @@ Route::put('games/{game:slug}', [AdminGameController::class, 'update'])
     ->name('games.update');
 Route::delete('games/{game:slug}', [AdminGameController::class, 'destroy'])
     ->name('games.destroy');
+
+// ── Categories ────────────────────────────────────────────────────────
+Route::get('categories', [AdminCategoryController::class, 'index'])
+    ->name('categories.index');
+Route::get('categories/create', [AdminCategoryController::class, 'create'])
+    ->name('categories.create');
+Route::post('categories', [AdminCategoryController::class, 'store'])
+    ->name('categories.store');
+Route::get('categories/{category:slug}/edit', [AdminCategoryController::class, 'edit'])
+    ->name('categories.edit');
+Route::put('categories/{category:slug}', [AdminCategoryController::class, 'update'])
+    ->name('categories.update');
+Route::delete('categories/{category:slug}', [AdminCategoryController::class, 'destroy'])
+    ->name('categories.destroy');
+
+// ── Developers ────────────────────────────────────────────────────────
+Route::get('developers', [AdminDeveloperController::class, 'index'])
+    ->name('developers.index');
+Route::get('developers/create', [AdminDeveloperController::class, 'create'])
+    ->name('developers.create');
+Route::post('developers', [AdminDeveloperController::class, 'store'])
+    ->name('developers.store');
+Route::get('developers/{developer:slug}/edit', [AdminDeveloperController::class, 'edit'])
+    ->name('developers.edit');
+Route::put('developers/{developer:slug}', [AdminDeveloperController::class, 'update'])
+    ->name('developers.update');
+Route::delete('developers/{developer:slug}', [AdminDeveloperController::class, 'destroy'])
+    ->name('developers.destroy');
