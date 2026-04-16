@@ -7,6 +7,7 @@ import {
     Play,
     RefreshCw,
     ShieldCheck,
+    ShieldOff,
     Sparkles,
     Trash2,
 } from 'lucide-react';
@@ -103,21 +104,24 @@ export default function DevelopersDashboardShow({
                                     {app.name}
                                 </h1>
                                 <Badge
-                                    variant="secondary"
+                                    variant={app.suspended_at ? 'destructive' : 'secondary'}
                                     className={cn(
                                         'shrink-0 text-[10px] font-semibold uppercase tracking-wider',
-                                        app.is_active
-                                            ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
-                                            : 'bg-muted text-muted-foreground',
+                                        app.suspended_at
+                                            ? ''
+                                            : app.is_active
+                                              ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
+                                              : 'bg-muted text-muted-foreground',
                                     )}
                                 >
-                                    {app.is_active
-                                        ? t(
-                                              'developers.dashboard.index.status.active',
-                                          )
-                                        : t(
-                                              'developers.dashboard.index.status.paused',
-                                          )}
+                                    {app.suspended_at && (
+                                        <ShieldOff className="mr-1 size-3" aria-hidden />
+                                    )}
+                                    {app.suspended_at
+                                        ? t('developers.dashboard.show.status.suspended')
+                                        : app.is_active
+                                          ? t('developers.dashboard.index.status.active')
+                                          : t('developers.dashboard.index.status.paused')}
                                 </Badge>
                             </div>
                             <p className="truncate font-mono text-xs text-muted-foreground">
@@ -146,6 +150,19 @@ export default function DevelopersDashboardShow({
                     </div>
                 </header>
 
+                {app.suspended_at && (
+                    <Alert variant="destructive" className="border-destructive/40">
+                        <ShieldOff className="size-4" />
+                        <AlertTitle>
+                            {t('developers.dashboard.show.suspended.title')}
+                        </AlertTitle>
+                        <AlertDescription>
+                            {app.suspension_reason ??
+                                t('developers.dashboard.show.suspended.default_reason')}
+                        </AlertDescription>
+                    </Alert>
+                )}
+
                 <Tabs
                     value={activeTab}
                     onValueChange={(next) => setActiveTab(next as TabKey)}
@@ -169,6 +186,7 @@ export default function DevelopersDashboardShow({
                                 clientId={client.id}
                                 confidential={client.confidential}
                                 appSlug={app.slug}
+                                isSuspended={app.suspended_at !== null}
                             />
                         </TabsContent>
                     )}
@@ -273,12 +291,14 @@ type CredentialsPanelProps = {
     clientId: string;
     confidential: boolean;
     appSlug: string;
+    isSuspended: boolean;
 };
 
 function CredentialsPanel({
     clientId,
     confidential,
     appSlug,
+    isSuspended,
 }: CredentialsPanelProps) {
     const { t } = useTranslation();
     const [confirmOpen, setConfirmOpen] = useState(false);
@@ -326,7 +346,7 @@ function CredentialsPanel({
                         variant="outline"
                         onClick={() => setConfirmOpen(true)}
                         className="gap-2"
-                        disabled={processing}
+                        disabled={processing || isSuspended}
                     >
                         <RefreshCw
                             className={cn(
@@ -475,6 +495,7 @@ type DangerPanelProps = {
 
 function DangerPanel({ app }: DangerPanelProps) {
     const { t } = useTranslation();
+    const isSuspended = app.suspended_at !== null;
 
     const togglePost = useForm({});
 
@@ -497,20 +518,22 @@ function DangerPanel({ app }: DangerPanelProps) {
                         : t('developers.dashboard.show.danger.resume.title')
                 }
                 description={
-                    app.is_active
-                        ? t(
-                              'developers.dashboard.show.danger.pause.description',
-                          )
-                        : t(
-                              'developers.dashboard.show.danger.resume.description',
-                          )
+                    isSuspended
+                        ? t('developers.dashboard.show.suspended.action_blocked')
+                        : app.is_active
+                          ? t(
+                                'developers.dashboard.show.danger.pause.description',
+                            )
+                          : t(
+                                'developers.dashboard.show.danger.resume.description',
+                            )
                 }
                 action={
                     <Button
                         type="button"
                         variant="outline"
                         onClick={handleToggle}
-                        disabled={togglePost.processing}
+                        disabled={togglePost.processing || isSuspended}
                         className="gap-2"
                     >
                         {app.is_active ? (

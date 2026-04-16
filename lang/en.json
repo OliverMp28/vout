@@ -361,6 +361,10 @@
     "developers.dashboard.create.oauth.description": "OAuth flow setup: where to send the user back after authentication and what kind of client you are.",
     "developers.dashboard.create.help.heading": "How your project fits",
     "developers.dashboard.show.back": "Back to list",
+    "developers.dashboard.show.status.suspended": "Suspended",
+    "developers.dashboard.show.suspended.title": "This app has been suspended by an administrator",
+    "developers.dashboard.show.suspended.default_reason": "Contact support for more information.",
+    "developers.dashboard.show.suspended.action_blocked": "This app is suspended. Actions are disabled until an administrator reactivates it.",
     "developers.dashboard.show.tabs.overview": "Overview",
     "developers.dashboard.show.tabs.credentials": "Credentials",
     "developers.dashboard.show.tabs.origins": "Allowed origins",
@@ -512,5 +516,104 @@
     "developers.form.client_type.public.title": "No, client-only",
     "developers.form.client_type.public.description": "Pure SPA, mobile app or external backend (Firebase, Supabase). Vout will protect the flow with PKCE instead of a secret.",
     "developers.form.client_type.public.badge": "SPA · mobile · BaaS",
-    "developers.form.client_type.note": "If in doubt, leave \"Yes, I have a backend\". You can change it later by regenerating credentials."
+    "developers.form.client_type.note": "If in doubt, leave \"Yes, I have a backend\". You can change it later by regenerating credentials.",
+
+    "developers.apps.suspended_blocked": "This app is suspended. You cannot modify it until an administrator reactivates it.",
+
+    "admin.nav.aria": "Admin panel navigation",
+    "admin.nav.apps": "Apps",
+
+    "admin.apps.index.title": "Ecosystem Apps",
+    "admin.apps.index.description": "Manage all registered apps in the ecosystem.",
+    "admin.apps.index.search_placeholder": "Search by name or owner…",
+    "admin.apps.index.empty": "No apps match the current filters.",
+    "admin.apps.index.pagination": "App list pagination",
+
+    "admin.apps.filter.all": "All statuses",
+    "admin.apps.filter.active": "Active",
+    "admin.apps.filter.paused": "Paused",
+    "admin.apps.filter.suspended": "Suspended",
+
+    "admin.apps.table.name": "App",
+    "admin.apps.table.owner": "Owner",
+    "admin.apps.table.status": "Status",
+    "admin.apps.table.auth": "Auth",
+    "admin.apps.table.no_owner": "No owner",
+    "admin.apps.table.with_idp": "With IdP",
+    "admin.apps.table.client_only": "Client only",
+    "admin.apps.table.view": "View",
+
+    "admin.apps.status.active": "Active",
+    "admin.apps.status.paused": "Paused",
+    "admin.apps.status.suspended": "Suspended",
+
+    "admin.apps.badge.first_party": "First-party (Official Vout)",
+
+    "admin.apps.show.back": "Back to apps",
+    "admin.apps.show.auth_idp": "With IdP",
+    "admin.apps.show.auth_client": "Client only",
+
+    "admin.apps.show.suspended_banner.title": "This app is suspended",
+
+    "admin.apps.show.details.heading": "App details",
+    "admin.apps.show.details.name": "Name",
+    "admin.apps.show.details.slug": "Slug",
+    "admin.apps.show.details.app_url": "App URL",
+    "admin.apps.show.details.open_url": "Open in new tab",
+    "admin.apps.show.details.client_id": "OAuth Client ID",
+    "admin.apps.show.details.copy": "Copy client ID",
+    "admin.apps.show.details.client_type": "Client type",
+    "admin.apps.show.details.confidential": "Confidential",
+    "admin.apps.show.details.public": "Public (PKCE)",
+    "admin.apps.show.details.client_status": "Client status",
+    "admin.apps.show.details.revoked": "Revoked",
+    "admin.apps.show.details.valid": "Valid",
+    "admin.apps.show.details.no_client": "No OAuth client — credentials were revoked or never created.",
+    "admin.apps.show.details.created_at": "Created",
+    "admin.apps.show.details.updated_at": "Updated",
+
+    "admin.apps.show.origins.heading": "Allowed origins",
+    "admin.apps.show.origins.empty": "No origins configured.",
+
+    "admin.apps.show.owner.heading": "Owner",
+    "admin.apps.show.owner.none": "No owner assigned.",
+
+    "admin.apps.show.actions.heading": "Admin actions",
+    "admin.apps.show.actions.cancel": "Cancel",
+
+    "admin.apps.show.actions.first_party.title": "First-party badge",
+    "admin.apps.show.actions.first_party.description": "Mark this app as an official Vout app. This is a visual distinction only.",
+    "admin.apps.show.actions.first_party.mark": "Mark as first-party",
+    "admin.apps.show.actions.first_party.remove": "Remove first-party",
+
+    "admin.apps.show.actions.suspend.title": "Suspend app",
+    "admin.apps.show.actions.suspend.description": "Immediately disable this app and revoke its OAuth credentials.",
+    "admin.apps.show.actions.suspend.cta": "Suspend",
+    "admin.apps.show.actions.suspend.confirm_title": "Suspend :name?",
+    "admin.apps.show.actions.suspend.confirm_body": "Suspending will permanently revoke the OAuth client. The owner will need to regenerate credentials after reactivation.",
+    "admin.apps.show.actions.suspend.warning_title": "This action revokes tokens",
+    "admin.apps.show.actions.suspend.warning_body": "All active access tokens for this app will stop working immediately. Users currently authenticated via this app will be logged out.",
+    "admin.apps.show.actions.suspend.remark_label": "Reason for suspension",
+    "admin.apps.show.actions.suspend.remark_placeholder": "Describe why this app is being suspended (min. 10 characters)…",
+
+    "admin.apps.show.actions.reactivate.title": "Reactivate app",
+    "admin.apps.show.actions.reactivate.description": "Remove the suspension and allow the owner to use this app again.",
+    "admin.apps.show.actions.reactivate.cta": "Reactivate",
+    "admin.apps.show.actions.reactivate.confirm_title": "Reactivate :name?",
+    "admin.apps.show.actions.reactivate.confirm_body": "The app will be re-enabled, but the owner must regenerate OAuth credentials from their dashboard.",
+    "admin.apps.show.actions.reactivate.note_title": "Credentials not restored",
+    "admin.apps.show.actions.reactivate.note_body": "The previous OAuth client was permanently revoked during suspension. The developer must create new credentials.",
+
+    "admin.apps.show.actions.delete.title": "Delete app",
+    "admin.apps.show.actions.delete.description": "Permanently remove this app and all its data. This cannot be undone.",
+    "admin.apps.show.actions.delete.cta": "Delete",
+    "admin.apps.show.actions.delete.confirm_title": "Delete this app?",
+    "admin.apps.show.actions.delete.confirm_body": "Type :slug to confirm permanent deletion.",
+    "admin.apps.show.actions.delete.warning_title": "Irreversible action",
+    "admin.apps.show.actions.delete.warning_body": "The app, its OAuth credentials, and all associated data will be permanently deleted.",
+    "admin.apps.show.actions.delete.confirm_label": "Type :slug to confirm",
+    "admin.apps.show.actions.delete.mismatch": "The slug doesn't match.",
+
+    "admin.apps.already_suspended": "This app is already suspended.",
+    "admin.apps.not_suspended": "This app is not suspended."
 }

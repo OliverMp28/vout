@@ -18,6 +18,8 @@ export type RegisteredAppResource = {
     readonly requires_auth: boolean;
     readonly is_first_party: boolean;
     readonly oauth_client_id: string | null;
+    readonly suspended_at: string | null;
+    readonly suspension_reason: string | null;
     readonly created_at: string;
     readonly updated_at: string;
 };

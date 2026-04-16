@@ -19,6 +19,7 @@ export type User = {
     google_id: string | null;
     has_password: boolean;
     email_verified_at: string | null;
+    is_admin: boolean;
     two_factor_enabled?: boolean;
     settings: UserSetting | null;
     created_at: string;
