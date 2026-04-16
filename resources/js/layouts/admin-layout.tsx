@@ -1,5 +1,5 @@
 import { Link } from '@inertiajs/react';
-import { AppWindow } from 'lucide-react';
+import { AppWindow, Gamepad2 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useCurrentUrl } from '@/hooks/use-current-url';
@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils';
 import admin from '@/routes/admin';
 import type { AppLayoutProps, BreadcrumbItem } from '@/types';
 
-const { apps } = admin;
+const { apps, games } = admin;
 
 type AdminLayoutProps = AppLayoutProps & {
     children: ReactNode;
@@ -40,6 +40,13 @@ export default function AdminLayout({ children, breadcrumbs }: AdminLayoutProps)
             labelKey: 'admin.nav.apps',
             href: apps.index(),
             icon: AppWindow,
+            match: 'prefix',
+        },
+        {
+            key: 'games',
+            labelKey: 'admin.nav.games',
+            href: games.index(),
+            icon: Gamepad2,
             match: 'prefix',
         },
     ];

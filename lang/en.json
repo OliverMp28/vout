@@ -615,5 +615,100 @@
     "admin.apps.show.actions.delete.mismatch": "The slug doesn't match.",
 
     "admin.apps.already_suspended": "This app is already suspended.",
-    "admin.apps.not_suspended": "This app is not suspended."
+    "admin.apps.not_suspended": "This app is not suspended.",
+
+    "admin.nav.games": "Games",
+
+    "admin.games.index.title": "Catalog Games",
+    "admin.games.index.description": "Review, approve, and manage all games in the ecosystem.",
+    "admin.games.index.search_placeholder": "Search by name or submitter…",
+    "admin.games.index.empty": "No games match the current filters.",
+    "admin.games.index.pagination": "Game list pagination",
+    "admin.games.index.pending_badge": ":count pending review",
+
+    "admin.games.filter.all": "All statuses",
+    "admin.games.filter.pending_review": "Pending review",
+    "admin.games.filter.published": "Published",
+    "admin.games.filter.rejected": "Rejected",
+    "admin.games.filter.draft": "Draft",
+    "admin.games.filter.featured_all": "All games",
+    "admin.games.filter.featured_yes": "Featured",
+    "admin.games.filter.featured_no": "Not featured",
+
+    "admin.games.table.name": "Game",
+    "admin.games.table.submitter": "Submitter",
+    "admin.games.table.status": "Status",
+    "admin.games.table.app": "App",
+    "admin.games.table.seeded": "Seeded internally",
+    "admin.games.table.no_app": "No app linked",
+    "admin.games.table.view": "View",
+
+    "admin.games.badge.featured": "Featured",
+
+    "admin.games.show.back": "Back to games",
+
+    "admin.games.show.rejected_banner.title": "This game was rejected",
+
+    "admin.games.show.details.heading": "Game details",
+    "admin.games.show.details.name": "Name",
+    "admin.games.show.details.slug": "Slug",
+    "admin.games.show.details.description": "Description",
+    "admin.games.show.details.embed_url": "Embed URL",
+    "admin.games.show.details.app": "Linked app",
+    "admin.games.show.details.play_count": "Play count",
+    "admin.games.show.details.release_date": "Release date",
+    "admin.games.show.details.created_at": "Created",
+    "admin.games.show.details.updated_at": "Updated",
+
+    "admin.games.show.preview.heading": "Preview",
+    "admin.games.show.preview.hint": "Sandboxed preview — some features may not work inside this iframe.",
+
+    "admin.games.show.submitter.heading": "Submitter",
+    "admin.games.show.submitter.seeded": "This game was seeded internally (no submitter).",
+
+    "admin.games.show.review.heading": "Review queue",
+    "admin.games.show.review.description": "This game is waiting for your review. Approve it to publish to the catalog, or reject it with a reason.",
+    "admin.games.show.review.approve_cta": "Approve & Publish",
+    "admin.games.show.review.approve_title": "Approve :name?",
+    "admin.games.show.review.approve_body": "The game will be published and visible in the public catalog. The developer will be notified.",
+    "admin.games.show.review.reject_cta": "Reject",
+    "admin.games.show.review.reject_title": "Reject :name?",
+    "admin.games.show.review.reject_body": "The developer will see your reason and can edit and resubmit the game for another review.",
+    "admin.games.show.review.reason_label": "Reason for rejection",
+    "admin.games.show.review.reason_placeholder": "Explain why this game is being rejected (min. 10 characters)…",
+
+    "admin.games.show.actions.heading": "Admin actions",
+    "admin.games.show.actions.cancel": "Cancel",
+
+    "admin.games.show.actions.featured.title": "Featured badge",
+    "admin.games.show.actions.featured.description": "Featured games are highlighted on the portal homepage.",
+    "admin.games.show.actions.featured.mark": "Mark as featured",
+    "admin.games.show.actions.featured.remove": "Remove featured",
+
+    "admin.games.show.actions.delete.title": "Delete game",
+    "admin.games.show.actions.delete.description": "Permanently remove this game from the catalog. This cannot be undone.",
+    "admin.games.show.actions.delete.cta": "Delete",
+    "admin.games.show.actions.delete.confirm_title": "Delete this game?",
+    "admin.games.show.actions.delete.confirm_body": "Type :slug to confirm permanent deletion.",
+    "admin.games.show.actions.delete.warning_title": "Irreversible action",
+    "admin.games.show.actions.delete.warning_body": "The game and all its data (categories, play history) will be permanently deleted.",
+    "admin.games.show.actions.delete.confirm_label": "Type :slug to confirm",
+    "admin.games.show.actions.delete.mismatch": "The slug doesn't match.",
+
+    "admin.games.show.edit.heading": "Edit game",
+    "admin.games.show.edit.description": "As admin you can correct any field before publishing or at any time.",
+    "admin.games.show.edit.open": "Edit fields",
+    "admin.games.show.edit.name": "Name",
+    "admin.games.show.edit.description_field": "Description",
+    "admin.games.show.edit.embed_url": "Embed URL",
+    "admin.games.show.edit.cover_image": "Cover image URL",
+    "admin.games.show.edit.release_date": "Release date",
+    "admin.games.show.edit.repo_url": "Repository URL",
+    "admin.games.show.edit.categories": "Categories",
+    "admin.games.show.edit.categories_hint": "Select up to :max categories.",
+    "admin.games.show.edit.developers": "Developers",
+    "admin.games.show.edit.developers_hint": "Select up to :max developers.",
+    "admin.games.show.edit.save": "Save changes",
+
+    "admin.games.not_pending": "This game is not pending review."
 }

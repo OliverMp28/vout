@@ -615,5 +615,100 @@
     "admin.apps.show.actions.delete.mismatch": "El slug no coincide.",
 
     "admin.apps.already_suspended": "Esta app ya está suspendida.",
-    "admin.apps.not_suspended": "Esta app no está suspendida."
+    "admin.apps.not_suspended": "Esta app no está suspendida.",
+
+    "admin.nav.games": "Juegos",
+
+    "admin.games.index.title": "Juegos del catálogo",
+    "admin.games.index.description": "Revisa, aprueba y gestiona todos los juegos del ecosistema.",
+    "admin.games.index.search_placeholder": "Buscar por nombre o remitente…",
+    "admin.games.index.empty": "Ningún juego coincide con los filtros actuales.",
+    "admin.games.index.pagination": "Paginación del listado de juegos",
+    "admin.games.index.pending_badge": ":count pendientes de revisión",
+
+    "admin.games.filter.all": "Todos los estados",
+    "admin.games.filter.pending_review": "Pendiente de revisión",
+    "admin.games.filter.published": "Publicado",
+    "admin.games.filter.rejected": "Rechazado",
+    "admin.games.filter.draft": "Borrador",
+    "admin.games.filter.featured_all": "Todos los juegos",
+    "admin.games.filter.featured_yes": "Destacados",
+    "admin.games.filter.featured_no": "No destacados",
+
+    "admin.games.table.name": "Juego",
+    "admin.games.table.submitter": "Remitente",
+    "admin.games.table.status": "Estado",
+    "admin.games.table.app": "App",
+    "admin.games.table.seeded": "Curado internamente",
+    "admin.games.table.no_app": "Sin app vinculada",
+    "admin.games.table.view": "Ver",
+
+    "admin.games.badge.featured": "Destacado",
+
+    "admin.games.show.back": "Volver a juegos",
+
+    "admin.games.show.rejected_banner.title": "Este juego fue rechazado",
+
+    "admin.games.show.details.heading": "Detalles del juego",
+    "admin.games.show.details.name": "Nombre",
+    "admin.games.show.details.slug": "Slug",
+    "admin.games.show.details.description": "Descripción",
+    "admin.games.show.details.embed_url": "URL de embebido",
+    "admin.games.show.details.app": "App vinculada",
+    "admin.games.show.details.play_count": "Partidas jugadas",
+    "admin.games.show.details.release_date": "Fecha de lanzamiento",
+    "admin.games.show.details.created_at": "Creado",
+    "admin.games.show.details.updated_at": "Actualizado",
+
+    "admin.games.show.preview.heading": "Vista previa",
+    "admin.games.show.preview.hint": "Vista previa en sandbox — algunas funciones pueden no funcionar dentro de este iframe.",
+
+    "admin.games.show.submitter.heading": "Remitente",
+    "admin.games.show.submitter.seeded": "Este juego fue curado internamente (sin remitente).",
+
+    "admin.games.show.review.heading": "Cola de revisión",
+    "admin.games.show.review.description": "Este juego espera tu revisión. Apruébalo para publicarlo en el catálogo, o recházalo con un motivo.",
+    "admin.games.show.review.approve_cta": "Aprobar y publicar",
+    "admin.games.show.review.approve_title": "¿Aprobar :name?",
+    "admin.games.show.review.approve_body": "El juego se publicará y será visible en el catálogo público. El desarrollador será notificado.",
+    "admin.games.show.review.reject_cta": "Rechazar",
+    "admin.games.show.review.reject_title": "¿Rechazar :name?",
+    "admin.games.show.review.reject_body": "El desarrollador verá tu motivo y podrá editar y reenviar el juego para otra revisión.",
+    "admin.games.show.review.reason_label": "Motivo del rechazo",
+    "admin.games.show.review.reason_placeholder": "Explica por qué se rechaza este juego (mín. 10 caracteres)…",
+
+    "admin.games.show.actions.heading": "Acciones de administración",
+    "admin.games.show.actions.cancel": "Cancelar",
+
+    "admin.games.show.actions.featured.title": "Badge de destacado",
+    "admin.games.show.actions.featured.description": "Los juegos destacados aparecen en la portada del portal.",
+    "admin.games.show.actions.featured.mark": "Marcar como destacado",
+    "admin.games.show.actions.featured.remove": "Quitar destacado",
+
+    "admin.games.show.actions.delete.title": "Eliminar juego",
+    "admin.games.show.actions.delete.description": "Elimina permanentemente este juego del catálogo. No se puede deshacer.",
+    "admin.games.show.actions.delete.cta": "Eliminar",
+    "admin.games.show.actions.delete.confirm_title": "¿Eliminar este juego?",
+    "admin.games.show.actions.delete.confirm_body": "Escribe :slug para confirmar la eliminación permanente.",
+    "admin.games.show.actions.delete.warning_title": "Acción irreversible",
+    "admin.games.show.actions.delete.warning_body": "El juego y todos sus datos (categorías, historial de partidas) serán eliminados permanentemente.",
+    "admin.games.show.actions.delete.confirm_label": "Escribe :slug para confirmar",
+    "admin.games.show.actions.delete.mismatch": "El slug no coincide.",
+
+    "admin.games.show.edit.heading": "Editar juego",
+    "admin.games.show.edit.description": "Como admin puedes corregir cualquier campo antes de publicar o en cualquier momento.",
+    "admin.games.show.edit.open": "Editar campos",
+    "admin.games.show.edit.name": "Nombre",
+    "admin.games.show.edit.description_field": "Descripción",
+    "admin.games.show.edit.embed_url": "URL de incrustación",
+    "admin.games.show.edit.cover_image": "URL de portada",
+    "admin.games.show.edit.release_date": "Fecha de lanzamiento",
+    "admin.games.show.edit.repo_url": "URL del repositorio",
+    "admin.games.show.edit.categories": "Categorías",
+    "admin.games.show.edit.categories_hint": "Selecciona hasta :max categorías.",
+    "admin.games.show.edit.developers": "Desarrolladores",
+    "admin.games.show.edit.developers_hint": "Selecciona hasta :max desarrolladores.",
+    "admin.games.show.edit.save": "Guardar cambios",
+
+    "admin.games.not_pending": "Este juego no está pendiente de revisión."
 }

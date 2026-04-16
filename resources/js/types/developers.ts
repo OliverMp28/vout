@@ -114,6 +114,7 @@ export type DeveloperGameDetailResource = DeveloperGameCardResource & {
     readonly description: string;
     readonly release_date: string | null;
     readonly repo_url: string | null;
+    readonly rejection_reason: string | null;
     readonly is_editable: boolean;
     readonly is_deletable: boolean;
     readonly category_ids: readonly number[];

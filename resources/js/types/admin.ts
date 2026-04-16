@@ -57,3 +57,75 @@ export type AdminAppFilters = {
     first_party?: string;
     search?: string;
 };
+
+// ── Admin: Games ───────────────────────────────────────────────────────
+
+export type GameStatus = 'draft' | 'pending_review' | 'published' | 'rejected';
+
+export type AdminGameSubmitter = {
+    id: number;
+    name: string;
+    email: string;
+    username: string;
+};
+
+export type AdminGameApp = {
+    id: number;
+    name: string;
+    slug: string;
+    allowed_origins: string[];
+};
+
+export type AdminGameCategory = {
+    id: number;
+    name: string;
+    slug: string;
+};
+
+export type AdminGameListItem = {
+    id: number;
+    name: string;
+    slug: string;
+    cover_image: string | null;
+    embed_url: string | null;
+    status: GameStatus;
+    is_active: boolean;
+    is_featured: boolean;
+    play_count: number;
+    rejection_reason: string | null;
+    created_at: string;
+    updated_at: string;
+    submitted_by: AdminGameSubmitter | null;
+    registered_app: AdminGameApp | null;
+    categories: AdminGameCategory[];
+};
+
+export type AdminGameDetail = {
+    id: number;
+    name: string;
+    slug: string;
+    description: string;
+    cover_image: string | null;
+    embed_url: string | null;
+    repo_url: string | null;
+    release_date: string | null;
+    status: GameStatus;
+    is_active: boolean;
+    is_featured: boolean;
+    play_count: number;
+    rejection_reason: string | null;
+    created_at: string | null;
+    updated_at: string | null;
+    submitter: AdminGameSubmitter | null;
+    registered_app: AdminGameApp | null;
+    categories: AdminGameCategory[];
+    developers: AdminGameCategory[];
+    category_ids: number[];
+    developer_ids: number[];
+};
+
+export type AdminGameFilters = {
+    status?: string;
+    featured?: string;
+    search?: string;
+};

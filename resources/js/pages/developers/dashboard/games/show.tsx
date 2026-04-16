@@ -91,8 +91,13 @@ export default function DevelopersGamesShow({
                         <AlertTitle>
                             {t('developers.games.show.rejected.title')}
                         </AlertTitle>
-                        <AlertDescription>
-                            {t('developers.games.show.rejected.body')}
+                        <AlertDescription className="space-y-1">
+                            {game.rejection_reason && (
+                                <p className="font-medium">
+                                    {game.rejection_reason}
+                                </p>
+                            )}
+                            <p>{t('developers.games.show.rejected.body')}</p>
                         </AlertDescription>
                     </Alert>
                 )}
