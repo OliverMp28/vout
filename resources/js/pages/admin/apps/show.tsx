@@ -1,4 +1,4 @@
-import { Head, Link, router, useForm } from '@inertiajs/react';
+import { Head, Link, useForm } from '@inertiajs/react';
 import {
     AlertTriangle,
     ArrowLeft,
@@ -7,7 +7,6 @@ import {
     Crown,
     ExternalLink,
     Globe,
-    Key,
     Play,
     ShieldCheck,
     ShieldOff,
