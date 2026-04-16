@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Developers\DeveloperAppController;
+use App\Http\Controllers\Developers\DeveloperGameController;
 use App\Http\Controllers\Developers\DevelopersLandingController;
 use Illuminate\Support\Facades\Route;
 
@@ -48,4 +49,18 @@ Route::middleware(['auth', 'verified'])
             ->name('apps.toggle');
         Route::delete('apps/{app:slug}', [DeveloperAppController::class, 'destroy'])
             ->name('apps.destroy');
+
+        // ── Games: envío y gestión del catálogo (Fase 4.2, S1) ──────────
+        Route::get('dashboard/games', [DeveloperGameController::class, 'index'])
+            ->name('games.index');
+        Route::get('dashboard/games/create', [DeveloperGameController::class, 'create'])
+            ->name('games.create');
+        Route::post('dashboard/games', [DeveloperGameController::class, 'store'])
+            ->name('games.store');
+        Route::get('dashboard/games/{game:slug}', [DeveloperGameController::class, 'show'])
+            ->name('games.show');
+        Route::put('dashboard/games/{game:slug}', [DeveloperGameController::class, 'update'])
+            ->name('games.update');
+        Route::delete('dashboard/games/{game:slug}', [DeveloperGameController::class, 'destroy'])
+            ->name('games.destroy');
     });

@@ -1,12 +1,14 @@
 import { Link } from '@inertiajs/react';
-import { BookOpen, LayoutGrid, Sparkles } from 'lucide-react';
+import { BookOpen, Gamepad2, LayoutGrid, Sparkles } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useCurrentUrl } from '@/hooks/use-current-url';
 import { useTranslation } from '@/hooks/use-translation';
 import PortalLayout from '@/layouts/portal-layout';
 import { cn } from '@/lib/utils';
-import { dashboard, docs, landing } from '@/routes/developers';
+import developers from '@/routes/developers';
 import type { AppLayoutProps, BreadcrumbItem } from '@/types';
+
+const { dashboard, docs, games, landing } = developers;
 
 type DevelopersLayoutProps = AppLayoutProps & {
     /**
@@ -18,7 +20,7 @@ type DevelopersLayoutProps = AppLayoutProps & {
 };
 
 type SubnavItem = {
-    key: 'overview' | 'docs' | 'landing';
+    key: 'overview' | 'games' | 'docs' | 'landing';
     labelKey: string;
     href: ReturnType<typeof dashboard> | ReturnType<typeof landing>;
     icon: typeof LayoutGrid;
@@ -54,6 +56,11 @@ export default function DevelopersLayout({
     // al entrar al detalle de una app la pestaña se apagaría y el usuario
     // perdería el anclaje visual de sección.
     const isInAppsFlow = currentUrl.startsWith('/developers/apps');
+    // La pestaña de juegos cubre su listado (`/developers/dashboard/games`)
+    // y todo su CRUD (create/show). El endpoint base está bajo `/dashboard`,
+    // pero sin esta excepción entraría en conflicto con "Panel" al compartir
+    // prefijo. Resolvemos el caso evaluando este flag antes de `overview`.
+    const isInGamesFlow = currentUrl.startsWith('/developers/dashboard/games');
 
     const subnavItems: SubnavItem[] = [
         {
@@ -61,6 +68,13 @@ export default function DevelopersLayout({
             labelKey: 'developers.nav.overview',
             href: dashboard(),
             icon: LayoutGrid,
+            match: 'prefix',
+        },
+        {
+            key: 'games',
+            labelKey: 'developers.nav.games',
+            href: games.index(),
+            icon: Gamepad2,
             match: 'prefix',
         },
         {
@@ -93,8 +107,14 @@ export default function DevelopersLayout({
                                 ? isCurrentUrl(item.href)
                                 : isCurrentOrParentUrl(item.href);
                         const active =
-                            baseActive ||
-                            (item.key === 'overview' && isInAppsFlow);
+                            // Juegos gana prioridad sobre "Panel" cuando la URL
+                            // empieza por `/developers/dashboard/games` porque
+                            // ambos comparten prefijo `/developers/dashboard`.
+                            item.key === 'overview'
+                                ? (baseActive && !isInGamesFlow) || isInAppsFlow
+                                : item.key === 'games'
+                                  ? isInGamesFlow
+                                  : baseActive;
 
                         return (
                             <Link

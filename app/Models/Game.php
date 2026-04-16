@@ -17,6 +17,8 @@ use Illuminate\Support\Facades\DB;
  * Representa un minijuego web que puede ser embebido en un iframe.
  * Cada juego puede pertenecer a múltiples categorías, tener múltiples
  * desarrolladores y ser jugado por múltiples usuarios.
+ *
+ * @property \Illuminate\Support\Carbon|null $release_date
  */
 class Game extends Model
 {

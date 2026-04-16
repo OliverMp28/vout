@@ -167,6 +167,16 @@ return [
     'ulid' => 'El campo :attribute debe ser un ULID válido.',
     'uuid' => 'El campo :attribute debe ser un UUID válido.',
 
+    'custom' => [
+        'origin' => 'Debe ser un origen válido (scheme + host). Ej: https://mi-app.com',
+        'redirect_uri_not_in_origins' => 'El redirect URI debe pertenecer a uno de los orígenes permitidos.',
+        'embed_url_https' => 'La URL del juego debe usar HTTPS.',
+        'cover_image_https' => 'La URL de la portada debe usar HTTPS.',
+        'registered_app_not_owned' => 'La app seleccionada no existe o no te pertenece.',
+        'registered_app_inactive' => 'Esta app está pausada o suspendida. Reactívala o elige otra.',
+        'embed_url_not_in_allowed_origins' => 'La URL del juego debe pertenecer a un origen permitido de la app seleccionada.',
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | Atributos personalizados

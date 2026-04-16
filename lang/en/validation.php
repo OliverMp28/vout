@@ -179,9 +179,13 @@ return [
     */
 
     'custom' => [
-        'attribute-name' => [
-            'rule-name' => 'custom-message',
-        ],
+        'origin' => 'Must be a valid origin (scheme + host). E.g. https://my-app.com',
+        'redirect_uri_not_in_origins' => 'The redirect URI must belong to one of the allowed origins.',
+        'embed_url_https' => 'The game URL must use HTTPS.',
+        'cover_image_https' => 'The cover image URL must use HTTPS.',
+        'registered_app_not_owned' => 'The selected app does not exist or does not belong to you.',
+        'registered_app_inactive' => 'This app is paused or suspended. Reactivate it or pick another.',
+        'embed_url_not_in_allowed_origins' => 'The game URL must belong to an allowed origin of the selected app.',
     ],
 
     /*

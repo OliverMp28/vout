@@ -75,3 +75,91 @@ export type DevelopersAppShowProps = {
     readonly client: OAuthClientSummary | null;
     readonly created_client_secret: string | null;
 };
+
+/**
+ * Estado de moderación — espejo de `App\Enums\GameStatus`.
+ */
+export type GameStatus = 'draft' | 'pending_review' | 'published' | 'rejected';
+
+export type GameCategoryChip = {
+    readonly id: number;
+    readonly name: string;
+    readonly slug: string;
+};
+
+export type GameAppChip = {
+    readonly id: number;
+    readonly name: string;
+    readonly slug: string;
+};
+
+export type DeveloperGameCardResource = {
+    readonly id: number;
+    readonly name: string;
+    readonly slug: string;
+    readonly cover_image: string | null;
+    readonly embed_url: string | null;
+    readonly status: GameStatus;
+    readonly is_active: boolean;
+    readonly play_count: number;
+    readonly created_at: string | null;
+    readonly updated_at: string | null;
+    readonly registered_app: GameAppChip | null;
+    readonly categories: readonly GameCategoryChip[];
+};
+
+export type DeveloperGameDetailResource = DeveloperGameCardResource & {
+    readonly description: string;
+    readonly release_date: string | null;
+    readonly repo_url: string | null;
+    readonly is_editable: boolean;
+    readonly is_deletable: boolean;
+    readonly category_ids: readonly number[];
+    readonly developer_ids: readonly number[];
+    readonly registered_app_id: number | null;
+};
+
+export type DeveloperAppOption = {
+    readonly id: number;
+    readonly name: string;
+    readonly slug: string;
+    readonly is_active: boolean;
+    readonly allowed_origins: readonly string[];
+};
+
+export type CategoryOption = {
+    readonly id: number;
+    readonly name: string;
+    readonly slug: string;
+};
+
+export type DeveloperOption = CategoryOption;
+
+export type GameFormData = {
+    name: string;
+    description: string;
+    registered_app_id: number | null;
+    embed_url: string;
+    cover_image: string;
+    release_date: string;
+    repo_url: string;
+    category_ids: number[];
+    developer_ids: number[];
+};
+
+export type DevelopersGameIndexProps = {
+    readonly games: readonly DeveloperGameCardResource[];
+};
+
+export type DevelopersGameCreateProps = {
+    readonly apps: readonly DeveloperAppOption[];
+    readonly categories: readonly CategoryOption[];
+    readonly developers: readonly DeveloperOption[];
+};
+
+export type DevelopersGameShowProps = {
+    readonly game: DeveloperGameDetailResource;
+    readonly apps: readonly DeveloperAppOption[];
+    readonly categories: readonly CategoryOption[];
+    readonly developers: readonly DeveloperOption[];
+};
