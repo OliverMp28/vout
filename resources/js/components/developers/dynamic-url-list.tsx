@@ -1,4 +1,5 @@
 import { Plus, X } from 'lucide-react';
+import { InfoHint } from '@/components/developers/info-hint';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,6 +10,11 @@ import { cn } from '@/lib/utils';
 type DynamicUrlListProps = {
     id: string;
     label: string;
+    /**
+     * Si se proporciona, renderiza un botón `?` (InfoHint) junto al label
+     * con la explicación contextual del campo.
+     */
+    hint?: { label: string; body: string };
     description?: string;
     placeholder?: string;
     values: readonly string[];
@@ -55,6 +61,7 @@ type DynamicUrlListProps = {
 export function DynamicUrlList({
     id,
     label,
+    hint,
     description,
     placeholder,
     values,
@@ -98,7 +105,14 @@ export function DynamicUrlList({
     return (
         <div className="space-y-2">
             <div className="flex items-baseline justify-between gap-2">
-                <Label htmlFor={`${id}-0`}>{label}</Label>
+                <span className="inline-flex items-center gap-1.5">
+                    <Label htmlFor={`${id}-0`}>{label}</Label>
+                    {hint && (
+                        <InfoHint label={hint.label}>
+                            <p>{hint.body}</p>
+                        </InfoHint>
+                    )}
+                </span>
                 <span className="text-xs text-muted-foreground">
                     {entries.length}/{max}
                 </span>

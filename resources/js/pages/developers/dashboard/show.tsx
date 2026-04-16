@@ -417,6 +417,10 @@ function OriginsPanel({ app, redirectUris, requiresAuth }: OriginsPanelProps) {
                 <DynamicUrlList
                     id="origins-allowed"
                     label={t('developers.form.allowed_origins')}
+                    hint={{
+                        label: t('developers.hints.allowed_origins.label'),
+                        body: t('developers.hints.allowed_origins.body'),
+                    }}
                     description={t('developers.form.allowed_origins_hint')}
                     placeholder="https://mi-app.com"
                     values={data.allowed_origins}
@@ -431,6 +435,10 @@ function OriginsPanel({ app, redirectUris, requiresAuth }: OriginsPanelProps) {
                     <DynamicUrlList
                         id="origins-redirects"
                         label={t('developers.form.redirect_uris')}
+                        hint={{
+                            label: t('developers.hints.redirect_uris.label'),
+                            body: t('developers.hints.redirect_uris.body'),
+                        }}
                         description={t('developers.form.redirect_uris_hint')}
                         placeholder="https://mi-app.com/auth/callback"
                         values={data.redirect_uris}
