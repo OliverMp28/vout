@@ -93,6 +93,8 @@ export type GameAppChip = {
     readonly id: number;
     readonly name: string;
     readonly slug: string;
+    readonly is_active?: boolean;
+    readonly is_suspended?: boolean;
 };
 
 export type DeveloperGameCardResource = {

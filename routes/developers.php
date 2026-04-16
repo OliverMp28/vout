@@ -45,6 +45,8 @@ Route::middleware(['auth', 'verified'])
             ->name('apps.update');
         Route::post('apps/{app:slug}/secret', [DeveloperAppController::class, 'regenerateSecret'])
             ->name('apps.secret');
+        Route::post('apps/{app:slug}/credentials', [DeveloperAppController::class, 'issueCredentials'])
+            ->name('apps.credentials');
         Route::post('apps/{app:slug}/toggle', [DeveloperAppController::class, 'toggleActive'])
             ->name('apps.toggle');
         Route::delete('apps/{app:slug}', [DeveloperAppController::class, 'destroy'])

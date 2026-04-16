@@ -54,14 +54,15 @@ class GamePolicy
     }
 
     /**
-     * El desarrollador puede editar su juego si no está ya publicado.
-     * Una vez en catálogo, los cambios pasan por soporte para evitar
-     * que enlaces públicos cambien sin control.
+     * El desarrollador puede editar su juego en cualquier estado del
+     * ciclo de moderación. El slug público es inmutable desde la creación
+     * (DeveloperGameController::update() no lo regenera jamás), así que
+     * los enlaces del catálogo no se rompen aunque se edite el name u
+     * otros campos tras publicarse. Borrar sí sigue bloqueado en Published.
      */
     public function update(User $user, Game $game): bool
     {
-        return $this->isSubmitter($user, $game)
-            && $game->status->isEditable();
+        return $this->isSubmitter($user, $game);
     }
 
     /**

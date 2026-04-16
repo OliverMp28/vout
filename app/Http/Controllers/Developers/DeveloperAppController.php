@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Developers;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Developers\IssueDeveloperAppCredentialsRequest;
 use App\Http\Requests\Developers\StoreDeveloperAppRequest;
 use App\Http\Requests\Developers\UpdateDeveloperAppRequest;
 use App\Models\RegisteredApp;
@@ -185,6 +186,47 @@ class DeveloperAppController extends Controller
 
         return to_route('developers.apps.show', $app)
             ->with('created_client_secret', $client->plainSecret);
+    }
+
+    /**
+     * Emite unas credenciales OAuth nuevas para una app cuyo client fue
+     * revocado (ruta típica: tras una suspensión admin que eliminó el
+     * client original). Crea un nuevo `oauth_clients` y lo vincula a la
+     * app. Devuelve el secreto en claro una sola vez vía flash.
+     *
+     * Precondiciones:
+     *   - La app debe ser "con IdP" (`requires_auth = true`).
+     *   - No debe tener client vigente (`oauth_client_id = null`).
+     *   - No debe estar suspendida.
+     */
+    public function issueCredentials(
+        IssueDeveloperAppCredentialsRequest $request,
+        RegisteredApp $app,
+        ClientRepository $clientRepo,
+    ): RedirectResponse {
+        $this->authorize('update', $app);
+
+        abort_if($app->isSuspended(), 403, __('developers.apps.suspended_blocked'));
+        abort_unless($app->requires_auth, 422, __('developers.apps.credentials.not_applicable'));
+        abort_unless($app->oauth_client_id === null, 409, __('developers.apps.credentials.already_issued'));
+
+        $data = $request->validated();
+
+        $plainSecret = DB::transaction(function () use ($app, $data, $clientRepo): string {
+            $client = $clientRepo->createAuthorizationCodeGrantClient(
+                name: $app->name,
+                redirectUris: $data['redirect_uris'],
+                confidential: (bool) $data['confidential'],
+                user: $app->user,
+            );
+
+            $app->update(['oauth_client_id' => $client->id]);
+
+            return (string) $client->plainSecret;
+        });
+
+        return to_route('developers.apps.show', $app)
+            ->with('created_client_secret', $plainSecret);
     }
 
     /**

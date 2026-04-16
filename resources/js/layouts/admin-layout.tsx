@@ -1,5 +1,5 @@
 import { Link } from '@inertiajs/react';
-import { AppWindow, Gamepad2 } from 'lucide-react';
+import { AppWindow, Code2, Gamepad2, Tags } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useCurrentUrl } from '@/hooks/use-current-url';
@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils';
 import admin from '@/routes/admin';
 import type { AppLayoutProps, BreadcrumbItem } from '@/types';
 
-const { apps, games } = admin;
+const { apps, games, categories, developers } = admin;
 
 type AdminLayoutProps = AppLayoutProps & {
     children: ReactNode;
@@ -49,13 +49,27 @@ export default function AdminLayout({ children, breadcrumbs }: AdminLayoutProps)
             icon: Gamepad2,
             match: 'prefix',
         },
+        {
+            key: 'categories',
+            labelKey: 'admin.nav.categories',
+            href: categories.index(),
+            icon: Tags,
+            match: 'prefix',
+        },
+        {
+            key: 'developers',
+            labelKey: 'admin.nav.developers',
+            href: developers.index(),
+            icon: Code2,
+            match: 'prefix',
+        },
     ];
 
     return (
         <PortalLayout breadcrumbs={breadcrumbs as BreadcrumbItem[] | undefined}>
             <nav
                 aria-label={t('admin.nav.aria')}
-                className="mb-8 flex flex-wrap gap-1 rounded-xl border border-border/60 bg-card/40 p-1 backdrop-blur-sm"
+                className="mb-8 flex flex-wrap gap-1 rounded-xl border border-border/60 bg-card/80 p-1"
             >
                 {subnavItems.map((item) => {
                     const Icon = item.icon;

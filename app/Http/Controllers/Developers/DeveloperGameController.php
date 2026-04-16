@@ -120,7 +120,7 @@ class DeveloperGameController extends Controller
         $this->authorize('view', $game);
 
         $game->load([
-            'registeredApp:id,slug,name,allowed_origins,is_active',
+            'registeredApp:id,slug,name,allowed_origins,is_active,suspended_at',
             'categories:id,name,slug',
             'developers:id,name,slug',
         ]);
@@ -261,6 +261,8 @@ class DeveloperGameController extends Controller
                 'id' => $game->registeredApp->id,
                 'name' => $game->registeredApp->name,
                 'slug' => $game->registeredApp->slug,
+                'is_active' => (bool) $game->registeredApp->is_active,
+                'is_suspended' => $game->registeredApp->isSuspended(),
             ] : null,
             'categories' => $game->categories->map(fn (Category $c): array => [
                 'id' => $c->id,
@@ -280,7 +282,7 @@ class DeveloperGameController extends Controller
             'release_date' => $game->release_date?->toDateString(),
             'repo_url' => $game->repo_url,
             'rejection_reason' => $game->rejection_reason,
-            'is_editable' => $game->status->isEditable(),
+            'is_editable' => true,
             'is_deletable' => $game->status !== GameStatus::Published,
             'category_ids' => $game->categories->pluck('id')->values()->all(),
             'developer_ids' => $game->developers->pluck('id')->values()->all(),

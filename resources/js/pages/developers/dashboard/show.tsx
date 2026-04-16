@@ -2,6 +2,7 @@ import { Head, Link, router, useForm } from '@inertiajs/react';
 import {
     AlertTriangle,
     ArrowLeft,
+    KeyRound,
     Key,
     Pause,
     Play,
@@ -20,6 +21,7 @@ import InputError from '@/components/input-error';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
     Dialog,
     DialogContent,
@@ -75,7 +77,10 @@ export default function DevelopersDashboardShow({
             : null;
 
     const hasClient = client !== null;
-    const availableTabs: readonly TabKey[] = hasClient
+    // Apps "con IdP" siempre muestran el tab Credenciales: si el client fue
+    // revocado (tras suspensión), el panel expone el flujo de re-emisión en
+    // lugar de desaparecer y dejar al dev sin forma de recuperarse.
+    const availableTabs: readonly TabKey[] = app.requires_auth
         ? ['overview', 'credentials', 'origins', 'danger']
         : ['overview', 'origins', 'danger'];
 
@@ -180,14 +185,21 @@ export default function DevelopersDashboardShow({
                         <OverviewPanel app={app} />
                     </TabsContent>
 
-                    {hasClient && (
+                    {app.requires_auth && (
                         <TabsContent value="credentials">
-                            <CredentialsPanel
-                                clientId={client.id}
-                                confidential={client.confidential}
-                                appSlug={app.slug}
-                                isSuspended={app.suspended_at !== null}
-                            />
+                            {hasClient ? (
+                                <CredentialsPanel
+                                    clientId={client.id}
+                                    confidential={client.confidential}
+                                    appSlug={app.slug}
+                                    isSuspended={app.suspended_at !== null}
+                                />
+                            ) : (
+                                <IssueCredentialsPanel
+                                    app={app}
+                                    isSuspended={app.suspended_at !== null}
+                                />
+                            )}
                         </TabsContent>
                     )}
 
@@ -396,6 +408,134 @@ function CredentialsPanel({
                     </Dialog>
                 </>
             )}
+        </Panel>
+    );
+}
+
+type IssueCredentialsPanelProps = {
+    app: DevelopersAppShowProps['app'];
+    isSuspended: boolean;
+};
+
+/**
+ * Panel de re-emisión de credenciales para apps con IdP cuyo client fue
+ * revocado (ruta típica: la app fue suspendida por un admin y, al reactivar,
+ * el client OAuth original quedó eliminado). El dev introduce los nuevos
+ * redirect_uris (validados contra los `allowed_origins` actuales de la app)
+ * y elige confidencialidad. El secreto se devuelve una sola vez vía flash.
+ */
+function IssueCredentialsPanel({ app, isSuspended }: IssueCredentialsPanelProps) {
+    const { t } = useTranslation();
+
+    type IssueFormData = {
+        confidential: boolean;
+        redirect_uris: string[];
+    };
+
+    const { data, setData, post, processing, errors, reset } =
+        useForm<IssueFormData>({
+            confidential: true,
+            redirect_uris: [''],
+        });
+
+    const handleSubmit = (event: SubmitEvent<HTMLFormElement>): void => {
+        event.preventDefault();
+        post(appsRoutes.credentials(app.slug).url, {
+            preserveScroll: true,
+            onSuccess: () => reset(),
+        });
+    };
+
+    return (
+        <Panel
+            title={t('developers.dashboard.show.credentials.heading')}
+            description={t(
+                'developers.dashboard.show.credentials.issue.description',
+            )}
+        >
+            <Alert variant="default" className="border-destructive/40">
+                <KeyRound className="size-4 text-destructive" />
+                <AlertTitle>
+                    {t('developers.dashboard.show.credentials.issue.reason_title')}
+                </AlertTitle>
+                <AlertDescription>
+                    {t('developers.dashboard.show.credentials.issue.reason_body')}
+                </AlertDescription>
+            </Alert>
+
+            {isSuspended && (
+                <Alert variant="destructive" className="border-destructive/40">
+                    <ShieldOff className="size-4" />
+                    <AlertTitle>
+                        {t('developers.dashboard.show.credentials.issue.blocked_title')}
+                    </AlertTitle>
+                    <AlertDescription>
+                        {t('developers.dashboard.show.credentials.issue.blocked_body')}
+                    </AlertDescription>
+                </Alert>
+            )}
+
+            <form onSubmit={handleSubmit} className="space-y-6">
+                <DynamicUrlList
+                    id="issue-redirect-uris"
+                    label={t('developers.form.redirect_uris')}
+                    hint={{
+                        label: t('developers.hints.redirect_uris.label'),
+                        body: t('developers.hints.redirect_uris.body'),
+                    }}
+                    description={t(
+                        'developers.dashboard.show.credentials.issue.redirect_hint',
+                        {
+                            origins: app.allowed_origins.join(', '),
+                        },
+                    )}
+                    placeholder="https://mi-app.com/auth/callback"
+                    values={data.redirect_uris}
+                    onChange={(next) => setData('redirect_uris', next)}
+                    errors={errors as Record<string, string>}
+                    fieldName="redirect_uris"
+                    max={5}
+                    disabled={processing || isSuspended}
+                />
+
+                <div className="flex items-start gap-3 rounded-xl border border-border bg-muted/30 p-4">
+                    <Checkbox
+                        id="issue-confidential"
+                        checked={data.confidential}
+                        onCheckedChange={(next) =>
+                            setData('confidential', next === true)
+                        }
+                        disabled={processing || isSuspended}
+                    />
+                    <div className="space-y-1">
+                        <Label
+                            htmlFor="issue-confidential"
+                            className="text-sm font-semibold"
+                        >
+                            {t(
+                                'developers.dashboard.show.credentials.issue.confidential_label',
+                            )}
+                        </Label>
+                        <p className="text-xs text-muted-foreground">
+                            {t(
+                                'developers.dashboard.show.credentials.issue.confidential_body',
+                            )}
+                        </p>
+                        <InputError message={errors.confidential} />
+                    </div>
+                </div>
+
+                <Button
+                    type="submit"
+                    disabled={processing || isSuspended}
+                    className="gap-2"
+                >
+                    <KeyRound className="size-4" aria-hidden />
+                    {processing
+                        ? t('developers.form.submitting')
+                        : t('developers.dashboard.show.credentials.issue.cta')}
+                </Button>
+            </form>
         </Panel>
     );
 }

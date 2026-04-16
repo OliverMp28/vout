@@ -19,7 +19,7 @@ it('niega ver el juego de otro desarrollador', function (): void {
     expect($stranger->can('view', $game))->toBeFalse();
 });
 
-it('permite editar el juego cuando el estado es draft, pending_review o rejected', function (GameStatus $status): void {
+it('permite editar el juego en cualquier estado del ciclo de moderación', function (GameStatus $status): void {
     $dev = User::factory()->create();
     $game = Game::factory()->submittedBy($dev)->state(['status' => $status])->create();
 
@@ -28,13 +28,14 @@ it('permite editar el juego cuando el estado es draft, pending_review o rejected
     GameStatus::Draft,
     GameStatus::PendingReview,
     GameStatus::Rejected,
+    GameStatus::Published,
 ]);
 
-it('bloquea la edición y borrado cuando el juego ya está publicado', function (): void {
+it('bloquea el borrado cuando el juego ya está publicado, pero permite seguir editándolo', function (): void {
     $dev = User::factory()->create();
     $game = Game::factory()->submittedBy($dev)->create(['status' => GameStatus::Published]);
 
-    expect($dev->can('update', $game))->toBeFalse()
+    expect($dev->can('update', $game))->toBeTrue()
         ->and($dev->can('delete', $game))->toBeFalse();
 });
 

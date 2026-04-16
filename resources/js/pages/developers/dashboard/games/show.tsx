@@ -1,5 +1,11 @@
 import { Head, Link, useForm } from '@inertiajs/react';
-import { AlertTriangle, ArrowLeft, Trash2 } from 'lucide-react';
+import {
+    AlertTriangle,
+    ArrowLeft,
+    CheckCircle2,
+    ShieldOff,
+    Trash2,
+} from 'lucide-react';
 import { useState } from 'react';
 import type { ReactNode, SubmitEvent } from 'react';
 import { GameForm } from '@/components/developers/games/game-form';
@@ -101,6 +107,54 @@ export default function DevelopersGamesShow({
                         </AlertDescription>
                     </Alert>
                 )}
+
+                {game.status === 'published' && (
+                    <Alert
+                        variant="default"
+                        className="border-emerald-500/40"
+                    >
+                        <CheckCircle2 className="size-4 text-emerald-600 dark:text-emerald-400" />
+                        <AlertTitle>
+                            {t('developers.games.show.published.title')}
+                        </AlertTitle>
+                        <AlertDescription>
+                            {t('developers.games.show.published.body')}
+                        </AlertDescription>
+                    </Alert>
+                )}
+
+                {game.registered_app?.is_suspended && (
+                    <Alert variant="destructive" className="border-destructive/40">
+                        <ShieldOff className="size-4" />
+                        <AlertTitle>
+                            {t('developers.games.show.app_suspended.title')}
+                        </AlertTitle>
+                        <AlertDescription>
+                            {t('developers.games.show.app_suspended.body', {
+                                app: game.registered_app.name,
+                            })}
+                        </AlertDescription>
+                    </Alert>
+                )}
+
+                {game.registered_app &&
+                    !game.registered_app.is_suspended &&
+                    game.registered_app.is_active === false && (
+                        <Alert
+                            variant="default"
+                            className="border-amber-500/40"
+                        >
+                            <AlertTriangle className="size-4 text-amber-600 dark:text-amber-400" />
+                            <AlertTitle>
+                                {t('developers.games.show.app_paused.title')}
+                            </AlertTitle>
+                            <AlertDescription>
+                                {t('developers.games.show.app_paused.body', {
+                                    app: game.registered_app.name,
+                                })}
+                            </AlertDescription>
+                        </Alert>
+                    )}
 
                 <GameForm
                     mode="edit"

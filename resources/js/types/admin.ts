@@ -129,3 +129,57 @@ export type AdminGameFilters = {
     featured?: string;
     search?: string;
 };
+
+// ── Admin: Categories ─────────────────────────────────────────────────
+
+export type AdminCategoryListItem = {
+    id: number;
+    name: string;
+    slug: string;
+    games_count: number;
+    created_at: string;
+    updated_at: string;
+};
+
+export type AdminCategoryDetail = {
+    id: number;
+    name: string;
+    slug: string;
+    games_count: number;
+    created_at: string | null;
+    updated_at: string | null;
+};
+
+export type AdminCategoryFilters = {
+    search?: string;
+};
+
+// ── Admin: Developers ─────────────────────────────────────────────────
+
+export type AdminDeveloperListItem = {
+    id: number;
+    name: string;
+    slug: string;
+    website_url: string | null;
+    bio: string | null;
+    logo_url: string | null;
+    games_count: number;
+    created_at: string;
+    updated_at: string;
+};
+
+export type AdminDeveloperDetail = {
+    id: number;
+    name: string;
+    slug: string;
+    website_url: string | null;
+    bio: string | null;
+    logo_url: string | null;
+    games_count: number;
+    created_at: string | null;
+    updated_at: string | null;
+};
+
+export type AdminDeveloperFilters = {
+    search?: string;
+};
