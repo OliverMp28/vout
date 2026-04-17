@@ -8,6 +8,9 @@ declare module '@inertiajs/core' {
             sidebarOpen: boolean;
             locale: string;
             translations: Record<string, string>;
+            admin: {
+                pendingGamesCount: number;
+            } | null;
             [key: string]: unknown;
         };
     }

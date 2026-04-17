@@ -2,8 +2,10 @@
 
 use App\Http\Controllers\Admin\AdminAppController;
 use App\Http\Controllers\Admin\AdminCategoryController;
+use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\AdminDeveloperController;
 use App\Http\Controllers\Admin\AdminGameController;
+use App\Http\Controllers\Admin\AuditLogController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -16,7 +18,15 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::redirect('/', '/admin/games');
+Route::redirect('/', '/admin/dashboard');
+
+// ── Dashboard ───────────────────────────────────────────────────────────
+Route::get('dashboard', AdminDashboardController::class)
+    ->name('dashboard');
+
+// ── Audit Log ──────────────────────────────────────────────────────────
+Route::get('audit', [AuditLogController::class, 'index'])
+    ->name('audit.index');
 
 // ── Apps ────────────────────────────────────────────────────────────────
 Route::get('apps', [AdminAppController::class, 'index'])

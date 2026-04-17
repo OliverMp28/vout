@@ -2,6 +2,8 @@
 
 namespace App\Http\Middleware;
 
+use App\Enums\GameStatus;
+use App\Models\Game;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -55,10 +57,35 @@ class HandleInertiaRequests extends Middleware
                 ] : null,
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
+            'admin' => $this->adminContext($request),
             'locale' => app()->getLocale(),
             'translations' => file_exists(base_path('lang/'.app()->getLocale().'.json'))
                 ? json_decode(file_get_contents(base_path('lang/'.app()->getLocale().'.json')), true)
                 : [],
+        ];
+    }
+
+    /**
+     * Contexto compartido sólo para páginas del panel admin — expone un
+     * contador ligero para la insignia "pendientes de revisión" del
+     * sub-nav. Se calcula únicamente cuando el usuario es admin y la
+     * ruta pertenece al grupo `admin.*`, para no pagar la query en el
+     * resto del portal.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function adminContext(Request $request): ?array
+    {
+        $user = $request->user();
+
+        if (! $user?->is_admin || ! $request->routeIs('admin.*')) {
+            return null;
+        }
+
+        return [
+            'pendingGamesCount' => Game::query()
+                ->where('status', GameStatus::PendingReview->value)
+                ->count(),
         ];
     }
 }

@@ -208,3 +208,80 @@ export type AdminDeveloperFilters = {
     search?: string;
     claimed?: 'all' | 'claimed' | 'manual';
 };
+
+// ── Admin: Dashboard ──────────────────────────────────────────────────
+
+export type AdminMetricKey =
+    | 'gamesPending'
+    | 'gamesPublished'
+    | 'appsActive'
+    | 'appsSuspended'
+    | 'developersClaimed'
+    | 'developersManual'
+    | 'categories'
+    | 'admins';
+
+export type AdminMetric = {
+    value: number;
+    trend: string | null;
+};
+
+export type AdminMetrics = Record<AdminMetricKey, AdminMetric>;
+
+export type AdminActor = {
+    id: number;
+    name: string;
+    email: string;
+};
+
+/**
+ * Entrada ligera del feed lateral del dashboard — sólo campos de
+ * cabecera. El detalle completo con `changes` y `remark` vive en la
+ * página `/admin/audit`.
+ */
+export type AdminRecentActivityItem = {
+    id: number;
+    action: string;
+    auditable_type: string | null;
+    auditable_id: number | null;
+    created_at: string | null;
+    admin: AdminActor | null;
+};
+
+// ── Admin: Audit Log ──────────────────────────────────────────────────
+
+export type AdminAuditAuditable = {
+    type: string | null;
+    id: number | null;
+    label: string | null;
+};
+
+export type AdminAuditLogEntry = {
+    id: number;
+    action: string;
+    changes: Record<string, unknown> | null;
+    remark: string | null;
+    created_at: string | null;
+    admin: AdminActor | null;
+    auditable: AdminAuditAuditable;
+};
+
+export type AdminAuditLogs = {
+    data: AdminAuditLogEntry[];
+    next_cursor: string | null;
+    prev_cursor: string | null;
+};
+
+export type AdminAuditFilters = {
+    action: string | null;
+    admin_id: number | null;
+    auditable_type: string | null;
+    from: string | null;
+    to: string | null;
+};
+
+export type AdminAuditAdminOption = {
+    id: number;
+    name: string;
+    email: string;
+};
