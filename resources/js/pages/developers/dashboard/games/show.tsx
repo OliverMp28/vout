@@ -47,6 +47,7 @@ export default function DevelopersGamesShow({
     apps,
     categories,
     developers: developerOptions,
+    own_profile,
 }: DevelopersGameShowProps) {
     const { t } = useTranslation();
 
@@ -164,6 +165,7 @@ export default function DevelopersGamesShow({
                     apps={apps}
                     categories={categories}
                     developers={developerOptions}
+                    ownProfile={own_profile}
                     onChange={(key, value) =>
                         setData((prev) => ({ ...prev, [key]: value }))
                     }

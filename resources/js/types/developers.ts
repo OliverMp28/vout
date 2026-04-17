@@ -156,10 +156,21 @@ export type DevelopersGameIndexProps = {
     readonly games: readonly DeveloperGameCardResource[];
 };
 
+/**
+ * Resumen mínimo de la ficha propia del dev autenticado.
+ * El formulario lo usa para avisar del auto-adjunto al enviar/editar.
+ */
+export type OwnDeveloperProfileSummary = {
+    readonly id: number;
+    readonly name: string;
+    readonly slug: string;
+};
+
 export type DevelopersGameCreateProps = {
     readonly apps: readonly DeveloperAppOption[];
     readonly categories: readonly CategoryOption[];
     readonly developers: readonly DeveloperOption[];
+    readonly own_profile: OwnDeveloperProfileSummary | null;
 };
 
 export type DevelopersGameShowProps = {
@@ -167,4 +178,32 @@ export type DevelopersGameShowProps = {
     readonly apps: readonly DeveloperAppOption[];
     readonly categories: readonly CategoryOption[];
     readonly developers: readonly DeveloperOption[];
+    readonly own_profile: OwnDeveloperProfileSummary | null;
+};
+
+/**
+ * Ficha pública del dev (Fase 4.2, S4.5). Existe sólo cuando el user ya ha
+ * reclamado su entrada en `developers` — si no, la prop viene como `null`.
+ */
+export type DeveloperProfileResource = {
+    readonly id: number;
+    readonly name: string;
+    readonly slug: string;
+    readonly website_url: string | null;
+    readonly bio: string | null;
+    readonly logo_url: string | null;
+    readonly games_count: number;
+    readonly created_at: string | null;
+    readonly updated_at: string | null;
+};
+
+export type DevelopersProfileEditProps = {
+    readonly profile: DeveloperProfileResource | null;
+};
+
+export type DeveloperProfileFormData = {
+    name: string;
+    website_url: string;
+    bio: string;
+    logo_url: string;
 };

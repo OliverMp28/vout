@@ -1,5 +1,5 @@
 import { Link } from '@inertiajs/react';
-import { AlertCircle, Plus } from 'lucide-react';
+import { AlertCircle, BadgeCheck, Plus, UserRoundPlus } from 'lucide-react';
 import type { ReactNode, SubmitEvent } from 'react';
 import { FlowDiagram } from '@/components/developers/flow-diagram';
 import { InfoHint } from '@/components/developers/info-hint';
@@ -20,9 +20,10 @@ import type {
     DeveloperAppOption,
     DeveloperOption,
     GameFormData,
+    OwnDeveloperProfileSummary,
 } from '@/types';
 
-const { apps: appsRoutes } = developers;
+const { apps: appsRoutes, profile: profileRoutes } = developers;
 
 const MAX_CATEGORIES = 5;
 const MAX_DEVELOPERS = 10;
@@ -37,6 +38,7 @@ type GameFormProps = {
     apps: readonly DeveloperAppOption[];
     categories: readonly CategoryOption[];
     developers: readonly DeveloperOption[];
+    ownProfile: OwnDeveloperProfileSummary | null;
     onChange: <K extends keyof GameFormData>(
         key: K,
         value: GameFormData[K],
@@ -63,6 +65,7 @@ export function GameForm({
     apps,
     categories,
     developers: developerOptions,
+    ownProfile,
     onChange,
     onSubmit,
     onReset,
@@ -406,6 +409,44 @@ export function GameForm({
                         disabled={isLocked}
                         error={errors.developer_ids}
                     />
+
+                    {ownProfile ? (
+                        <div className="flex items-start gap-2 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 text-xs">
+                            <BadgeCheck
+                                className="mt-0.5 size-3.5 shrink-0 text-primary"
+                                aria-hidden
+                            />
+                            <p className="text-muted-foreground">
+                                <span className="font-medium text-foreground">
+                                    {ownProfile.name}
+                                </span>{' '}
+                                {t(
+                                    'developers.games.form.developers.own_profile_notice',
+                                )}
+                            </p>
+                        </div>
+                    ) : (
+                        <div className="flex items-start gap-2 rounded-lg border border-dashed border-border bg-muted/30 px-3 py-2 text-xs">
+                            <UserRoundPlus
+                                className="mt-0.5 size-3.5 shrink-0 text-muted-foreground"
+                                aria-hidden
+                            />
+                            <p className="flex-1 text-muted-foreground">
+                                {t(
+                                    'developers.games.form.developers.claim_hint',
+                                )}{' '}
+                                <Link
+                                    href={profileRoutes.edit().url}
+                                    prefetch
+                                    className="font-medium text-primary underline-offset-2 hover:underline"
+                                >
+                                    {t(
+                                        'developers.games.form.developers.claim_cta',
+                                    )}
+                                </Link>
+                            </p>
+                        </div>
+                    )}
                 </Section>
 
                 <div className="flex flex-wrap items-center gap-3">

@@ -137,6 +137,15 @@ class User extends Authenticatable implements OAuthenticatable
         return $this->hasMany(Game::class, 'submitted_by_user_id');
     }
 
+    /**
+     * Ficha pública de desarrollador mantenida por el usuario (Fase 4.2 S4.5).
+     * Opcional — un user puede no haber reclamado ninguna ficha aún.
+     */
+    public function developerProfile(): HasOne
+    {
+        return $this->hasOne(Developer::class);
+    }
+
     // ─── Accessors ───────────────────────────────────────────
 
     /**

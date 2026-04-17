@@ -69,7 +69,8 @@ class DeveloperGameController extends Controller
         return Inertia::render('developers/dashboard/games/create', [
             'apps' => $this->availableApps($request),
             'categories' => $this->categoryOptions(),
-            'developers' => $this->developerOptions(),
+            'developers' => $this->developerOptions($request),
+            'own_profile' => $this->ownProfileSummary($request),
         ]);
     }
 
@@ -101,8 +102,19 @@ class DeveloperGameController extends Controller
 
             $game->categories()->sync($data['category_ids']);
 
-            if (! empty($data['developer_ids'] ?? [])) {
-                $game->developers()->sync($data['developer_ids']);
+            $developerIds = $data['developer_ids'] ?? [];
+
+            // Auto-adjunto: si el dev ya reclamó su ficha pública, se añade
+            // silenciosamente al juego — así el catálogo público lo acredita
+            // aunque el dev no marcase su propio chip en el formulario.
+            // (Fase 4.2, S4.5 — Developer Profile self-registration.)
+            $ownProfileId = $user->developerProfile?->id;
+            if ($ownProfileId !== null && ! in_array($ownProfileId, $developerIds, true)) {
+                $developerIds[] = $ownProfileId;
+            }
+
+            if (! empty($developerIds)) {
+                $game->developers()->sync($developerIds);
             }
 
             return $game;
@@ -126,10 +138,11 @@ class DeveloperGameController extends Controller
         ]);
 
         return Inertia::render('developers/dashboard/games/show', [
-            'game' => $this->serializeGameDetail($game),
+            'game' => $this->serializeGameDetail($game, $request->user()->developerProfile?->id),
             'apps' => $this->availableApps($request, includeId: $game->registered_app_id),
             'categories' => $this->categoryOptions(),
-            'developers' => $this->developerOptions(),
+            'developers' => $this->developerOptions($request),
+            'own_profile' => $this->ownProfileSummary($request),
         ]);
     }
 
@@ -142,8 +155,9 @@ class DeveloperGameController extends Controller
         $this->authorize('update', $game);
 
         $data = $request->validated();
+        $user = $request->user();
 
-        DB::transaction(function () use ($game, $data): void {
+        DB::transaction(function () use ($game, $data, $user): void {
             $game->fill(collect($data)->only([
                 'name', 'description', 'embed_url', 'cover_image',
                 'release_date', 'repo_url', 'registered_app_id',
@@ -159,7 +173,17 @@ class DeveloperGameController extends Controller
             }
 
             if (array_key_exists('developer_ids', $data)) {
-                $game->developers()->sync($data['developer_ids'] ?? []);
+                $developerIds = $data['developer_ids'] ?? [];
+
+                // Mantener siempre vinculada la ficha propia del dev si existe:
+                // el formulario la oculta del picker, así que si no la re-inyectamos
+                // aquí un simple "guardar" la desvincularía silenciosamente.
+                $ownProfileId = $user->developerProfile?->id;
+                if ($ownProfileId !== null && ! in_array($ownProfileId, $developerIds, true)) {
+                    $developerIds[] = $ownProfileId;
+                }
+
+                $game->developers()->sync($developerIds);
             }
         });
 
@@ -226,11 +250,19 @@ class DeveloperGameController extends Controller
     }
 
     /**
+     * Lista de developers seleccionables en el picker del formulario.
+     * Se excluye la ficha propia del user autenticado: ya se vincula
+     * automáticamente en store/update y mostrarla confundiría al dev
+     * (aparecería pre-marcada "por sistema" sin poder desmarcarla).
+     *
      * @return list<array{id:int,name:string,slug:string}>
      */
-    private function developerOptions(): array
+    private function developerOptions(Request $request): array
     {
+        $ownProfileId = $request->user()->developerProfile?->id;
+
         return Developer::query()
+            ->when($ownProfileId !== null, fn ($query) => $query->where('id', '!=', $ownProfileId))
             ->orderBy('name')
             ->get(['id', 'name', 'slug'])
             ->map(fn (Developer $developer): array => [
@@ -239,6 +271,23 @@ class DeveloperGameController extends Controller
                 'slug' => $developer->slug,
             ])
             ->all();
+    }
+
+    /**
+     * Resumen de la ficha propia del user para que el UI muestre un aviso
+     * "tu ficha se adjuntará automáticamente". `null` si aún no la reclamó.
+     *
+     * @return array{id:int,name:string,slug:string}|null
+     */
+    private function ownProfileSummary(Request $request): ?array
+    {
+        $profile = $request->user()->developerProfile;
+
+        return $profile ? [
+            'id' => $profile->id,
+            'name' => $profile->name,
+            'slug' => $profile->slug,
+        ] : null;
     }
 
     /**
@@ -275,8 +324,12 @@ class DeveloperGameController extends Controller
     /**
      * @return array<string, mixed>
      */
-    private function serializeGameDetail(Game $game): array
+    private function serializeGameDetail(Game $game, ?int $ownProfileId = null): array
     {
+        // Se excluye la ficha propia del dev autenticado del conjunto
+        // de `developer_ids` expuesto al formulario — el picker la oculta,
+        // así que no debe aparecer pre-marcada. El backend la re-adjunta
+        // en store/update para que el catálogo público siga acreditándola.
         return array_merge($this->serializeGameCard($game), [
             'description' => $game->description,
             'release_date' => $game->release_date?->toDateString(),
@@ -285,7 +338,11 @@ class DeveloperGameController extends Controller
             'is_editable' => true,
             'is_deletable' => $game->status !== GameStatus::Published,
             'category_ids' => $game->categories->pluck('id')->values()->all(),
-            'developer_ids' => $game->developers->pluck('id')->values()->all(),
+            'developer_ids' => $game->developers
+                ->pluck('id')
+                ->filter(fn (int $id): bool => $id !== $ownProfileId)
+                ->values()
+                ->all(),
             'registered_app_id' => $game->registered_app_id,
         ]);
     }

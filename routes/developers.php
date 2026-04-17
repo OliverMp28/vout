@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Developers\DeveloperAppController;
 use App\Http\Controllers\Developers\DeveloperGameController;
+use App\Http\Controllers\Developers\DeveloperProfileController;
 use App\Http\Controllers\Developers\DevelopersLandingController;
 use Illuminate\Support\Facades\Route;
 
@@ -65,4 +66,12 @@ Route::middleware(['auth', 'verified'])
             ->name('games.update');
         Route::delete('dashboard/games/{game:slug}', [DeveloperGameController::class, 'destroy'])
             ->name('games.destroy');
+
+        // ── Profile: ficha pública del dev (Fase 4.2, S4.5) ─────────────
+        Route::get('dashboard/profile', [DeveloperProfileController::class, 'edit'])
+            ->name('profile.edit');
+        Route::post('dashboard/profile', [DeveloperProfileController::class, 'store'])
+            ->name('profile.store');
+        Route::put('dashboard/profile', [DeveloperProfileController::class, 'update'])
+            ->name('profile.update');
     });

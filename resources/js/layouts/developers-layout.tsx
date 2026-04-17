@@ -1,5 +1,5 @@
 import { Link } from '@inertiajs/react';
-import { BookOpen, Gamepad2, LayoutGrid, Sparkles } from 'lucide-react';
+import { BookOpen, Gamepad2, LayoutGrid, Sparkles, UserRound } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useCurrentUrl } from '@/hooks/use-current-url';
 import { useTranslation } from '@/hooks/use-translation';
@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils';
 import developers from '@/routes/developers';
 import type { AppLayoutProps, BreadcrumbItem } from '@/types';
 
-const { dashboard, docs, games, landing } = developers;
+const { dashboard, docs, games, landing, profile } = developers;
 
 type DevelopersLayoutProps = AppLayoutProps & {
     /**
@@ -20,7 +20,7 @@ type DevelopersLayoutProps = AppLayoutProps & {
 };
 
 type SubnavItem = {
-    key: 'overview' | 'games' | 'docs' | 'landing';
+    key: 'overview' | 'games' | 'profile' | 'docs' | 'landing';
     labelKey: string;
     href: ReturnType<typeof dashboard> | ReturnType<typeof landing>;
     icon: typeof LayoutGrid;
@@ -61,6 +61,11 @@ export default function DevelopersLayout({
     // pero sin esta excepción entraría en conflicto con "Panel" al compartir
     // prefijo. Resolvemos el caso evaluando este flag antes de `overview`.
     const isInGamesFlow = currentUrl.startsWith('/developers/dashboard/games');
+    // Perfil vive en `/developers/dashboard/profile`. Mismo conflicto de
+    // prefijo que `games`: si no lo evaluamos antes, "Panel" se enciende.
+    const isInProfileFlow = currentUrl.startsWith(
+        '/developers/dashboard/profile',
+    );
 
     const subnavItems: SubnavItem[] = [
         {
@@ -75,6 +80,13 @@ export default function DevelopersLayout({
             labelKey: 'developers.nav.games',
             href: games.index(),
             icon: Gamepad2,
+            match: 'prefix',
+        },
+        {
+            key: 'profile',
+            labelKey: 'developers.nav.profile',
+            href: profile.edit(),
+            icon: UserRound,
             match: 'prefix',
         },
         {
@@ -107,14 +119,19 @@ export default function DevelopersLayout({
                                 ? isCurrentUrl(item.href)
                                 : isCurrentOrParentUrl(item.href);
                         const active =
-                            // Juegos gana prioridad sobre "Panel" cuando la URL
-                            // empieza por `/developers/dashboard/games` porque
-                            // ambos comparten prefijo `/developers/dashboard`.
+                            // Juegos y Perfil ganan prioridad sobre "Panel"
+                            // cuando la URL empieza por `/developers/dashboard/{games|profile}`
+                            // porque todos comparten prefijo `/developers/dashboard`.
                             item.key === 'overview'
-                                ? (baseActive && !isInGamesFlow) || isInAppsFlow
+                                ? (baseActive &&
+                                      !isInGamesFlow &&
+                                      !isInProfileFlow) ||
+                                  isInAppsFlow
                                 : item.key === 'games'
                                   ? isInGamesFlow
-                                  : baseActive;
+                                  : item.key === 'profile'
+                                    ? isInProfileFlow
+                                    : baseActive;
 
                         return (
                             <Link

@@ -156,6 +156,17 @@ export type AdminCategoryFilters = {
 
 // ── Admin: Developers ─────────────────────────────────────────────────
 
+/**
+ * Titular reclamante de una ficha (Fase 4.2, S4.5). `null` en fichas
+ * manuales curadas por el admin (estudios históricos, ficciones).
+ */
+export type AdminDeveloperOwner = {
+    id: number;
+    name: string;
+    email: string;
+    username: string;
+};
+
 export type AdminDeveloperListItem = {
     id: number;
     name: string;
@@ -166,6 +177,7 @@ export type AdminDeveloperListItem = {
     games_count: number;
     created_at: string;
     updated_at: string;
+    owner: AdminDeveloperOwner | null;
 };
 
 export type AdminDeveloperDetail = {
@@ -178,8 +190,21 @@ export type AdminDeveloperDetail = {
     games_count: number;
     created_at: string | null;
     updated_at: string | null;
+    owner: AdminDeveloperOwner | null;
+};
+
+/**
+ * Opción del combo de reasignación — usuarios del portal que aún no han
+ * reclamado ninguna ficha (restricción unique en `developers.user_id`).
+ */
+export type AdminDeveloperReassignUserOption = {
+    id: number;
+    name: string;
+    email: string;
+    username: string;
 };
 
 export type AdminDeveloperFilters = {
     search?: string;
+    claimed?: 'all' | 'claimed' | 'manual';
 };

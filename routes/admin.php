@@ -73,5 +73,7 @@ Route::get('developers/{developer:slug}/edit', [AdminDeveloperController::class,
     ->name('developers.edit');
 Route::put('developers/{developer:slug}', [AdminDeveloperController::class, 'update'])
     ->name('developers.update');
+Route::post('developers/{developer:slug}/reassign', [AdminDeveloperController::class, 'reassign'])
+    ->name('developers.reassign');
 Route::delete('developers/{developer:slug}', [AdminDeveloperController::class, 'destroy'])
     ->name('developers.destroy');

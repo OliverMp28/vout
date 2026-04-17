@@ -36,6 +36,7 @@ export default function DevelopersGamesCreate({
     apps,
     categories,
     developers: developerOptions,
+    own_profile,
 }: DevelopersGameCreateProps) {
     const { t } = useTranslation();
 
@@ -82,6 +83,7 @@ export default function DevelopersGamesCreate({
                     apps={apps}
                     categories={categories}
                     developers={developerOptions}
+                    ownProfile={own_profile}
                     onChange={(key, value) =>
                         setData((prev) => ({ ...prev, [key]: value }))
                     }

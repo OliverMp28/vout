@@ -1,9 +1,21 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { Code2, ExternalLink, Plus, Search } from 'lucide-react';
+import {
+    BadgeCheck,
+    Code2,
+    ExternalLink,
+    Plus,
+    Search,
+    UserRound,
+} from 'lucide-react';
 import type { ReactNode } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import {
+    Tabs,
+    TabsList,
+    TabsTrigger,
+} from '@/components/ui/tabs';
 import { useTranslation } from '@/hooks/use-translation';
 import AdminLayout from '@/layouts/admin-layout';
 import admin from '@/routes/admin';
@@ -31,13 +43,23 @@ type Props = {
 export default function AdminDevelopersIndex({ developers, filters }: Props) {
     const { t } = useTranslation();
 
-    const handleSearch = (value: string): void => {
+    const pushFilters = (next: Partial<AdminDeveloperFilters>): void => {
         router.get(
             devRoutes.index().url,
-            { ...filters, search: value || undefined },
+            {
+                search: filters.search || undefined,
+                claimed: filters.claimed || undefined,
+                ...next,
+            },
             { preserveState: true, replace: true },
         );
     };
+
+    const handleSearch = (value: string): void => {
+        pushFilters({ search: value || undefined });
+    };
+
+    const activeClaimed = filters.claimed ?? 'all';
 
     return (
         <>
@@ -61,17 +83,43 @@ export default function AdminDevelopersIndex({ developers, filters }: Props) {
                     </Button>
                 </header>
 
-                <div className="relative">
-                    <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                        type="search"
-                        placeholder={t(
-                            'admin.developers.index.search_placeholder',
-                        )}
-                        defaultValue={filters.search ?? ''}
-                        onChange={(e) => handleSearch(e.target.value)}
-                        className="pl-9"
-                    />
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="relative flex-1 sm:max-w-sm">
+                        <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+                        <Input
+                            type="search"
+                            placeholder={t(
+                                'admin.developers.index.search_placeholder',
+                            )}
+                            defaultValue={filters.search ?? ''}
+                            onChange={(e) => handleSearch(e.target.value)}
+                            className="pl-9"
+                        />
+                    </div>
+
+                    <Tabs
+                        value={activeClaimed}
+                        onValueChange={(value) =>
+                            pushFilters({
+                                claimed:
+                                    value === 'all'
+                                        ? undefined
+                                        : (value as 'claimed' | 'manual'),
+                            })
+                        }
+                    >
+                        <TabsList>
+                            <TabsTrigger value="all">
+                                {t('admin.developers.filters.all')}
+                            </TabsTrigger>
+                            <TabsTrigger value="claimed">
+                                {t('admin.developers.filters.claimed')}
+                            </TabsTrigger>
+                            <TabsTrigger value="manual">
+                                {t('admin.developers.filters.manual')}
+                            </TabsTrigger>
+                        </TabsList>
+                    </Tabs>
                 </div>
 
                 {developers.data.length === 0 ? (
@@ -89,8 +137,8 @@ export default function AdminDevelopersIndex({ developers, filters }: Props) {
                                     <th className="px-4 py-3">
                                         {t('admin.developers.table.name')}
                                     </th>
-                                    <th className="hidden px-4 py-3 md:table-cell">
-                                        {t('admin.developers.table.slug')}
+                                    <th className="px-4 py-3">
+                                        {t('admin.developers.table.ownership')}
                                     </th>
                                     <th className="hidden px-4 py-3 lg:table-cell">
                                         {t('admin.developers.table.website')}
@@ -107,13 +155,52 @@ export default function AdminDevelopersIndex({ developers, filters }: Props) {
                                         key={dev.id}
                                         className="transition-colors hover:bg-muted/30"
                                     >
-                                        <td className="px-4 py-3 font-medium">
-                                            {dev.name}
+                                        <td className="px-4 py-3">
+                                            <div className="flex flex-col gap-0.5">
+                                                <span className="font-medium">
+                                                    {dev.name}
+                                                </span>
+                                                <code className="font-mono text-[10px] text-muted-foreground">
+                                                    {dev.slug}
+                                                </code>
+                                            </div>
                                         </td>
-                                        <td className="hidden px-4 py-3 md:table-cell">
-                                            <code className="font-mono text-xs text-muted-foreground">
-                                                {dev.slug}
-                                            </code>
+                                        <td className="px-4 py-3">
+                                            {dev.owner ? (
+                                                <div className="flex flex-col gap-1">
+                                                    <Badge
+                                                        variant="default"
+                                                        className="w-fit gap-1 text-[10px]"
+                                                    >
+                                                        <BadgeCheck
+                                                            className="size-3"
+                                                            aria-hidden
+                                                        />
+                                                        {t(
+                                                            'admin.developers.badges.claimed',
+                                                        )}
+                                                    </Badge>
+                                                    <span className="truncate text-xs text-muted-foreground">
+                                                        {dev.owner.name}{' '}
+                                                        <span className="font-mono text-[10px]">
+                                                            ({dev.owner.email})
+                                                        </span>
+                                                    </span>
+                                                </div>
+                                            ) : (
+                                                <Badge
+                                                    variant="secondary"
+                                                    className="w-fit gap-1 text-[10px]"
+                                                >
+                                                    <UserRound
+                                                        className="size-3"
+                                                        aria-hidden
+                                                    />
+                                                    {t(
+                                                        'admin.developers.badges.manual',
+                                                    )}
+                                                </Badge>
+                                            )}
                                         </td>
                                         <td className="hidden px-4 py-3 lg:table-cell">
                                             {dev.website_url ? (
