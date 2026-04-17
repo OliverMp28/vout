@@ -136,8 +136,15 @@ export default function AdminDevelopersEdit({
                                     'admin.developers.form.name_placeholder',
                                 )}
                                 disabled={saving}
+                                aria-invalid={!!errors.name}
+                                aria-describedby={
+                                    errors.name ? 'name-error' : undefined
+                                }
                             />
-                            <InputError message={errors.name} />
+                            <InputError
+                                id="name-error"
+                                message={errors.name}
+                            />
                         </div>
 
                         <div className="space-y-2">
@@ -155,8 +162,17 @@ export default function AdminDevelopersEdit({
                                     'admin.developers.form.website_url_placeholder',
                                 )}
                                 disabled={saving}
+                                aria-invalid={!!errors.website_url}
+                                aria-describedby={
+                                    errors.website_url
+                                        ? 'website-url-error'
+                                        : undefined
+                                }
                             />
-                            <InputError message={errors.website_url} />
+                            <InputError
+                                id="website-url-error"
+                                message={errors.website_url}
+                            />
                         </div>
 
                         <div className="space-y-2">
@@ -174,8 +190,15 @@ export default function AdminDevelopersEdit({
                                 )}
                                 rows={3}
                                 disabled={saving}
+                                aria-invalid={!!errors.bio}
+                                aria-describedby={
+                                    errors.bio ? 'bio-error' : undefined
+                                }
                             />
-                            <InputError message={errors.bio} />
+                            <InputError
+                                id="bio-error"
+                                message={errors.bio}
+                            />
                         </div>
 
                         <div className="space-y-2">
@@ -193,8 +216,17 @@ export default function AdminDevelopersEdit({
                                     'admin.developers.form.logo_url_placeholder',
                                 )}
                                 disabled={saving}
+                                aria-invalid={!!errors.logo_url}
+                                aria-describedby={
+                                    errors.logo_url
+                                        ? 'logo-url-error'
+                                        : undefined
+                                }
                             />
-                            <InputError message={errors.logo_url} />
+                            <InputError
+                                id="logo-url-error"
+                                message={errors.logo_url}
+                            />
                         </div>
 
                         <Button type="submit" disabled={saving}>

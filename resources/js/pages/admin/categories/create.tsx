@@ -64,8 +64,12 @@ export default function AdminCategoriesCreate() {
                             )}
                             disabled={processing}
                             autoFocus
+                            aria-invalid={!!errors.name}
+                            aria-describedby={
+                                errors.name ? 'name-error' : undefined
+                            }
                         />
-                        <InputError message={errors.name} />
+                        <InputError id="name-error" message={errors.name} />
                     </div>
 
                     <Button type="submit" disabled={processing}>

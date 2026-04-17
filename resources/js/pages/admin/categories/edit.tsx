@@ -89,8 +89,15 @@ export default function AdminCategoriesEdit({ category }: Props) {
                                     'admin.categories.form.name_placeholder',
                                 )}
                                 disabled={saving}
+                                aria-invalid={!!errors.name}
+                                aria-describedby={
+                                    errors.name ? 'name-error' : undefined
+                                }
                             />
-                            <InputError message={errors.name} />
+                            <InputError
+                                id="name-error"
+                                message={errors.name}
+                            />
                         </div>
 
                         <Button type="submit" disabled={saving}>
