@@ -56,13 +56,19 @@ export default function CatalogIndex({
 
             <div className="space-y-6">
                 {/* Header */}
-                <div>
-                    <h1 className="text-2xl font-semibold">
-                        {t('catalog.title')}
-                    </h1>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                        {t('catalog.description')}
-                    </p>
+                <div className="flex items-start gap-3">
+                    <span
+                        className="mt-1.5 inline-block h-8 w-1 rounded-full bg-linear-to-b from-primary to-primary/30"
+                        aria-hidden="true"
+                    />
+                    <div>
+                        <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">
+                            {t('catalog.title')}
+                        </h1>
+                        <p className="mt-1 text-sm text-muted-foreground">
+                            {t('catalog.description')}
+                        </p>
+                    </div>
                 </div>
 
                 {/* Filters */}

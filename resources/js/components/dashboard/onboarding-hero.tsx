@@ -131,7 +131,7 @@ function OnboardingStepCard({ step, index }: OnboardingStepCardProps) {
     return (
         <li
             className={cn(
-                'group relative flex flex-col gap-3 rounded-xl border bg-card/80 p-4 backdrop-blur-sm transition-all duration-200',
+                'group relative flex flex-col gap-3 rounded-xl border bg-card p-4 transition-all duration-200',
                 step.done
                     ? 'border-primary/30'
                     : 'hover:border-primary/40 hover:shadow-md',

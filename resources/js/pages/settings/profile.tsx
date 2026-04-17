@@ -39,7 +39,7 @@ export default function Profile({
 
             <SettingsLayout>
                 <div className="space-y-6">
-                    <div className="glass-card-light rounded-xl p-6 md:p-8">
+                    <div className="rounded-xl border border-border/60 bg-card p-6 shadow-sm md:p-8">
                         <Heading
                             variant="small"
                             title={t('profile.info.title')}
@@ -216,7 +216,7 @@ export default function Profile({
                         </Form>
                     </div>
 
-                    <div className="glass-card-light space-y-6 rounded-xl p-6 md:p-8">
+                    <div className="space-y-6 rounded-xl border border-border/60 bg-card p-6 shadow-sm md:p-8">
                         <Heading
                             variant="small"
                             title={t('profile.details.title')}

@@ -83,7 +83,11 @@ export function FeaturedCarousel({ games }: Props) {
 
     return (
         <section
-            className="relative overflow-hidden rounded-xl"
+            className={cn(
+                'group/carousel relative overflow-hidden rounded-2xl',
+                'ring-1 ring-white/10 shadow-[0_20px_60px_-20px_rgba(0,0,0,0.45)]',
+                'dark:ring-white/5',
+            )}
             style={{ height: 'clamp(340px, 50vw, 560px)' }}
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
@@ -91,7 +95,7 @@ export function FeaturedCarousel({ games }: Props) {
             aria-label={t('carousel.label')}
             aria-roledescription="carousel"
         >
-            {/* Background slides — crossfade stack */}
+            {/* Background slides — crossfade stack with Ken Burns on active */}
             {games.map((game, index) => (
                 <div
                     key={game.id}
@@ -103,10 +107,15 @@ export function FeaturedCarousel({ games }: Props) {
                 >
                     {game.cover_image ? (
                         <img
+                            key={`${game.id}-${index === activeIndex ? progressKey : 'idle'}`}
                             src={game.cover_image}
                             alt=""
-                            className="size-full object-cover"
-                            style={{ transform: 'scale(1.05)' }}
+                            className={cn(
+                                'size-full object-cover',
+                                index === activeIndex
+                                    ? 'carousel-ken-burns'
+                                    : 'scale-105',
+                            )}
                             loading={index === 0 ? 'eager' : 'lazy'}
                         />
                     ) : (
@@ -118,9 +127,27 @@ export function FeaturedCarousel({ games }: Props) {
                             }}
                         />
                     )}
-                    {/* Cinematic overlays */}
-                    <div className="absolute inset-0 bg-linear-to-t from-black/90 via-black/30 to-black/10" />
-                    <div className="absolute inset-0 bg-linear-to-r from-black/55 via-transparent to-transparent" />
+                    {/* Cinematic overlays — darken bottom, brand-tinted sides */}
+                    <div className="absolute inset-0 bg-linear-to-t from-black/90 via-black/40 to-black/5" />
+                    <div className="absolute inset-0 bg-linear-to-r from-black/65 via-transparent to-transparent" />
+                    {/* Subtle brand tint on the right edge for warmth */}
+                    <div
+                        className="absolute inset-y-0 right-0 w-1/3 opacity-40 mix-blend-soft-light"
+                        style={{
+                            background:
+                                'linear-gradient(270deg, var(--vout-gradient-end), transparent)',
+                        }}
+                        aria-hidden="true"
+                    />
+                    {/* Vignette — darkens corners to anchor attention on content */}
+                    <div
+                        className="absolute inset-0"
+                        style={{
+                            background:
+                                'radial-gradient(ellipse 90% 70% at 50% 50%, transparent 55%, rgba(0,0,0,0.45) 100%)',
+                        }}
+                        aria-hidden="true"
+                    />
                 </div>
             ))}
 
@@ -270,7 +297,7 @@ export function FeaturedCarousel({ games }: Props) {
                 )}
             </div>
 
-            {/* Prev / Next arrows — visible on hover */}
+            {/* Prev / Next arrows — semi-visible by default, prominent on hover */}
             {hasMultiple && (
                 <>
                     <button
@@ -278,9 +305,10 @@ export function FeaturedCarousel({ games }: Props) {
                         onClick={goPrev}
                         aria-label={t('carousel.prev')}
                         className={cn(
-                            'absolute top-1/3 left-3 z-20 -translate-y-1/2 rounded-full border border-white/20 bg-black/40 p-2 text-white backdrop-blur-sm transition-all duration-200',
-                            'hover:bg-black/60 hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50',
-                            isHovered ? 'opacity-100' : 'opacity-0',
+                            'absolute top-1/3 left-3 z-20 -translate-y-1/2 rounded-full border border-white/25 bg-black/45 p-2.5 text-white backdrop-blur-sm transition-all duration-300',
+                            'hover:bg-black/70 hover:scale-110 hover:border-white/50',
+                            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70',
+                            'opacity-40 group-hover/carousel:opacity-100',
                         )}
                     >
                         <ChevronLeft className="size-5" />
@@ -290,9 +318,10 @@ export function FeaturedCarousel({ games }: Props) {
                         onClick={goNext}
                         aria-label={t('carousel.next')}
                         className={cn(
-                            'absolute top-1/3 right-3 z-20 -translate-y-1/2 rounded-full border border-white/20 bg-black/40 p-2 text-white backdrop-blur-sm transition-all duration-200',
-                            'hover:bg-black/60 hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50',
-                            isHovered ? 'opacity-100' : 'opacity-0',
+                            'absolute top-1/3 right-3 z-20 -translate-y-1/2 rounded-full border border-white/25 bg-black/45 p-2.5 text-white backdrop-blur-sm transition-all duration-300',
+                            'hover:bg-black/70 hover:scale-110 hover:border-white/50',
+                            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70',
+                            'opacity-40 group-hover/carousel:opacity-100',
                         )}
                     >
                         <ChevronRight className="size-5" />

@@ -36,7 +36,7 @@ export function ContinuePlayingCard({ game }: Props) {
             id="dashboard-continue-playing"
             aria-labelledby="dashboard-continue-playing-title"
             className={cn(
-                'glass-card-light relative overflow-hidden',
+                'relative overflow-hidden rounded-xl border border-border/60 bg-card shadow-sm',
                 'flex flex-col gap-0 md:flex-row md:items-stretch',
                 'transition-all duration-200 hover:shadow-md',
             )}
@@ -134,7 +134,7 @@ function ContinuePlayingEmpty() {
         <section
             id="dashboard-continue-playing"
             aria-labelledby="dashboard-continue-playing-empty-title"
-            className="glass-card-light flex flex-col items-start gap-3 p-6"
+            className="flex flex-col items-start gap-3 rounded-xl border border-border/60 bg-card p-6 shadow-sm"
         >
             <div className="flex size-12 items-center justify-center rounded-full bg-primary/10">
                 <Gamepad2

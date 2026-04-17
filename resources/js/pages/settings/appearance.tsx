@@ -54,7 +54,7 @@ export default function Appearance({ activeGestureConfig }: AppearanceProps) {
             <SettingsLayout>
                 <div className="space-y-8">
                     {/* Theme Preference */}
-                    <div className="glass-card-light space-y-6 rounded-xl p-6 md:p-8">
+                    <div className="rounded-xl border border-border/60 bg-card p-6 shadow-sm md:p-8">
                         <div className="flex items-start gap-4">
                             <div className="shrink-0 rounded-lg bg-primary/10 p-3">
                                 <Paintbrush className="h-6 w-6 text-primary" />
@@ -73,7 +73,7 @@ export default function Appearance({ activeGestureConfig }: AppearanceProps) {
                     </div>
 
                     {/* Vout Ecosystem Preferences */}
-                    <div className="glass-card-light space-y-6 rounded-xl p-6 md:p-8">
+                    <div className="space-y-6 rounded-xl border border-border/60 bg-card p-6 shadow-sm md:p-8">
                         <Heading
                             variant="small"
                             title={t('appearance.ecosystem.title')}

@@ -261,7 +261,7 @@ export default function PlayGame({ game, activeGestureConfig, accessToken }: Pla
                     <div
                         key={lastGesture ?? 'idle'}
                         className={cn(
-                            'h-full rounded-2xl border border-border/60 bg-card/70 p-5 shadow-xl shadow-black/5 backdrop-blur-md dark:bg-card/40 dark:shadow-black/20',
+                            'h-full rounded-2xl border border-border/60 bg-card p-5 shadow-lg shadow-black/5 dark:shadow-black/20',
                             lastGesture && 'motion-safe:animate-gesture-pulse',
                         )}
                     >

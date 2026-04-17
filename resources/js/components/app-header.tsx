@@ -64,7 +64,7 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
     ];
 
     return (
-        <header className="sticky top-0 z-50 w-full border-b border-border/60 bg-background/95 shadow-sm dark:bg-background/90">
+        <header className="sticky top-0 z-50 w-full border-b border-border/60 bg-background/80 shadow-sm backdrop-blur-lg backdrop-saturate-150 supports-backdrop-filter:bg-background/65 dark:bg-background/80 dark:supports-backdrop-filter:bg-background/60">
             <div className="mx-auto flex h-16 items-center px-4 md:max-w-7xl md:px-6 lg:px-8">
                 {/* Mobile Menu */}
                 <div className="lg:hidden">
@@ -223,7 +223,7 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                 </div>
             </div>
             {breadcrumbs.length > 1 && (
-                <div className="flex w-full border-t border-border/30 bg-background/80">
+                <div className="flex w-full border-t border-border/30 bg-background/70 backdrop-blur-lg backdrop-saturate-150 supports-backdrop-filter:bg-background/55">
                     <div className="mx-auto flex h-10 w-full items-center justify-start px-4 text-xs font-medium text-muted-foreground md:max-w-7xl md:px-6 lg:px-8">
                         <Breadcrumbs breadcrumbs={breadcrumbs} />
                     </div>

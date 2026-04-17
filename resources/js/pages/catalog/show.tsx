@@ -76,16 +76,16 @@ export default function CatalogShow({
                 {/* Back */}
                 <Link
                     href={catalogIndex.url()}
-                    className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
+                    className="group/back inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
                 >
-                    <ArrowLeft className="size-4" />
+                    <ArrowLeft className="size-4 transition-transform duration-200 group-hover/back:-translate-x-0.5" />
                     {t('catalog.title')}
                 </Link>
 
                 {/* Hero */}
                 <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
                     {/* Cover */}
-                    <div className="relative aspect-video overflow-hidden rounded-lg bg-muted">
+                    <div className="relative aspect-video overflow-hidden rounded-xl bg-muted ring-1 ring-border/60 shadow-[0_20px_60px_-24px_rgba(0,0,0,0.35)]">
                         {game.cover_image ? (
                             <img
                                 src={game.cover_image}
@@ -93,8 +93,8 @@ export default function CatalogShow({
                                 className="size-full object-cover"
                             />
                         ) : (
-                            <div className="flex size-full items-center justify-center bg-primary/5">
-                                <Gamepad2 className="size-20 text-primary/20" />
+                            <div className="flex size-full items-center justify-center bg-linear-to-br from-primary/10 via-muted to-accent/10">
+                                <Gamepad2 className="size-20 text-primary/30" />
                             </div>
                         )}
                     </div>
