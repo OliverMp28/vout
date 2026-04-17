@@ -109,6 +109,15 @@ class User extends Authenticatable implements OAuthenticatable
     }
 
     /**
+     * Perfil de gestos actualmente activo del usuario, si existe.
+     * Simplifica consultas frecuentes (dashboard, play, calibración).
+     */
+    public function activeGestureConfig(): HasOne
+    {
+        return $this->hasOne(GestureConfig::class)->where('is_active', true);
+    }
+
+    /**
      * Juegos con los que el usuario ha interactuado.
      * La tabla pivote almacena favoritos, puntuaciones y conteo de partidas.
      */

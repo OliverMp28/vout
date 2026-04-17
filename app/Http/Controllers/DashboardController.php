@@ -3,54 +3,61 @@
 namespace App\Http\Controllers;
 
 use App\Http\Resources\GameResource;
-use App\Models\Game;
+use App\Services\DashboardDataService;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class DashboardController extends Controller
 {
+    public function __construct(private readonly DashboardDataService $dashboard) {}
+
     /**
-     * Panel personal del usuario autenticado.
+     * Dashboard Estratégico (Fase 2.5).
      *
-     * Muestra favoritos, jugados recientemente y destacados del catálogo.
-     * La interacción del usuario se adjunta vía scopeWithUserInteraction.
+     * Cockpit personal del usuario: continuidad de juego, estadísticas
+     * rápidas, recomendaciones personalizadas, contexto del ecosistema
+     * (dev/admin) y onboarding guiado dismissible para usuarios nuevos.
      */
     public function __invoke(Request $request): Response
     {
         $user = $request->user();
 
-        $favorites = Game::query()
-            ->active()
-            ->withUserInteraction($user->id)
-            ->whereRaw('user_pivot.is_favorite = 1')
-            ->with(['categories:id,name,slug'])
-            ->orderByRaw('COALESCE(user_pivot.last_played_at, 0) DESC')
-            ->limit(6)
-            ->get();
-
-        $recentlyPlayed = Game::query()
-            ->active()
-            ->withUserInteraction($user->id)
-            ->whereRaw('user_pivot.last_played_at IS NOT NULL')
-            ->with(['categories:id,name,slug'])
-            ->orderByRaw('user_pivot.last_played_at DESC')
-            ->limit(4)
-            ->get();
-
-        $featured = Game::query()
-            ->active()
-            ->featured()
-            ->withUserInteraction($user->id)
-            ->with(['categories:id,name,slug'])
-            ->sortedBy('popular')
-            ->limit(6)
-            ->get();
+        $continuePlaying = $this->dashboard->continuePlaying($user);
+        $recommendations = $this->dashboard->recommendations($user);
 
         return Inertia::render('dashboard', [
-            'favorites' => GameResource::collection($favorites),
-            'recentlyPlayed' => GameResource::collection($recentlyPlayed),
-            'featured' => GameResource::collection($featured),
+            'greeting' => [
+                'name' => $user->name,
+                'hourOfDay' => (int) now()->format('G'),
+            ],
+            'continuePlaying' => $continuePlaying !== null
+                ? new GameResource($continuePlaying)
+                : null,
+            'stats' => $this->dashboard->quickStats($user),
+            'recommendations' => GameResource::collection($recommendations),
+            'recommendationReason' => $this->dashboard->recommendationReason($user),
+            'ecosystem' => [
+                'voutId' => (string) $user->vout_id,
+                ...$this->dashboard->ecosystemContext($user),
+            ],
+            'onboarding' => $this->dashboard->onboardingState($user),
         ]);
+    }
+
+    /**
+     * Marca el hero de onboarding del dashboard como descartado por el user.
+     *
+     * Crea el registro `user_settings` si no existe (firstOrCreate pattern).
+     */
+    public function dismissWelcome(Request $request): RedirectResponse
+    {
+        $user = $request->user();
+
+        $settings = $user->settings()->firstOrCreate([]);
+        $settings->update(['dashboard_welcome_dismissed_at' => now()]);
+
+        return back();
     }
 }

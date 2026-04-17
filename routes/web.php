@@ -13,6 +13,10 @@ Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', DashboardController::class)->name('dashboard');
 
+    // Fase 2.5 — Descarta el hero de onboarding del dashboard.
+    Route::post('dashboard/welcome/dismiss', [DashboardController::class, 'dismissWelcome'])
+        ->name('dashboard.welcome.dismiss');
+
     // Fase 3.3 — Reproductor de juegos embebidos.
     // Requiere autenticación verificada porque genera un token de identidad.
     Route::get('play/{game}', [PlayController::class, 'show'])->name('play.show');

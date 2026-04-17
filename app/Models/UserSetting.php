@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Database\Factories\UserSettingFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -14,7 +15,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class UserSetting extends Model
 {
-    /** @use HasFactory<\Database\Factories\UserSettingFactory> */
+    /** @use HasFactory<UserSettingFactory> */
     use HasFactory;
 
     /**
@@ -28,6 +29,7 @@ class UserSetting extends Model
         'dark_mode',
         'show_mascot',
         'gestures_enabled',
+        'dashboard_welcome_dismissed_at',
     ];
 
     /**
@@ -41,6 +43,7 @@ class UserSetting extends Model
             'dark_mode' => 'boolean',
             'show_mascot' => 'boolean',
             'gestures_enabled' => 'boolean',
+            'dashboard_welcome_dismissed_at' => 'datetime',
         ];
     }
 
