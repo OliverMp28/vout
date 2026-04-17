@@ -4,6 +4,7 @@ use App\Models\Game;
 use App\Models\GestureConfig;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 
 uses(RefreshDatabase::class);
 
@@ -144,4 +145,56 @@ it('solo devuelve la config activa cuando el usuario tiene varias', function () 
         ->assertInertia(fn ($page) => $page
             ->where('activeGestureConfig.id', $active->id)
         );
+});
+
+// ─── Fase 3.4: registro de partida (play_count + last_played_at) ──
+
+it('crea la fila pivote game_user con play_count=1 en la primera visita', function () {
+    $user = User::factory()->create();
+    $game = Game::factory()->create(['is_active' => true]);
+
+    expect($user->games()->count())->toBe(0);
+
+    $this->actingAs($user)
+        ->get(route('play.show', $game))
+        ->assertOk();
+
+    $pivot = $user->games()->where('game_id', $game->id)->first()?->pivot;
+
+    expect($pivot)->not->toBeNull()
+        ->and($pivot->play_count)->toBe(1)
+        ->and($pivot->last_played_at)->not->toBeNull();
+});
+
+it('incrementa play_count y refresca last_played_at en visitas sucesivas', function () {
+    $user = User::factory()->create();
+    $game = Game::factory()->create(['is_active' => true]);
+
+    $oldTimestamp = now()->subHour();
+    $user->games()->attach($game->id, [
+        'play_count' => 3,
+        'last_played_at' => $oldTimestamp,
+        'is_favorite' => true,
+        'best_score' => 999,
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('play.show', $game))
+        ->assertOk();
+
+    $pivot = $user->games()->where('game_id', $game->id)->first()->pivot;
+
+    expect($pivot->play_count)->toBe(4)
+        ->and(Carbon::parse($pivot->last_played_at)->greaterThan($oldTimestamp))->toBeTrue()
+        ->and((bool) $pivot->is_favorite)->toBeTrue()
+        ->and($pivot->best_score)->toBe(999);
+});
+
+it('no crea fila pivote si un guest accede al reproductor', function () {
+    $game = Game::factory()->create(['is_active' => true]);
+
+    $this->get(route('play.show', $game))
+        ->assertRedirect(route('login'));
+
+    expect(DB::table('game_user')->count())->toBe(0);
 });

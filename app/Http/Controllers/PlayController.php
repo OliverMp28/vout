@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\IncrementGamePlayCount;
 use App\Models\Game;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -51,11 +52,12 @@ class PlayController extends Controller
             scopes: ['game:play'],
         )->accessToken;
 
-        // @fase3.4 — Incrementar play_count en game_user aquí, justo antes de renderizar.
-        // Usar un Job en cola para no bloquear la respuesta:
-        //   IncrementPlayCount::dispatch($user, $game);
-        // El Job actualiza la tabla pivote game_user (play_count++, last_played_at=now()).
-        // Alternativa más precisa: incrementar al recibir GAME_STATE desde el iframe.
+        // Fase 3.4 — Registra la partida tras enviar la respuesta para no
+        // bloquear el render del iFrame. `dispatchAfterResponse` corre en el
+        // mismo proceso después de flush HTTP, sin depender de un queue worker.
+        if ($user !== null) {
+            IncrementGamePlayCount::dispatchAfterResponse($user->id, $game->id);
+        }
 
         return Inertia::render('play/game', [
             // Datos públicos del juego que el frontend necesita para el iFrame.
