@@ -3,12 +3,11 @@
 namespace App\Http\Controllers\Settings;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Settings\ProfileDeleteRequest;
 use App\Http\Requests\Settings\ProfileUpdateRequest;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -37,10 +36,10 @@ class ProfileController extends Controller
             if ($user->avatar) {
                 // Remove /storage/ prefix to delete from public disk
                 $oldPath = str_replace('/storage/', '', $user->avatar);
-                \Illuminate\Support\Facades\Storage::disk('public')->delete($oldPath);
+                Storage::disk('public')->delete($oldPath);
             }
             $path = $request->file('avatar')->store('avatars', 'public');
-            $validated['avatar'] = '/storage/' . $path;
+            $validated['avatar'] = '/storage/'.$path;
         }
 
         $user->fill($validated);
@@ -52,22 +51,5 @@ class ProfileController extends Controller
         $user->save();
 
         return to_route('profile.edit');
-    }
-
-    /**
-     * Delete the user's profile.
-     */
-    public function destroy(ProfileDeleteRequest $request): RedirectResponse
-    {
-        $user = $request->user();
-
-        Auth::logout();
-
-        $user->delete();
-
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
-
-        return redirect('/');
     }
 }
