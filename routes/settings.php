@@ -4,6 +4,7 @@ use App\Http\Controllers\Auth\SocialiteController;
 use App\Http\Controllers\Settings\AppearanceController;
 use App\Http\Controllers\Settings\GestureConfigController;
 use App\Http\Controllers\Settings\PasswordController;
+use App\Http\Controllers\Settings\PrivacyController;
 use App\Http\Controllers\Settings\ProfileController;
 use App\Http\Controllers\Settings\TwoFactorAuthenticationController;
 use App\Http\Controllers\Settings\UserSettingController;
@@ -17,7 +18,14 @@ Route::middleware(['auth'])->group(function () {
 });
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::delete('settings/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    // Fase 5 — Privacidad (derechos RGPD).
+    // El borrado de cuenta vive aquí (antes en /settings/profile) porque el
+    // encuadre legal y la UX son distintos al flujo genérico de perfil.
+    Route::get('settings/privacy', [PrivacyController::class, 'show'])->name('privacy.edit');
+    Route::get('settings/privacy/export', [PrivacyController::class, 'export'])
+        ->middleware('throttle:6,1')
+        ->name('privacy.export');
+    Route::delete('settings/privacy', [PrivacyController::class, 'destroy'])->name('privacy.destroy');
 
     Route::get('settings/password', [PasswordController::class, 'edit'])->name('user-password.edit');
 

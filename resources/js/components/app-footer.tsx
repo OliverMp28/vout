@@ -3,7 +3,7 @@ import { Github } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { useCookieConsent } from '@/hooks/use-cookie-consent';
 import { useTranslation } from '@/hooks/use-translation';
-import { home, visionLab } from '@/routes';
+import { home } from '@/routes';
 import { index as catalogIndex } from '@/routes/catalog';
 import { docs as developersDocs, landing as developersLanding } from '@/routes/developers';
 import { show as legalShow } from '@/routes/legal';
@@ -18,7 +18,6 @@ export function AppFooter() {
     const platformLinks = [
         { label: t('footer.home'), href: home().url },
         { label: t('footer.catalog'), href: catalogIndex().url },
-        { label: t('footer.vision_lab'), href: visionLab().url },
     ];
 
     const developerLinks = [
