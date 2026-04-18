@@ -18,7 +18,7 @@ export default function AuthSplitLayout({
         <div className="relative grid min-h-dvh lg:grid-cols-[1fr_1.1fr]">
             {/* ─── Panel decorativo ──────────────────────────── */}
             <div className="relative hidden overflow-hidden lg:block">
-                {/* Fondo gradiente */}
+                {/* Fondo gradiente base */}
                 <div
                     className="absolute inset-0"
                     style={{
@@ -27,19 +27,141 @@ export default function AuthSplitLayout({
                     }}
                 />
 
+                {/* Grid de líneas sutil — técnico, suave */}
+                <div
+                    aria-hidden
+                    className="absolute inset-0 opacity-60"
+                    style={{
+                        backgroundImage: [
+                            'linear-gradient(to right, rgba(255,255,255,0.035) 1px, transparent 1px)',
+                            'linear-gradient(to bottom, rgba(255,255,255,0.035) 1px, transparent 1px)',
+                        ].join(', '),
+                        backgroundSize: '72px 72px',
+                        maskImage:
+                            'radial-gradient(ellipse 80% 70% at 50% 50%, black 40%, transparent 90%)',
+                    }}
+                />
+
+                {/* Grain noise — cereza del pastel, textura premium */}
+                <svg
+                    aria-hidden
+                    className="pointer-events-none absolute inset-0 h-full w-full opacity-[0.12] mix-blend-overlay"
+                >
+                    <filter id="auth-grain">
+                        <feTurbulence
+                            type="fractalNoise"
+                            baseFrequency="0.85"
+                            numOctaves="2"
+                            seed="4"
+                        />
+                        <feColorMatrix values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.6 0" />
+                    </filter>
+                    <rect
+                        width="100%"
+                        height="100%"
+                        filter="url(#auth-grain)"
+                    />
+                </svg>
+
+                {/* Aros concéntricos con retícula — evoca el enfoque facial */}
+                <svg
+                    aria-hidden
+                    className="absolute -top-24 -right-28 h-xl w-xl"
+                    viewBox="0 0 400 400"
+                    fill="none"
+                >
+                    <circle
+                        cx="200"
+                        cy="200"
+                        r="80"
+                        stroke="white"
+                        strokeOpacity="0.22"
+                        strokeWidth="1"
+                    />
+                    <circle
+                        cx="200"
+                        cy="200"
+                        r="140"
+                        stroke="white"
+                        strokeOpacity="0.15"
+                        strokeWidth="1"
+                    />
+                    <circle
+                        cx="200"
+                        cy="200"
+                        r="200"
+                        stroke="white"
+                        strokeOpacity="0.09"
+                        strokeWidth="1"
+                    />
+                    {/* Pequeñas marcas de retícula */}
+                    <line
+                        x1="200"
+                        y1="60"
+                        x2="200"
+                        y2="96"
+                        stroke="white"
+                        strokeOpacity="0.3"
+                    />
+                    <line
+                        x1="200"
+                        y1="304"
+                        x2="200"
+                        y2="340"
+                        stroke="white"
+                        strokeOpacity="0.3"
+                    />
+                    <line
+                        x1="60"
+                        y1="200"
+                        x2="96"
+                        y2="200"
+                        stroke="white"
+                        strokeOpacity="0.3"
+                    />
+                    <line
+                        x1="304"
+                        y1="200"
+                        x2="340"
+                        y2="200"
+                        stroke="white"
+                        strokeOpacity="0.3"
+                    />
+                </svg>
+
+                {/* Triángulo suave — esquina inferior-izquierda */}
+                <svg
+                    aria-hidden
+                    className="absolute -bottom-16 -left-10 h-72 w-72 opacity-[0.14]"
+                    viewBox="0 0 200 200"
+                    fill="none"
+                >
+                    <polygon
+                        points="100,20 180,180 20,180"
+                        stroke="white"
+                        strokeWidth="1"
+                    />
+                    <polygon
+                        points="100,70 150,160 50,160"
+                        stroke="white"
+                        strokeOpacity="0.55"
+                        strokeWidth="1"
+                    />
+                </svg>
+
                 {/* Orbes ambient glow */}
                 <div
-                    className="animate-glow-pulse absolute -top-24 -left-24 h-72 w-72 rounded-full"
+                    className="animate-glow-pulse absolute -top-32 -left-32 h-80 w-80 rounded-full"
                     style={{
                         background:
-                            'radial-gradient(circle, rgba(255,255,255,0.15), transparent 70%)',
+                            'radial-gradient(circle, rgba(255,255,255,0.18), transparent 70%)',
                     }}
                 />
                 <div
-                    className="animate-glow-pulse absolute -right-16 bottom-32 h-56 w-56 rounded-full"
+                    className="animate-glow-pulse absolute right-0 -bottom-20 h-72 w-72 rounded-full"
                     style={{
                         background:
-                            'radial-gradient(circle, rgba(255,255,255,0.1), transparent 70%)',
+                            'radial-gradient(circle, rgba(190,150,255,0.22), transparent 70%)',
                         animationDelay: '2s',
                     }}
                 />
@@ -56,64 +178,73 @@ export default function AuthSplitLayout({
                             src="/logos/vout-wordmark.png"
                             alt="Vout"
                             draggable={false}
-                            className="h-8 w-auto select-none drop-shadow-[0_1px_2px_rgba(0,0,0,0.2)]"
+                            className="h-8 w-auto drop-shadow-[0_1px_3px_rgba(0,0,0,0.25)] select-none"
                         />
                     </Link>
 
                     {/* Centro: eslogan + feature cards */}
                     <div className="space-y-8">
-                        <div className="space-y-3">
-                            <h2 className="text-3xl leading-tight font-bold tracking-tight">
+                        <div className="space-y-4">
+                            {/* Badge de confianza — IdP / OAuth */}
+                            <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-medium text-white/90 backdrop-blur-sm">
+                                <span className="size-1.5 animate-pulse rounded-full bg-white/80" />
+                                Identity Provider · OAuth 2.0
+                            </div>
+
+                            <h2 className="text-3xl leading-[1.15] font-bold tracking-tight">
                                 Tu pasaporte al
                                 <br />
-                                mundo gaming
+                                <span className="bg-linear-to-r from-white to-white/70 bg-clip-text text-transparent">
+                                    mundo gaming.
+                                </span>
                             </h2>
-                            <p className="max-w-xs text-base leading-relaxed text-white/70">
-                                Una cuenta, todos los juegos. Controla con tu
-                                rostro, juega sin límites.
+                            <p className="max-w-sm text-base leading-relaxed text-white/75">
+                                Una cuenta que funciona en todo el ecosistema.
+                                Sin descargas, sin cuentas duplicadas.
                             </p>
                         </div>
 
                         {/* Feature cards con glassmorfismo */}
                         <div className="space-y-3">
-                            <div className="glass-card animate-float flex items-center gap-3 px-4 py-3">
-                                <Users className="size-5 shrink-0 text-white/80" />
+                            <div className="glass-card flex items-center gap-3 px-4 py-3">
+                                <div className="flex size-9 shrink-0 items-center justify-center rounded-md bg-white/15 ring-1 ring-white/10">
+                                    <Users className="size-4 text-white" />
+                                </div>
                                 <div>
                                     <p className="text-sm font-medium">
-                                        Identidad unificada
+                                        Una cuenta, todos los juegos
                                     </p>
                                     <p className="text-xs text-white/60">
-                                        Una cuenta para todo el ecosistema
+                                        Login único para todo el ecosistema
                                     </p>
                                 </div>
                             </div>
 
-                            <div
-                                className="glass-card animate-float flex items-center gap-3 px-4 py-3"
-                                style={{ animationDelay: '1s' }}
-                            >
-                                <Scan className="size-5 shrink-0 text-white/80" />
+                            <div className="glass-card flex items-center gap-3 px-4 py-3">
+                                <div className="flex size-9 shrink-0 items-center justify-center rounded-md bg-white/15 ring-1 ring-white/10">
+                                    <Scan className="size-4 text-white" />
+                                </div>
                                 <div>
                                     <p className="text-sm font-medium">
-                                        Control facial
+                                        Juega sin manos
                                     </p>
                                     <p className="text-xs text-white/60">
-                                        Juega usando gestos con tu cámara
+                                        Control por gestos faciales con tu
+                                        cámara
                                     </p>
                                 </div>
                             </div>
 
-                            <div
-                                className="glass-card animate-float flex items-center gap-3 px-4 py-3"
-                                style={{ animationDelay: '2s' }}
-                            >
-                                <Gamepad2 className="size-5 shrink-0 text-white/80" />
+                            <div className="glass-card flex items-center gap-3 px-4 py-3">
+                                <div className="flex size-9 shrink-0 items-center justify-center rounded-md bg-white/15 ring-1 ring-white/10">
+                                    <Gamepad2 className="size-4 text-white" />
+                                </div>
                                 <div>
                                     <p className="text-sm font-medium">
                                         Portal de juegos
                                     </p>
                                     <p className="text-xs text-white/60">
-                                        Descubre y juega desde el navegador
+                                        Jugables al instante desde el navegador
                                     </p>
                                 </div>
                             </div>
@@ -121,21 +252,43 @@ export default function AuthSplitLayout({
                     </div>
 
                     {/* Footer */}
-                    <p className="text-sm text-white/40">
-                        © {new Date().getFullYear()} Vout. Plataforma de
-                        identidad y gaming accesible.
-                    </p>
+                    <div className="flex items-center justify-between gap-4 text-xs text-white/45">
+                        <span>© {new Date().getFullYear()} Vout</span>
+                        <span className="text-right">
+                            Identidad y gaming accesible
+                        </span>
+                    </div>
                 </div>
             </div>
 
             {/* ─── Panel del formulario ──────────────────────── */}
             <div className="relative flex w-full items-center justify-center px-6 py-10 sm:px-8 lg:px-12">
+                {/* Glow sutil detrás del formulario (se nota más en mobile) */}
+                <div
+                    aria-hidden
+                    className="pointer-events-none absolute inset-x-0 top-0 h-72 opacity-70 lg:opacity-30"
+                    style={{
+                        background:
+                            'radial-gradient(55% 100% at 50% 0%, color-mix(in oklch, var(--primary) 14%, transparent) 0%, transparent 75%)',
+                    }}
+                />
+
+                {/* Banner de marca en mobile — tira fina con el gradiente */}
+                <div
+                    aria-hidden
+                    className="pointer-events-none absolute inset-x-0 top-0 h-[3px] lg:hidden"
+                    style={{
+                        background:
+                            'linear-gradient(90deg, var(--vout-gradient-start), var(--vout-gradient-end))',
+                    }}
+                />
+
                 <div className="absolute top-4 right-4 z-10 flex items-center gap-1">
                     <AppearanceSwitcher />
                     <LanguageSwitcher />
                 </div>
 
-                <div className="mx-auto flex w-full max-w-sm flex-col justify-center space-y-6">
+                <div className="relative mx-auto flex w-full max-w-sm flex-col justify-center space-y-6">
                     {/* Logo en móvil */}
                     <Link
                         href={home()}
