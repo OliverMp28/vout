@@ -49,10 +49,15 @@ export default function AuthSplitLayout({
                     {/* Logo */}
                     <Link
                         href={home()}
-                        className="flex items-center gap-3 text-lg font-semibold transition-opacity duration-200 hover:opacity-80"
+                        className="flex items-center transition-opacity duration-200 hover:opacity-80"
                     >
-                        <AppLogoIcon className="size-9 rounded-lg shadow-md" />
-                        <span>{name}</span>
+                        <span className="sr-only">{name}</span>
+                        <img
+                            src="/logos/vout-wordmark.png"
+                            alt="Vout"
+                            draggable={false}
+                            className="h-8 w-auto select-none drop-shadow-[0_1px_2px_rgba(0,0,0,0.2)]"
+                        />
                     </Link>
 
                     {/* Centro: eslogan + feature cards */}
@@ -136,7 +141,7 @@ export default function AuthSplitLayout({
                         href={home()}
                         className="flex items-center justify-center lg:hidden"
                     >
-                        <AppLogoIcon className="size-12 rounded-xl shadow-lg" />
+                        <AppLogoIcon alt="Vout" className="size-12" />
                     </Link>
 
                     {/* Título y descripción */}

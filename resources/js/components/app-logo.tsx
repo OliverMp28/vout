@@ -1,16 +1,16 @@
-import AppLogoIcon from '@/components/app-logo-icon';
+import { cn } from '@/lib/utils';
 
-export default function AppLogo() {
+type Props = {
+    className?: string;
+};
+
+export default function AppLogo({ className }: Props) {
     return (
-        <>
-            <div className="flex aspect-square size-8 items-center justify-center rounded-md">
-                <AppLogoIcon className="size-8" />
-            </div>
-            <div className="ml-1 grid flex-1 text-left text-sm">
-                <span className="mb-0.5 truncate leading-tight font-semibold">
-                    Vout
-                </span>
-            </div>
-        </>
+        <img
+            src="/logos/vout-wordmark.png"
+            alt="Vout"
+            draggable={false}
+            className={cn('h-6 w-auto max-w-full select-none', className)}
+        />
     );
 }
