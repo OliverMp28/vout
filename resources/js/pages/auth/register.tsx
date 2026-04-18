@@ -1,18 +1,24 @@
 import { Form, Head } from '@inertiajs/react';
+import { useState } from 'react';
 import { GoogleIcon } from '@/components/icons/google-icon';
 import InputError from '@/components/input-error';
 import TextLink from '@/components/text-link';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import { useTranslation } from '@/hooks/use-translation';
 import AuthLayout from '@/layouts/auth-layout';
 import { login } from '@/routes';
+import { show as legalShow } from '@/routes/legal';
 import { store } from '@/routes/register';
 
 export default function Register() {
     const { t } = useTranslation();
+    const [acceptTerms, setAcceptTerms] = useState(false);
+    const [confirmAge, setConfirmAge] = useState(false);
+    const consentReady = acceptTerms && confirmAge;
 
     return (
         <AuthLayout
@@ -109,12 +115,89 @@ export default function Register() {
                                     />
                                 </div>
                             </div>
+
+                            <div className="space-y-3 rounded-md border border-border/60 bg-muted/30 p-3">
+                                <div className="flex items-start gap-3">
+                                    <Checkbox
+                                        id="accept_terms"
+                                        name="accept_terms"
+                                        checked={acceptTerms}
+                                        onCheckedChange={(value) => setAcceptTerms(value === true)}
+                                        aria-invalid={!!errors.accept_terms}
+                                        aria-describedby={errors.accept_terms ? 'accept_terms-error' : undefined}
+                                        tabIndex={6}
+                                        className="mt-0.5"
+                                    />
+                                    <div className="space-y-1">
+                                        <Label
+                                            htmlFor="accept_terms"
+                                            className="text-sm leading-snug font-normal"
+                                        >
+                                            {t('auth.consent.terms.label_prefix')}{' '}
+                                            <TextLink
+                                                href={legalShow('terminos')}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                            >
+                                                {t('auth.consent.terms.link_terms')}
+                                            </TextLink>
+                                            {' '}{t('auth.consent.terms.label_and')}{' '}
+                                            <TextLink
+                                                href={legalShow('privacidad')}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                            >
+                                                {t('auth.consent.terms.link_privacy')}
+                                            </TextLink>
+                                            .
+                                        </Label>
+                                        {errors.accept_terms && (
+                                            <p
+                                                id="accept_terms-error"
+                                                className="text-xs text-destructive"
+                                            >
+                                                {errors.accept_terms}
+                                            </p>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div className="flex items-start gap-3">
+                                    <Checkbox
+                                        id="confirm_age"
+                                        name="confirm_age"
+                                        checked={confirmAge}
+                                        onCheckedChange={(value) => setConfirmAge(value === true)}
+                                        aria-invalid={!!errors.confirm_age}
+                                        aria-describedby={errors.confirm_age ? 'confirm_age-error' : undefined}
+                                        tabIndex={7}
+                                        className="mt-0.5"
+                                    />
+                                    <div className="space-y-1">
+                                        <Label
+                                            htmlFor="confirm_age"
+                                            className="text-sm leading-snug font-normal"
+                                        >
+                                            {t('auth.consent.age.label')}
+                                        </Label>
+                                        {errors.confirm_age && (
+                                            <p
+                                                id="confirm_age-error"
+                                                className="text-xs text-destructive"
+                                            >
+                                                {errors.confirm_age}
+                                            </p>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         <Button
                             type="submit"
                             className="w-full"
-                            tabIndex={6}
+                            tabIndex={8}
+                            disabled={!consentReady || processing}
                             data-test="register-user-button"
                         >
                             {processing && <Spinner />}
@@ -139,7 +222,7 @@ export default function Register() {
                             onClick={() =>
                                 (window.location.href = '/auth/google/redirect')
                             }
-                            tabIndex={7}
+                            tabIndex={9}
                         >
                             <GoogleIcon className="mr-2 size-4" />
                             {t('auth.login.google')}
@@ -147,7 +230,7 @@ export default function Register() {
 
                         <p className="text-center text-sm text-muted-foreground">
                             {t('auth.register.has_account')}{' '}
-                            <TextLink href={login()} tabIndex={8}>
+                            <TextLink href={login()} tabIndex={10}>
                                 {t('auth.register.login')}
                             </TextLink>
                         </p>

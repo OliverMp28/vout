@@ -26,7 +26,7 @@ class UserSetting extends Model
     protected $fillable = [
         'user_id',
         'locale',
-        'dark_mode',
+        'appearance',
         'show_mascot',
         'gestures_enabled',
         'dashboard_welcome_dismissed_at',
@@ -40,7 +40,6 @@ class UserSetting extends Model
     protected function casts(): array
     {
         return [
-            'dark_mode' => 'boolean',
             'show_mascot' => 'boolean',
             'gestures_enabled' => 'boolean',
             'dashboard_welcome_dismissed_at' => 'datetime',

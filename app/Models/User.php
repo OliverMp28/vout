@@ -47,6 +47,8 @@ class User extends Authenticatable implements OAuthenticatable
         'bio',
         'google_id',
         'is_admin',
+        'terms_accepted_at',
+        'privacy_version_accepted',
     ];
 
     /**
@@ -85,6 +87,7 @@ class User extends Authenticatable implements OAuthenticatable
             'password' => 'hashed',
             'two_factor_confirmed_at' => 'datetime',
             'is_admin' => 'boolean',
+            'terms_accepted_at' => 'datetime',
         ];
     }
 

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Auth\SocialiteCompleteController;
 use App\Http\Controllers\Auth\SocialiteController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\HomeController;
@@ -32,6 +33,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
 Route::middleware('guest')->group(function () {
     Route::get('auth/google/redirect', [SocialiteController::class, 'redirect'])->name('auth.google.redirect');
     Route::get('auth/google/callback', [SocialiteController::class, 'callback'])->name('auth.google.callback');
+});
+
+// Fase 5 — Interstitial de consentimiento tras primer login con Google.
+// Requiere usuario autenticado (recién creado por SocialiteController). Si ya
+// aceptó las políticas, el controlador redirige al dashboard automáticamente.
+Route::middleware('auth')->group(function () {
+    Route::get('auth/google/complete', [SocialiteCompleteController::class, 'show'])->name('auth.google.complete');
+    Route::post('auth/google/complete', [SocialiteCompleteController::class, 'store'])->name('auth.google.complete.store');
+    Route::post('auth/google/cancel', [SocialiteCompleteController::class, 'cancel'])->name('auth.google.cancel');
 });
 
 Route::post('/locale', [LocaleController::class, 'update'])->name('locale.update');

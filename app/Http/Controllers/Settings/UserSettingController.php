@@ -5,33 +5,38 @@ namespace App\Http\Controllers\Settings;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class UserSettingController extends Controller
 {
     /**
-     * Update the user's settings (appearance, mascot, gestures).
+     * Actualiza preferencias del usuario. Cada campo es opcional para que
+     * los controles puedan persistir de forma independiente:
+     *   - los tabs de tema envían sólo `appearance`
+     *   - el formulario de Apariencia envía `show_mascot` + `gestures_enabled`
      */
     public function update(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'dark_mode' => ['required', 'boolean'],
-            'show_mascot' => ['required', 'boolean'],
-            'gestures_enabled' => ['required', 'boolean'],
+            'appearance' => ['sometimes', 'required', Rule::in(['light', 'dark', 'system'])],
+            'show_mascot' => ['sometimes', 'required', 'boolean'],
+            'gestures_enabled' => ['sometimes', 'required', 'boolean'],
         ]);
 
         $user = $request->user();
 
-        // Obtener o crear configuraciones si no existen
         $settings = $user->settings()->firstOrCreate(
             ['user_id' => $user->id],
             [
-                'dark_mode' => true,
+                'appearance' => 'system',
                 'show_mascot' => true,
                 'gestures_enabled' => false,
             ]
         );
 
-        $settings->update($validated);
+        if (! empty($validated)) {
+            $settings->update($validated);
+        }
 
         return back();
     }

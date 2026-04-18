@@ -1,7 +1,7 @@
 export type UserSetting = {
     id: number;
     user_id: number;
-    dark_mode: boolean;
+    appearance: 'light' | 'dark' | 'system';
     show_mascot: boolean;
     gestures_enabled: boolean;
     created_at: string;

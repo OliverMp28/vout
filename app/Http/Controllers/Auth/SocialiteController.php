@@ -38,6 +38,7 @@ class SocialiteController extends Controller
         if ($user) {
             // Usuario encontrado con google_id, iniciamos sesión
             Auth::login($user);
+
             return redirect()->intended(route('dashboard', absolute: false));
         }
 
@@ -46,7 +47,7 @@ class SocialiteController extends Controller
 
         if ($user) {
             // El usuario existe nativamente.
-            
+
             // Protección contra sobrescritura silenciosa:
             // Si el usuario ya tiene un google_id distinto al que intenta usar ahora, abortamos.
             if ($user->google_id !== null && $user->google_id !== $googleUser->getId()) {
@@ -63,15 +64,16 @@ class SocialiteController extends Controller
             ]);
 
             Auth::login($user);
+
             return redirect()->intended(route('dashboard', absolute: false));
         }
 
         // Si no existe ni email ni google_id, registramos al nuevo usuario
         $baseName = $googleUser->getName() ?? $googleUser->getNickname() ?? 'Usuario';
         $baseUsername = str($baseName)->slug()->replace('-', '_')->toString();
-        
+
         // Aseguramos que el username sea único añadiendo un sufijo aleatorio corto
-        $username = $baseUsername . '_' . strtolower(str()->random(4));
+        $username = $baseUsername.'_'.strtolower(str()->random(4));
 
         $user = User::create([
             'name' => $baseName,
@@ -81,6 +83,8 @@ class SocialiteController extends Controller
             'avatar' => $googleUser->getAvatar(),
             // Generamos una contraseña aleatoria ya que no utilizará password para entrar de forma nativa a priori
             'password' => bcrypt(str()->random(24)),
+            // terms_accepted_at queda null intencionalmente: el callback no recoge
+            // consentimiento. Lo pediremos en el interstitial /auth/google/complete.
         ]);
 
         // Marcamos el correo como verificado porque viene autenticado por Google
@@ -88,8 +92,11 @@ class SocialiteController extends Controller
 
         Auth::login($user);
 
-        return redirect()->intended(route('dashboard', absolute: false));
+        // Fase 5 — Primer registro vía Google: pedimos consentimiento explícito
+        // (Términos + edad ≥14) antes de dejarlo navegar el portal.
+        return redirect()->route('auth.google.complete');
     }
+
     /**
      * Desvincula la cuenta de Google del usuario autenticado.
      */

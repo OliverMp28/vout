@@ -7,8 +7,9 @@ use App\Models\GestureConfig;
 use App\Models\RegisteredApp;
 use App\Models\User;
 use App\Models\UserSetting;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 
-uses(\Illuminate\Foundation\Testing\RefreshDatabase::class);
+uses(RefreshDatabase::class);
 
 // ─── User ────────────────────────────────────────────────────
 
@@ -159,14 +160,14 @@ it('gesture config pertenece a un usuario', function () {
 
 // ─── UserSetting ─────────────────────────────────────────────
 
-it('user setting castea booleanos correctamente', function () {
+it('user setting castea booleanos y persiste appearance correctamente', function () {
     $setting = UserSetting::factory()->create([
-        'dark_mode' => true,
+        'appearance' => 'dark',
         'show_mascot' => false,
         'gestures_enabled' => true,
     ]);
 
-    expect($setting->dark_mode)->toBeBool()->toBeTrue()
+    expect($setting->appearance)->toBe('dark')
         ->and($setting->show_mascot)->toBeBool()->toBeFalse()
         ->and($setting->gestures_enabled)->toBeBool()->toBeTrue();
 });
