@@ -50,4 +50,25 @@ return [
 
     // Scope que se asigna por defecto si la app no solicita ninguno explícitamente.
     'default_scope' => 'user:read',
+
+    /*
+    |--------------------------------------------------------------------------
+    | Identificación legal (Fase 5)
+    |--------------------------------------------------------------------------
+    |
+    | Datos de identificación del responsable exigidos por el art. 10 LSSI-CE
+    | y que las páginas legales sustituyen como tokens (`{{contact_email}}`,
+    | `{{holder_name}}`, `{{domain}}`, `{{repo_url}}`) para evitar duplicar
+    | el email o el dominio en cada markdown.
+    |
+    | Se centralizan aquí para que un cambio de alias o correo no requiera
+    | editar ocho archivos markdown.
+    |
+    */
+    'legal' => [
+        'holder_name' => env('VOUT_LEGAL_HOLDER_NAME', 'Oliver (proyecto Vout)'),
+        'contact_email' => env('VOUT_LEGAL_CONTACT_EMAIL', 'galvezerwin28@gmail.com'),
+        'domain' => env('VOUT_LEGAL_DOMAIN', 'vout.local'),
+        'repo_url' => env('VOUT_LEGAL_REPO_URL', 'https://github.com/OliverMp28/vout'),
+    ],
 ];
