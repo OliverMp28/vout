@@ -61,6 +61,7 @@
     "appearance.mode.dark": "Dark",
     "appearance.mode.system": "System",
     "nav.menu": "Navigation menu",
+    "nav.menu_description": "Navigate to Vout's main sections",
     "nav.search": "Search games",
     "nav.password": "Password",
     "nav.two_factor": "Two-factor auth",

@@ -1,7 +1,6 @@
 import { Link, usePage } from '@inertiajs/react';
 import { LayoutGrid, Menu, Search, Shapes } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
-import AppLogoIcon from '@/components/app-logo-icon';
 import { AppearanceSwitcher } from '@/components/appearance-switcher';
 import { Breadcrumbs } from '@/components/breadcrumbs';
 import { LanguageSwitcher } from '@/components/language-switcher';
@@ -21,6 +20,7 @@ import {
 import {
     Sheet,
     SheetContent,
+    SheetDescription,
     SheetHeader,
     SheetTitle,
     SheetTrigger,
@@ -86,15 +86,15 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                             <SheetTitle className="sr-only">
                                 {t('nav.menu')}
                             </SheetTitle>
+                            <SheetDescription className="sr-only">
+                                {t('nav.menu_description')}
+                            </SheetDescription>
                             <SheetHeader className="flex justify-start border-b border-border/40 px-4 py-6 text-left">
                                 <Link
                                     href="/"
                                     className="flex items-center gap-2"
                                 >
-                                    <AppLogoIcon className="h-8 w-8" />
-                                    <span className="bg-linear-to-r from-(--vout-gradient-start) to-(--vout-gradient-end) bg-clip-text text-xl font-bold tracking-tight text-transparent">
-                                        Vout
-                                    </span>
+                                    <AppLogo />
                                 </Link>
                             </SheetHeader>
                             <div className="mt-4 flex h-full flex-1 flex-col space-y-4 p-4">

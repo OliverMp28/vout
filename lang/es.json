@@ -61,6 +61,7 @@
     "appearance.mode.dark": "Oscuro",
     "appearance.mode.system": "Sistema",
     "nav.menu": "Menú de navegación",
+    "nav.menu_description": "Navega a las secciones principales de Vout",
     "nav.search": "Buscar juegos",
     "nav.password": "Contraseña",
     "nav.two_factor": "Autenticación 2FA",
