@@ -102,6 +102,34 @@ it('blocks path traversal attempts via the slug', function (): void {
     get('/legal/aviso-legal/../../etc/passwd')->assertNotFound();
 });
 
+it('exposes every real cookie in the cookies policy table', function (): void {
+    get(route('legal.show', ['slug' => 'cookies']))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('slug', 'cookies')
+            ->where('version', '1.0.0')
+            ->where('markdown', function (string $md): bool {
+                // Each name that actually exists at runtime must appear in
+                // the user-facing cookie table — guarantees we never ship a
+                // policy that hides a cookie (AEPD 2024 §minimum inventory).
+                foreach ([
+                    'vout-session',
+                    'XSRF-TOKEN',
+                    'remember_web_*',
+                    'appearance',
+                    'sidebar_state',
+                    'vout-cookie-consent',
+                ] as $name) {
+                    if (! str_contains($md, $name)) {
+                        return false;
+                    }
+                }
+
+                return true;
+            })
+        );
+});
+
 it('exposes the four legal documents in the sidebar menu', function (): void {
     get(route('legal.show', ['slug' => 'aviso-legal']))
         ->assertOk()

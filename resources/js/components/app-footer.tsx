@@ -1,6 +1,7 @@
 import { Link } from '@inertiajs/react';
 import { Github } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
+import { useCookieConsent } from '@/hooks/use-cookie-consent';
 import { useTranslation } from '@/hooks/use-translation';
 import { home, visionLab } from '@/routes';
 import { index as catalogIndex } from '@/routes/catalog';
@@ -12,6 +13,7 @@ const GITHUB_REPO_URL = 'https://github.com/OliverMp28/vout';
 export function AppFooter() {
     const currentYear = new Date().getFullYear();
     const { t } = useTranslation();
+    const { reopen } = useCookieConsent();
 
     const platformLinks = [
         { label: t('footer.home'), href: home().url },
@@ -123,10 +125,17 @@ export function AppFooter() {
                     </div>
                 </div>
 
-                <div className="mt-12 border-t border-border/40 pt-8">
-                    <p className="text-center text-sm text-muted-foreground">
+                <div className="mt-12 flex flex-col items-center justify-between gap-3 border-t border-border/40 pt-8 sm:flex-row">
+                    <p className="text-center text-sm text-muted-foreground sm:text-left">
                         &copy; {currentYear} Vout Ecosystem. {t('footer.rights')}
                     </p>
+                    <button
+                        type="button"
+                        onClick={reopen}
+                        className="text-sm text-muted-foreground transition-colors hover:text-primary"
+                    >
+                        {t('footer.legal.manage_cookies')}
+                    </button>
                 </div>
             </div>
         </footer>

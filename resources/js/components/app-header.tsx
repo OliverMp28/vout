@@ -2,6 +2,7 @@ import { Link, usePage } from '@inertiajs/react';
 import { LayoutGrid, Menu, Search, Shapes } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import AppLogoIcon from '@/components/app-logo-icon';
+import { AppearanceSwitcher } from '@/components/appearance-switcher';
 import { Breadcrumbs } from '@/components/breadcrumbs';
 import { LanguageSwitcher } from '@/components/language-switcher';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -190,6 +191,8 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                             </TooltipContent>
                         </Tooltip>
                     </TooltipProvider>
+
+                    <AppearanceSwitcher />
 
                     <LanguageSwitcher />
 

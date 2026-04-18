@@ -1,6 +1,7 @@
 import { AppFooter } from '@/components/app-footer';
 import { AppHeader } from '@/components/app-header';
 import { AppShell } from '@/components/app-shell';
+import { CookieBanner } from '@/components/cookie-consent/cookie-banner';
 import type { AppLayoutProps } from '@/types';
 
 export default function PortalLayout({
@@ -30,6 +31,7 @@ export default function PortalLayout({
             </main>
 
             <AppFooter />
+            <CookieBanner />
         </AppShell>
     );
 }

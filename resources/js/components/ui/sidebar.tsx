@@ -81,7 +81,10 @@ function SidebarProvider({
         _setOpen(openState)
       }
 
-      // This sets the cookie to keep the sidebar state.
+      // Estado funcional UI: el sidebar es admin-only y el usuario está
+      // siempre autenticado al verlo, así que persistirlo es necesario
+      // para que la UI vuelva al estado elegido en la próxima visita.
+      // No es una cookie de "preferencia" sujeta a consentimiento.
       document.cookie = `${SIDEBAR_COOKIE_NAME}=${openState}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}`
     },
     [setOpenProp, open]

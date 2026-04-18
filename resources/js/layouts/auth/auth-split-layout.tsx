@@ -1,6 +1,9 @@
 import { Link, usePage } from '@inertiajs/react';
 import { Gamepad2, Scan, Users } from 'lucide-react';
 import AppLogoIcon from '@/components/app-logo-icon';
+import { AppearanceSwitcher } from '@/components/appearance-switcher';
+import { CookieBanner } from '@/components/cookie-consent/cookie-banner';
+import { LanguageSwitcher } from '@/components/language-switcher';
 import { home } from '@/routes';
 import type { AuthLayoutProps } from '@/types';
 
@@ -121,7 +124,12 @@ export default function AuthSplitLayout({
             </div>
 
             {/* ─── Panel del formulario ──────────────────────── */}
-            <div className="flex w-full items-center justify-center px-6 py-10 sm:px-8 lg:px-12">
+            <div className="relative flex w-full items-center justify-center px-6 py-10 sm:px-8 lg:px-12">
+                <div className="absolute top-4 right-4 z-10 flex items-center gap-1">
+                    <AppearanceSwitcher />
+                    <LanguageSwitcher />
+                </div>
+
                 <div className="mx-auto flex w-full max-w-sm flex-col justify-center space-y-6">
                     {/* Logo en móvil */}
                     <Link
@@ -147,6 +155,8 @@ export default function AuthSplitLayout({
                     <div className="animate-slide-up-fade">{children}</div>
                 </div>
             </div>
+
+            <CookieBanner />
         </div>
     );
 }

@@ -33,7 +33,6 @@ export default function Appearance({ activeGestureConfig }: AppearanceProps) {
     ];
 
     const { data, setData, patch, processing, recentlySuccessful } = useForm({
-        dark_mode: auth.user.settings?.dark_mode ?? true,
         show_mascot: auth.user.settings?.show_mascot ?? true,
         gestures_enabled: auth.user.settings?.gestures_enabled ?? false,
     });

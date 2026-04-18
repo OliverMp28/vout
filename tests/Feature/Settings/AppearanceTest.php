@@ -41,7 +41,7 @@ test('user can update appearance settings', function () {
 
     $this->actingAs($user)
         ->patch(route('user-settings.update'), [
-            'dark_mode' => true,
+            'appearance' => 'dark',
             'show_mascot' => false,
             'gestures_enabled' => true,
         ])
@@ -51,7 +51,7 @@ test('user can update appearance settings', function () {
     $settings = $user->settings()->first();
 
     expect($settings)
-        ->dark_mode->toBeTrue()
+        ->appearance->toBe('dark')
         ->show_mascot->toBeFalse()
         ->gestures_enabled->toBeTrue();
 });
@@ -59,12 +59,11 @@ test('user can update appearance settings', function () {
 test('updating appearance settings creates user settings if none exist', function () {
     $user = User::factory()->create();
 
-    // El UserFactory no crea settings — verificamos que parta de cero.
     expect($user->settings()->exists())->toBeFalse();
 
     $this->actingAs($user)
         ->patch(route('user-settings.update'), [
-            'dark_mode' => false,
+            'appearance' => 'system',
             'show_mascot' => true,
             'gestures_enabled' => false,
         ])
@@ -72,27 +71,54 @@ test('updating appearance settings creates user settings if none exist', functio
 
     expect($user->settings()->exists())->toBeTrue();
     expect($user->settings()->first())
-        ->dark_mode->toBeFalse()
+        ->appearance->toBe('system')
         ->show_mascot->toBeTrue()
         ->gestures_enabled->toBeFalse();
 });
 
-test('appearance settings validation requires all fields', function () {
-    $user = User::factory()->create();
-
-    $this->actingAs($user)
-        ->patch(route('user-settings.update'), [])
-        ->assertSessionHasErrors(['dark_mode', 'show_mascot', 'gestures_enabled']);
-});
-
-test('appearance settings validation requires boolean values', function () {
+test('appearance accepts only the whitelisted modes', function () {
     $user = User::factory()->create();
 
     $this->actingAs($user)
         ->patch(route('user-settings.update'), [
-            'dark_mode' => 'not-a-boolean',
+            'appearance' => 'midnight',
+        ])
+        ->assertSessionHasErrors(['appearance']);
+});
+
+test('booleans are validated when provided', function () {
+    $user = User::factory()->create();
+
+    $this->actingAs($user)
+        ->patch(route('user-settings.update'), [
             'show_mascot' => 'not-a-boolean',
             'gestures_enabled' => 'not-a-boolean',
         ])
-        ->assertSessionHasErrors(['dark_mode', 'show_mascot', 'gestures_enabled']);
+        ->assertSessionHasErrors(['show_mascot', 'gestures_enabled']);
+});
+
+test('appearance can be updated independently of mascot or gestures', function () {
+    // Los tabs de tema envían sólo `appearance`; el form Save sólo
+    // envía mascot+gestures. Ambos canales deben funcionar por separado.
+    $user = User::factory()->create();
+
+    $this->actingAs($user)
+        ->patch(route('user-settings.update'), ['appearance' => 'light'])
+        ->assertRedirect()
+        ->assertSessionHasNoErrors();
+
+    expect($user->settings()->first()->appearance)->toBe('light');
+
+    $this->actingAs($user)
+        ->patch(route('user-settings.update'), [
+            'show_mascot' => false,
+            'gestures_enabled' => true,
+        ])
+        ->assertRedirect()
+        ->assertSessionHasNoErrors();
+
+    expect($user->settings()->first())
+        ->appearance->toBe('light')
+        ->show_mascot->toBeFalse()
+        ->gestures_enabled->toBeTrue();
 });
