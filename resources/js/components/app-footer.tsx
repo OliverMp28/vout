@@ -5,6 +5,7 @@ import { useTranslation } from '@/hooks/use-translation';
 import { home, visionLab } from '@/routes';
 import { index as catalogIndex } from '@/routes/catalog';
 import { docs as developersDocs, landing as developersLanding } from '@/routes/developers';
+import { show as legalShow } from '@/routes/legal';
 
 const GITHUB_REPO_URL = 'https://github.com/OliverMp28/vout';
 
@@ -26,10 +27,17 @@ export function AppFooter() {
         },
     ];
 
+    const legalLinks = [
+        { label: t('footer.legal.notice'), href: legalShow('aviso-legal').url },
+        { label: t('footer.legal.privacy'), href: legalShow('privacidad').url },
+        { label: t('footer.legal.cookies'), href: legalShow('cookies').url },
+        { label: t('footer.legal.terms'), href: legalShow('terminos').url },
+    ];
+
     return (
         <footer className="border-t border-border/40 bg-background/90">
             <div className="mx-auto max-w-7xl px-4 py-12 md:px-6 lg:px-8">
-                <div className="grid gap-12 md:grid-cols-[1.3fr_1fr_1fr]">
+                <div className="grid gap-12 md:grid-cols-2 lg:grid-cols-[1.3fr_1fr_1fr_1fr]">
                     <div className="space-y-6">
                         <Link href={home().url} className="flex items-center gap-2">
                             <AppLogo />
@@ -93,6 +101,24 @@ export function AppFooter() {
                                     {t('footer.source_code')}
                                 </a>
                             </li>
+                        </ul>
+                    </div>
+
+                    <div>
+                        <h3 className="text-xs font-semibold uppercase tracking-wider text-foreground">
+                            {t('footer.legal.title')}
+                        </h3>
+                        <ul className="mt-4 space-y-3">
+                            {legalLinks.map((link) => (
+                                <li key={link.href}>
+                                    <Link
+                                        href={link.href}
+                                        className="text-sm text-muted-foreground transition-colors hover:text-primary"
+                                    >
+                                        {link.label}
+                                    </Link>
+                                </li>
+                            ))}
                         </ul>
                     </div>
                 </div>

@@ -3,12 +3,19 @@
 use App\Http\Controllers\Auth\SocialiteController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\LegalController;
 use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\PlayController;
 use App\Http\Controllers\VisionLabController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
+
+// Fase 5 — Páginas legales públicas.
+// El `where` bloquea path traversal: sólo [a-z0-9-]+ llega al controlador.
+Route::get('legal/{slug}', [LegalController::class, 'show'])
+    ->where('slug', '[a-z0-9-]+')
+    ->name('legal.show');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', DashboardController::class)->name('dashboard');
