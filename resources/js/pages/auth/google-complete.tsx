@@ -19,8 +19,10 @@ type Props = {
 export default function GoogleComplete({ name, email }: Props) {
     const { t } = useTranslation();
     const [acceptTerms, setAcceptTerms] = useState(false);
-    const [confirmAge, setConfirmAge] = useState(false);
-    const consentReady = acceptTerms && confirmAge;
+    // Age-gate oculto por decisión de producto (proyecto personal, sin público masivo).
+    // Backend + i18n siguen intactos — para reactivarlo basta con restaurar el bloque
+    // del checkbox `confirm_age` más abajo y volver a `acceptTerms && confirmAge`.
+    const consentReady = acceptTerms;
 
     return (
         <AuthLayout
@@ -94,34 +96,36 @@ export default function GoogleComplete({ name, email }: Props) {
                                     </div>
                                 </div>
 
-                                <div className="flex items-start gap-3">
-                                    <Checkbox
-                                        id="confirm_age"
-                                        name="confirm_age"
-                                        checked={confirmAge}
-                                        onCheckedChange={(value) => setConfirmAge(value === true)}
-                                        aria-invalid={!!errors.confirm_age}
-                                        aria-describedby={errors.confirm_age ? 'confirm_age-error' : undefined}
-                                        className="mt-0.5"
-                                    />
-                                    <div className="space-y-1">
-                                        <Label
-                                            htmlFor="confirm_age"
-                                            className="text-sm leading-snug font-normal"
-                                        >
-                                            {t('auth.consent.age.label')}
-                                        </Label>
-                                        {errors.confirm_age && (
-                                            <p
-                                                id="confirm_age-error"
-                                                className="text-xs text-destructive"
-                                            >
-                                                {errors.confirm_age}
-                                            </p>
-                                        )}
+                                {/*
+                                    Age-gate (≥14) oculto por decisión de producto — ver google-complete.tsx:21.
+                                    El backend sigue validando `confirm_age` así que enviamos un hidden
+                                    para no romper el flujo. Para reactivar la UI: eliminar el hidden y
+                                    restaurar el Checkbox siguiente.
+
+                                    <div className="flex items-start gap-3">
+                                        <Checkbox
+                                            id="confirm_age"
+                                            name="confirm_age"
+                                            checked={confirmAge}
+                                            onCheckedChange={(value) => setConfirmAge(value === true)}
+                                            aria-invalid={!!errors.confirm_age}
+                                            aria-describedby={errors.confirm_age ? 'confirm_age-error' : undefined}
+                                            className="mt-0.5"
+                                        />
+                                        <div className="space-y-1">
+                                            <Label htmlFor="confirm_age" className="text-sm leading-snug font-normal">
+                                                {t('auth.consent.age.label')}
+                                            </Label>
+                                            {errors.confirm_age && (
+                                                <p id="confirm_age-error" className="text-xs text-destructive">
+                                                    {errors.confirm_age}
+                                                </p>
+                                            )}
+                                        </div>
                                     </div>
-                                </div>
-                                <InputError message={errors.accept_terms || errors.confirm_age} />
+                                */}
+                                <input type="hidden" name="confirm_age" value="1" />
+                                <InputError message={errors.accept_terms} />
                             </div>
 
                             <Button

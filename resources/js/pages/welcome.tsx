@@ -1,13 +1,5 @@
 import { Head, Link, usePage } from '@inertiajs/react';
-import {
-    ArrowRight,
-    Fingerprint,
-    Gamepad2,
-    Hand,
-    Sparkles,
-    Zap,
-} from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
+import { ArrowRight, Sparkles, Zap } from 'lucide-react';
 import { FeaturedCarousel } from '@/components/catalog/featured-carousel';
 import { GameCard } from '@/components/catalog/game-card';
 import { Button } from '@/components/ui/button';
@@ -74,9 +66,6 @@ export default function Welcome({ featured, popular, canRegister }: WelcomeProps
                         </div>
                     </section>
                 )}
-
-                {/* Value pillars strip — guests only, communicates Vout's identity in one glance */}
-                {isGuest && <PillarsStrip />}
 
                 {/* Register CTA strip — only for guests */}
                 {canRegister && isGuest && (
@@ -159,53 +148,3 @@ export default function Welcome({ featured, popular, canRegister }: WelcomeProps
     );
 }
 
-type Pillar = {
-    key: 'identity' | 'gaming' | 'accessibility';
-    icon: LucideIcon;
-};
-
-const PILLARS: Pillar[] = [
-    { key: 'identity', icon: Fingerprint },
-    { key: 'gaming', icon: Gamepad2 },
-    { key: 'accessibility', icon: Hand },
-];
-
-function PillarsStrip() {
-    const { t } = useTranslation();
-
-    return (
-        <section
-            aria-label="Vout"
-            className="grid gap-3 sm:grid-cols-3"
-        >
-            {PILLARS.map(({ key, icon: Icon }) => (
-                <div
-                    key={key}
-                    className="group/pillar relative overflow-hidden rounded-xl border border-border/60 bg-card/60 p-4 backdrop-blur-sm transition-all duration-300 hover:border-primary/30 hover:bg-card/80 hover:shadow-md"
-                >
-                    {/* Subtle hover glow */}
-                    <div
-                        className="pointer-events-none absolute -top-10 -right-10 size-24 rounded-full bg-primary/10 opacity-0 blur-2xl transition-opacity duration-300 group-hover/pillar:opacity-100"
-                        aria-hidden="true"
-                    />
-                    <div className="relative flex items-start gap-3">
-                        <div
-                            className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary transition-transform duration-300 group-hover/pillar:scale-105"
-                            aria-hidden="true"
-                        >
-                            <Icon className="size-4.5" />
-                        </div>
-                        <div className="min-w-0 space-y-0.5">
-                            <p className="text-sm font-semibold tracking-tight">
-                                {t(`welcome.pillars.${key}.title`)}
-                            </p>
-                            <p className="text-xs leading-relaxed text-muted-foreground">
-                                {t(`welcome.pillars.${key}.description`)}
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            ))}
-        </section>
-    );
-}
