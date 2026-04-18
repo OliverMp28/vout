@@ -1,6 +1,6 @@
 import { Transition } from '@headlessui/react';
-import { Head, useForm, usePage } from '@inertiajs/react';
-import { Aperture, Paintbrush, Smile } from 'lucide-react';
+import { Head, Link, useForm, usePage } from '@inertiajs/react';
+import { Aperture, Paintbrush, ShieldCheck, Smile } from 'lucide-react';
 import type { FormEventHandler } from 'react';
 
 import AppearanceTabs from '@/components/appearance-tabs';
@@ -15,6 +15,7 @@ import AppLayout from '@/layouts/app-layout';
 import SettingsLayout from '@/layouts/settings/layout';
 import type { GestureConfigData } from '@/lib/mediapipe/types';
 import { edit as editAppearance } from '@/routes/appearance';
+import { show as legalShow } from '@/routes/legal';
 import type { Auth, BreadcrumbItem } from '@/types';
 
 type AppearanceProps = {
@@ -151,6 +152,37 @@ export default function Appearance({ activeGestureConfig }: AppearanceProps) {
                             {/* Calibration Wizard (shown when gestures enabled) */}
                             {data.gestures_enabled && (
                                 <div className="space-y-6 animate-in fade-in slide-in-from-top-4 duration-500">
+                                    {/*
+                                     * Aviso de procesamiento local exigido por el plan de Fase 5.
+                                     * MediaPipe procesa los frames en el propio navegador mediante
+                                     * un Web Worker (ver app/Http/Controllers/... — la justificación
+                                     * legal completa vive en la Política de Privacidad). Este bloque
+                                     * recuerda al usuario que su vídeo no sale nunca del dispositivo
+                                     * y sólo se guardan parámetros numéricos de configuración.
+                                     */}
+                                    <div className="flex items-start gap-3 rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-4">
+                                        <ShieldCheck
+                                            className="mt-0.5 size-5 shrink-0 text-emerald-600 dark:text-emerald-400"
+                                            aria-hidden="true"
+                                        />
+                                        <div className="space-y-1.5 text-sm">
+                                            <p className="font-medium text-emerald-900 dark:text-emerald-100">
+                                                {t('appearance.camera_notice.title')}
+                                            </p>
+                                            <p className="text-xs leading-relaxed text-emerald-800/90 dark:text-emerald-200/80">
+                                                {t('appearance.camera_notice.desc')}
+                                            </p>
+                                            <Link
+                                                href={legalShow('privacidad').url}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="inline-flex items-center text-xs font-medium text-emerald-700 underline-offset-2 hover:underline dark:text-emerald-300"
+                                            >
+                                                {t('appearance.camera_notice.link')}
+                                            </Link>
+                                        </div>
+                                    </div>
+
                                     <CalibrationWizard
                                         saveUrl={activeGestureConfig ? `/gesture-configs/${activeGestureConfig.id}` : '/gesture-configs'}
                                         saveMethod={activeGestureConfig ? 'put' : 'post'}
