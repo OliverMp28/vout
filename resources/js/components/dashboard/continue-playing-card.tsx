@@ -62,12 +62,12 @@ export function ContinuePlayingCard({ game }: Props) {
 
             <div className="flex flex-1 flex-col gap-3 p-5 md:p-6">
                 <div className="flex flex-col gap-2">
-                    <span className="text-xs font-medium uppercase tracking-wide text-primary">
+                    <span className="text-xs font-medium tracking-wide text-primary uppercase">
                         {t('dashboard.continue.eyebrow')}
                     </span>
                     <h2
                         id="dashboard-continue-playing-title"
-                        className="text-xl font-semibold leading-tight"
+                        className="text-xl leading-tight font-semibold"
                     >
                         {game.name}
                     </h2>
@@ -137,10 +137,7 @@ function ContinuePlayingEmpty() {
             className="flex flex-col items-start gap-3 rounded-xl border border-border/60 bg-card p-6 shadow-sm"
         >
             <div className="flex size-12 items-center justify-center rounded-full bg-primary/10">
-                <Gamepad2
-                    className="size-6 text-primary"
-                    aria-hidden="true"
-                />
+                <Gamepad2 className="size-6 text-primary" aria-hidden="true" />
             </div>
             <div className="space-y-1">
                 <h2

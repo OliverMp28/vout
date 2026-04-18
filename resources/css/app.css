@@ -343,29 +343,25 @@
     background-color: var(--background);
     background-image:
         /* Dot grid sutil — menor intensidad para no competir con cards */
-        radial-gradient(
-            circle,
-            oklch(0.5 0.22 280 / 0.1) 1px,
-            transparent 1px
-        ),
+        radial-gradient(circle, oklch(0.5 0.22 280 / 0.1) 1px, transparent 1px),
         /* Top-left violet bloom — más amplio y vivo en light mode */
         radial-gradient(
-            ellipse 80% 65% at 5% -5%,
-            oklch(0.55 0.22 280 / 0.22) 0%,
-            transparent 65%
-        ),
+                ellipse 80% 65% at 5% -5%,
+                oklch(0.55 0.22 280 / 0.22) 0%,
+                transparent 65%
+            ),
         /* Bottom-right purple bloom */
         radial-gradient(
-            ellipse 70% 55% at 105% 110%,
-            oklch(0.5 0.2 310 / 0.18) 0%,
-            transparent 60%
-        ),
+                ellipse 70% 55% at 105% 110%,
+                oklch(0.5 0.2 310 / 0.18) 0%,
+                transparent 60%
+            ),
         /* Center soft glow */
         radial-gradient(
-            ellipse 60% 50% at 55% 45%,
-            oklch(0.55 0.18 295 / 0.07) 0%,
-            transparent 70%
-        );
+                ellipse 60% 50% at 55% 45%,
+                oklch(0.55 0.18 295 / 0.07) 0%,
+                transparent 70%
+            );
     background-size:
         28px 28px,
         100% 100%,
@@ -384,22 +380,22 @@
         ),
         /* Top-left violet bloom */
         radial-gradient(
-            ellipse 70% 55% at 10% 0%,
-            oklch(0.4 0.2 280 / 0.28) 0%,
-            transparent 65%
-        ),
+                ellipse 70% 55% at 10% 0%,
+                oklch(0.4 0.2 280 / 0.28) 0%,
+                transparent 65%
+            ),
         /* Bottom-right purple bloom */
         radial-gradient(
-            ellipse 60% 45% at 95% 105%,
-            oklch(0.35 0.15 310 / 0.22) 0%,
-            transparent 60%
-        ),
+                ellipse 60% 45% at 95% 105%,
+                oklch(0.35 0.15 310 / 0.22) 0%,
+                transparent 60%
+            ),
         /* Center soft glow */
         radial-gradient(
-            ellipse 50% 40% at 55% 45%,
-            oklch(0.4 0.18 285 / 0.12) 0%,
-            transparent 70%
-        );
+                ellipse 50% 40% at 55% 45%,
+                oklch(0.4 0.18 285 / 0.12) 0%,
+                transparent 70%
+            );
     background-size:
         28px 28px,
         100% 100%,

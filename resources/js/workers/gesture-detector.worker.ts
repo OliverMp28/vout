@@ -26,10 +26,18 @@ import {
     MEDIAPIPE_CDN_BASE,
     USED_BLENDSHAPE_KEYS,
 } from '@/lib/mediapipe/constants';
-import { classifyGestures, resetDebouncers } from '@/lib/mediapipe/gesture-classifier';
+import {
+    classifyGestures,
+    resetDebouncers,
+} from '@/lib/mediapipe/gesture-classifier';
 import { extractHeadPose } from '@/lib/mediapipe/head-pose';
 import { PerformanceAdapter } from '@/lib/mediapipe/performance-adapter';
-import type { NeutralBaseline, WorkerConfig, WorkerInMessage, WorkerOutMessage } from '@/lib/mediapipe/types';
+import type {
+    NeutralBaseline,
+    WorkerConfig,
+    WorkerInMessage,
+    WorkerOutMessage,
+} from '@/lib/mediapipe/types';
 
 // ---------------------------------------------------------------------------
 // Handlers globales — capturan errores que escapan de try/catch
@@ -37,13 +45,22 @@ import type { NeutralBaseline, WorkerConfig, WorkerInMessage, WorkerOutMessage }
 
 self.addEventListener('error', (e) => {
     console.error('[GestureWorker] Unhandled error:', e.message, e);
-    post({ type: 'ERROR', code: 'UNCAUGHT', message: e.message ?? 'Unhandled worker error' });
+    post({
+        type: 'ERROR',
+        code: 'UNCAUGHT',
+        message: e.message ?? 'Unhandled worker error',
+    });
 });
 
 self.addEventListener('unhandledrejection', (e: PromiseRejectionEvent) => {
-    const reason = e.reason instanceof Error ? e.reason.message : String(e.reason);
+    const reason =
+        e.reason instanceof Error ? e.reason.message : String(e.reason);
     console.error('[GestureWorker] Unhandled rejection:', reason, e.reason);
-    post({ type: 'ERROR', code: 'UNCAUGHT', message: reason ?? 'Unhandled promise rejection' });
+    post({
+        type: 'ERROR',
+        code: 'UNCAUGHT',
+        message: reason ?? 'Unhandled promise rejection',
+    });
 });
 
 // ---------------------------------------------------------------------------
@@ -52,7 +69,11 @@ self.addEventListener('unhandledrejection', (e: PromiseRejectionEvent) => {
 
 let landmarker: FaceLandmarkerInstance | null = null;
 let paused = false;
-let config: WorkerConfig = { sensitivity: 5, targetFps: 30, enableBlendshapes: false };
+let config: WorkerConfig = {
+    sensitivity: 5,
+    targetFps: 30,
+    enableBlendshapes: false,
+};
 let baseline: NeutralBaseline | null = null;
 
 const perf = new PerformanceAdapter();
@@ -115,26 +136,45 @@ async function loadMediaPipeFromCDN() {
     const vision = await import(/* @vite-ignore */ cdnUrl);
 
     if (!vision.FaceLandmarker || !vision.FilesetResolver) {
-        throw new Error('MediaPipe CDN module did not export FaceLandmarker or FilesetResolver');
+        throw new Error(
+            'MediaPipe CDN module did not export FaceLandmarker or FilesetResolver',
+        );
     }
 
-    return { FaceLandmarker: vision.FaceLandmarker, FilesetResolver: vision.FilesetResolver };
+    return {
+        FaceLandmarker: vision.FaceLandmarker,
+        FilesetResolver: vision.FilesetResolver,
+    };
 }
 
 // ---------------------------------------------------------------------------
 // INIT — Cargar modelo
 // ---------------------------------------------------------------------------
 
-async function handleInit(modelPath: string, wasmPath: string, cfg: WorkerConfig): Promise<void> {
+async function handleInit(
+    modelPath: string,
+    wasmPath: string,
+    cfg: WorkerConfig,
+): Promise<void> {
     config = cfg;
-    console.log('[GestureWorker] handleInit — model:', modelPath, 'wasm:', wasmPath);
+    console.log(
+        '[GestureWorker] handleInit — model:',
+        modelPath,
+        'wasm:',
+        wasmPath,
+    );
 
     try {
-        const { FaceLandmarker, FilesetResolver } = await loadMediaPipeFromCDN();
-        console.log('[GestureWorker] MediaPipe imported. Resolving WASM fileset...');
+        const { FaceLandmarker, FilesetResolver } =
+            await loadMediaPipeFromCDN();
+        console.log(
+            '[GestureWorker] MediaPipe imported. Resolving WASM fileset...',
+        );
 
         const vision = await FilesetResolver.forVisionTasks(wasmPath);
-        console.log('[GestureWorker] WASM fileset resolved. Creating FaceLandmarker (GPU)...');
+        console.log(
+            '[GestureWorker] WASM fileset resolved. Creating FaceLandmarker (GPU)...',
+        );
 
         landmarker = await FaceLandmarker.createFromOptions(vision, {
             baseOptions: {
@@ -143,24 +183,35 @@ async function handleInit(modelPath: string, wasmPath: string, cfg: WorkerConfig
             },
             runningMode: 'VIDEO',
             numFaces: DEFAULT_DETECTION_CONFIG.numFaces,
-            minFaceDetectionConfidence: DEFAULT_DETECTION_CONFIG.minFaceDetectionConfidence,
-            minFacePresenceConfidence: DEFAULT_DETECTION_CONFIG.minFacePresenceConfidence,
-            outputFaceBlendshapes: DEFAULT_DETECTION_CONFIG.outputFaceBlendshapes,
-            outputFacialTransformationMatrixes: DEFAULT_DETECTION_CONFIG.outputFacialTransformationMatrixes,
+            minFaceDetectionConfidence:
+                DEFAULT_DETECTION_CONFIG.minFaceDetectionConfidence,
+            minFacePresenceConfidence:
+                DEFAULT_DETECTION_CONFIG.minFacePresenceConfidence,
+            outputFaceBlendshapes:
+                DEFAULT_DETECTION_CONFIG.outputFaceBlendshapes,
+            outputFacialTransformationMatrixes:
+                DEFAULT_DETECTION_CONFIG.outputFacialTransformationMatrixes,
         });
 
         // Nota (Sesión 3.4 §4.4): el primer `detectForVideo` incluye la
         // compilación del shader GPU (≈200-500ms) que queda fuera de la ventana
         // deslizante del PerformanceAdapter porque arranca con muestras limpias.
         // No hay que alarmarse si el primer `inferenceMs` es un outlier alto.
-        console.log('[GestureWorker] FaceLandmarker created (delegate=GPU). Sending READY.');
+        console.log(
+            '[GestureWorker] FaceLandmarker created (delegate=GPU). Sending READY.',
+        );
         post({ type: 'READY' });
     } catch (gpuErr) {
         // El delegado GPU puede fallar en algunos dispositivos — reintentar con CPU.
-        console.warn('[GestureWorker] GPU init failed:', gpuErr, '— retrying with CPU...');
+        console.warn(
+            '[GestureWorker] GPU init failed:',
+            gpuErr,
+            '— retrying with CPU...',
+        );
 
         try {
-            const { FaceLandmarker, FilesetResolver } = await loadMediaPipeFromCDN();
+            const { FaceLandmarker, FilesetResolver } =
+                await loadMediaPipeFromCDN();
             const vision = await FilesetResolver.forVisionTasks(wasmPath);
 
             landmarker = await FaceLandmarker.createFromOptions(vision, {
@@ -170,20 +221,29 @@ async function handleInit(modelPath: string, wasmPath: string, cfg: WorkerConfig
                 },
                 runningMode: 'VIDEO',
                 numFaces: DEFAULT_DETECTION_CONFIG.numFaces,
-                minFaceDetectionConfidence: DEFAULT_DETECTION_CONFIG.minFaceDetectionConfidence,
-                minFacePresenceConfidence: DEFAULT_DETECTION_CONFIG.minFacePresenceConfidence,
-                outputFaceBlendshapes: DEFAULT_DETECTION_CONFIG.outputFaceBlendshapes,
-                outputFacialTransformationMatrixes: DEFAULT_DETECTION_CONFIG.outputFacialTransformationMatrixes,
+                minFaceDetectionConfidence:
+                    DEFAULT_DETECTION_CONFIG.minFaceDetectionConfidence,
+                minFacePresenceConfidence:
+                    DEFAULT_DETECTION_CONFIG.minFacePresenceConfidence,
+                outputFaceBlendshapes:
+                    DEFAULT_DETECTION_CONFIG.outputFaceBlendshapes,
+                outputFacialTransformationMatrixes:
+                    DEFAULT_DETECTION_CONFIG.outputFacialTransformationMatrixes,
             });
 
-            console.log('[GestureWorker] FaceLandmarker created (delegate=CPU fallback). Sending READY.');
+            console.log(
+                '[GestureWorker] FaceLandmarker created (delegate=CPU fallback). Sending READY.',
+            );
             post({ type: 'READY' });
         } catch (cpuErr) {
             console.error('[GestureWorker] CPU init also failed:', cpuErr);
             post({
                 type: 'ERROR',
                 code: 'INIT_FAILED',
-                message: cpuErr instanceof Error ? cpuErr.message : 'Failed to initialise FaceLandmarker',
+                message:
+                    cpuErr instanceof Error
+                        ? cpuErr.message
+                        : 'Failed to initialise FaceLandmarker',
             });
         }
     }
@@ -219,7 +279,10 @@ function handleFrame(bitmap: ImageBitmap, timestamp: number): void {
     // En modo Vision Lab necesitamos las 52 categorías para el panel de debug.
     // En modo juego basta con las 11 que consume `classifyGestures` — ver
     // `USED_BLENDSHAPE_KEYS` en constants.ts (Sesión 3.4 §4.2).
-    const bsMap = blendshapeMapFromResult(result.faceBlendshapes ?? [], config.enableBlendshapes);
+    const bsMap = blendshapeMapFromResult(
+        result.faceBlendshapes ?? [],
+        config.enableBlendshapes,
+    );
 
     // Modo calibración: acumular muestras.
     if (isCalibrating) {
@@ -232,7 +295,10 @@ function handleFrame(bitmap: ImageBitmap, timestamp: number): void {
 
     // -- Pose de cabeza (extraer ANTES de clasificar gestos) --
     let headPose = null;
-    if (result.facialTransformationMatrixes && result.facialTransformationMatrixes.length > 0) {
+    if (
+        result.facialTransformationMatrixes &&
+        result.facialTransformationMatrixes.length > 0
+    ) {
         const matrix = result.facialTransformationMatrixes[0].data;
         headPose = extractHeadPose(matrix, timestamp);
     }
@@ -242,9 +308,10 @@ function handleFrame(bitmap: ImageBitmap, timestamp: number): void {
     // rotada. En posiciones extremas la red neuronal distorsiona los
     // blendshapes frontales (ej. mirar arriba → falso BROW_RAISE, mirar
     // abajo → falso MOUTH_OPEN). El head tracking sigue funcionando.
-    const headExtremeRotation = headPose != null
-        && (Math.abs(headPose.pitch) > HEAD_POSE_GESTURE_GATE
-            || Math.abs(headPose.roll) > HEAD_POSE_GESTURE_GATE);
+    const headExtremeRotation =
+        headPose != null &&
+        (Math.abs(headPose.pitch) > HEAD_POSE_GESTURE_GATE ||
+            Math.abs(headPose.roll) > HEAD_POSE_GESTURE_GATE);
     const gestures = headExtremeRotation
         ? []
         : classifyGestures(bsMap, config.sensitivity, baseline, timestamp);

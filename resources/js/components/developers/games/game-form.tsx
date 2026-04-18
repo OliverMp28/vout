@@ -101,7 +101,7 @@ export function GameForm({
         <form
             onSubmit={onSubmit}
             noValidate
-            className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_320px] contain-[layout]"
+            className="grid gap-8 contain-[layout] lg:grid-cols-[minmax(0,1fr)_320px]"
         >
             <div className="space-y-6">
                 {!hasApps && mode === 'create' && (
@@ -123,9 +123,7 @@ export function GameForm({
                                     className="gap-1.5"
                                 >
                                     <Plus className="size-4" aria-hidden />
-                                    {t(
-                                        'developers.games.create.no_apps.cta',
-                                    )}
+                                    {t('developers.games.create.no_apps.cta')}
                                 </Link>
                             </Button>
                         </AlertDescription>
@@ -203,7 +201,9 @@ export function GameForm({
                                 {t('developers.games.form.app.label')}
                             </Label>
                             <InfoHint
-                                label={t('developers.hints.allowed_origins.label')}
+                                label={t(
+                                    'developers.hints.allowed_origins.label',
+                                )}
                             >
                                 <p>
                                     {t('developers.hints.allowed_origins.body')}
@@ -317,19 +317,14 @@ export function GameForm({
                     <div className="grid gap-4 sm:grid-cols-2">
                         <div className="grid gap-2">
                             <Label htmlFor="game-release-date">
-                                {t(
-                                    'developers.games.form.release_date.label',
-                                )}
+                                {t('developers.games.form.release_date.label')}
                             </Label>
                             <Input
                                 id="game-release-date"
                                 type="date"
                                 value={data.release_date}
                                 onChange={(event) =>
-                                    onChange(
-                                        'release_date',
-                                        event.target.value,
-                                    )
+                                    onChange('release_date', event.target.value)
                                 }
                                 disabled={isLocked}
                                 aria-invalid={
@@ -338,9 +333,7 @@ export function GameForm({
                                 }
                             />
                             <p className="text-xs text-muted-foreground">
-                                {t(
-                                    'developers.games.form.release_date.hint',
-                                )}
+                                {t('developers.games.form.release_date.hint')}
                             </p>
                             <InputError message={errors.release_date} />
                         </div>
@@ -376,9 +369,7 @@ export function GameForm({
                 </Section>
 
                 <Section
-                    title={t(
-                        'developers.games.form.section.taxonomy.title',
-                    )}
+                    title={t('developers.games.form.section.taxonomy.title')}
                     description={t(
                         'developers.games.form.section.taxonomy.description',
                     )}
@@ -583,4 +574,3 @@ function ChipGroup({
         </fieldset>
     );
 }
-

@@ -91,7 +91,13 @@ export default function AdminDashboard({ metrics, recentActivity }: Props) {
                     size="sm"
                     className="h-auto px-2 py-1 text-[11px]"
                 >
-                    <Link href={gamesRoutes.index({ query: { status: 'pending_review' } }).url}>
+                    <Link
+                        href={
+                            gamesRoutes.index({
+                                query: { status: 'pending_review' },
+                            }).url
+                        }
+                    >
                         {t('admin.dashboard.metrics.review_cta')}
                     </Link>
                 </Button>
@@ -121,7 +127,12 @@ export default function AdminDashboard({ metrics, recentActivity }: Props) {
                     size="sm"
                     className="h-auto px-2 py-1 text-[11px]"
                 >
-                    <Link href={appsRoutes.index({ query: { status: 'suspended' } }).url}>
+                    <Link
+                        href={
+                            appsRoutes.index({ query: { status: 'suspended' } })
+                                .url
+                        }
+                    >
                         {t('admin.dashboard.metrics.review_cta')}
                     </Link>
                 </Button>
@@ -194,7 +205,9 @@ export default function AdminDashboard({ metrics, recentActivity }: Props) {
                                         ? t(spec.hintKey)
                                         : undefined
                                 }
-                                action={metric.value > 0 ? spec.action : undefined}
+                                action={
+                                    metric.value > 0 ? spec.action : undefined
+                                }
                             />
                         );
                     })}
@@ -248,10 +261,14 @@ export default function AdminDashboard({ metrics, recentActivity }: Props) {
                                         <p className="text-sm">
                                             <span className="font-medium">
                                                 {entry.admin?.name ??
-                                                    t('admin.dashboard.activity.system')}
+                                                    t(
+                                                        'admin.dashboard.activity.system',
+                                                    )}
                                             </span>{' '}
                                             <span className="text-muted-foreground">
-                                                {t('admin.dashboard.activity.performed')}
+                                                {t(
+                                                    'admin.dashboard.activity.performed',
+                                                )}
                                             </span>{' '}
                                             <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-[11px]">
                                                 {entry.action}
@@ -259,14 +276,17 @@ export default function AdminDashboard({ metrics, recentActivity }: Props) {
                                         </p>
                                         <p className="truncate text-xs text-muted-foreground">
                                             {shortMorph(entry.auditable_type) ??
-                                                t('admin.dashboard.activity.unknown_target')}
+                                                t(
+                                                    'admin.dashboard.activity.unknown_target',
+                                                )}
                                             {entry.auditable_id && (
-                                                <>
-                                                    {' '}·{' '}#{entry.auditable_id}
-                                                </>
+                                                <> · #{entry.auditable_id}</>
+                                            )}{' '}
+                                            ·{' '}
+                                            {formatTimestamp(
+                                                entry.created_at,
+                                                locale,
                                             )}
-                                            {' '}·{' '}
-                                            {formatTimestamp(entry.created_at, locale)}
                                         </p>
                                     </div>
                                 </li>

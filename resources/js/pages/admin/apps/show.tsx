@@ -123,9 +123,7 @@ export default function AdminAppsShow({ app, client }: Props) {
     );
 }
 
-AdminAppsShow.layout = (page: ReactNode) => (
-    <AdminLayout>{page}</AdminLayout>
-);
+AdminAppsShow.layout = (page: ReactNode) => <AdminLayout>{page}</AdminLayout>;
 
 // ── Info Panels ──────────────────────────────────────────────────────
 
@@ -224,21 +222,15 @@ function DetailsPanel({
                             </dd>
                         </div>
                         <MetaRow
-                            label={t(
-                                'admin.apps.show.details.client_type',
-                            )}
+                            label={t('admin.apps.show.details.client_type')}
                             value={
                                 client.confidential
-                                    ? t(
-                                          'admin.apps.show.details.confidential',
-                                      )
+                                    ? t('admin.apps.show.details.confidential')
                                     : t('admin.apps.show.details.public')
                             }
                         />
                         <MetaRow
-                            label={t(
-                                'admin.apps.show.details.client_status',
-                            )}
+                            label={t('admin.apps.show.details.client_status')}
                             value={
                                 client.revoked
                                     ? t('admin.apps.show.details.revoked')
@@ -338,10 +330,7 @@ function ActionsPanel({ app }: { app: AdminAppDetail }) {
     const { t } = useTranslation();
 
     return (
-        <Panel
-            title={t('admin.apps.show.actions.heading')}
-            tone="danger"
-        >
+        <Panel title={t('admin.apps.show.actions.heading')} tone="danger">
             <FirstPartyAction app={app} />
             {app.suspended_at ? (
                 <ReactivateAction app={app} />
@@ -365,7 +354,7 @@ function ProfileChip({ icon: Icon, label, tone }: ProfileChipProps) {
     return (
         <span
             className={cn(
-                'inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-[11px] font-medium uppercase tracking-wider',
+                'inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-[11px] font-medium tracking-wider uppercase',
                 tone === 'primary'
                     ? 'bg-primary/10 text-primary'
                     : 'bg-muted text-muted-foreground',

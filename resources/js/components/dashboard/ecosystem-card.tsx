@@ -139,7 +139,7 @@ function RoleLink({ icon, badge, label, helper, href }: RoleLinkProps) {
         <Button
             asChild
             variant="ghost"
-            className="h-auto w-full justify-start gap-3 whitespace-normal px-3 py-3 text-left"
+            className="h-auto w-full justify-start gap-3 px-3 py-3 text-left whitespace-normal"
         >
             <Link href={href}>
                 <div

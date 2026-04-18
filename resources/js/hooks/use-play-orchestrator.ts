@@ -20,9 +20,16 @@ import { useGestureEngine } from '@/hooks/use-gesture-engine';
 import { useIframeHandshake } from '@/hooks/use-iframe-handshake';
 import { transformCursorToIframe } from '@/lib/iframe/cursor-forwarder';
 import { ALL_PRESETS, PRESET_PLATFORMER } from '@/lib/mediapipe/action-presets';
-import type { GestureActionMapping, HeadTrackingMode } from '@/lib/mediapipe/action-types';
+import type {
+    GestureActionMapping,
+    HeadTrackingMode,
+} from '@/lib/mediapipe/action-types';
 import type { HeadTrackPosition } from '@/lib/mediapipe/head-tracker';
-import type { GestureConfigData, GestureEvent, GestureType } from '@/lib/mediapipe/types';
+import type {
+    GestureConfigData,
+    GestureEvent,
+    GestureType,
+} from '@/lib/mediapipe/types';
 
 // ---------------------------------------------------------------------------
 // Tipos
@@ -91,16 +98,21 @@ export function usePlayOrchestrator({
 }: UsePlayOrchestratorOptions): UsePlayOrchestratorReturn {
     // ── Valores base desde la config del usuario ─────────────────────────
     const baseSensitivity = activeGestureConfig?.sensitivity ?? 5;
-    const baseMapping = activeGestureConfig?.gesture_mapping ?? PRESET_PLATFORMER.mapping;
+    const baseMapping =
+        activeGestureConfig?.gesture_mapping ?? PRESET_PLATFORMER.mapping;
     const baseHeadMode = activeGestureConfig?.head_tracking_mode ?? 'disabled';
 
     // ── Estado de UI ──────────────────────────────────────────────────────
     const [sensitivity, setSensitivity] = useState(baseSensitivity);
-    const [activeMapping, setActiveMapping] = useState<GestureActionMapping>(baseMapping);
-    const [headTrackingMode, setHeadTrackingMode] = useState<HeadTrackingMode>(baseHeadMode);
+    const [activeMapping, setActiveMapping] =
+        useState<GestureActionMapping>(baseMapping);
+    const [headTrackingMode, setHeadTrackingMode] =
+        useState<HeadTrackingMode>(baseHeadMode);
     const [dispatchEnabled, setDispatchEnabled] = useState(false);
     const [lastGesture, setLastGesture] = useState<GestureType | null>(null);
-    const [presetSuggestion, setPresetSuggestion] = useState<string | null>(null);
+    const [presetSuggestion, setPresetSuggestion] = useState<string | null>(
+        null,
+    );
 
     const hasGestureConfig = activeGestureConfig !== null;
 
@@ -125,7 +137,8 @@ export function usePlayOrchestrator({
     //
     // enabled se deriva en render para evitar un useEffect extra que llame
     // a setDispatchEnabled(false) cuando el handshake falla.
-    const effectiveDispatchEnabled = dispatchEnabled && handshake.status !== 'error';
+    const effectiveDispatchEnabled =
+        dispatchEnabled && handshake.status !== 'error';
 
     const dispatcher = useActionDispatcher({
         mapping: activeMapping,
@@ -264,7 +277,10 @@ export function usePlayOrchestrator({
         setPresetSuggestion(null);
     }, []);
 
-    const dismissPresetSuggestion = useCallback(() => setPresetSuggestion(null), []);
+    const dismissPresetSuggestion = useCallback(
+        () => setPresetSuggestion(null),
+        [],
+    );
 
     // ── Recenter cursor al centro del iframe (no del viewport) ───────────
     // HeadTracker trabaja en espacio de viewport [0, 1]. Para que el cursor
@@ -310,7 +326,9 @@ export function usePlayOrchestrator({
     // Liberar teclas al perder foco — evita keydown bloqueados tras alt-tab.
     const releaseHeldKeys = dispatcher.releaseHeldKeys;
     useEffect(() => {
-        const onHidden = () => { if (document.hidden) releaseHeldKeys(); };
+        const onHidden = () => {
+            if (document.hidden) releaseHeldKeys();
+        };
         const onBlur = () => releaseHeldKeys();
         document.addEventListener('visibilitychange', onHidden);
         window.addEventListener('blur', onBlur);

@@ -170,15 +170,20 @@ function HeroSection({
                         className="flex flex-wrap gap-2 font-mono text-[11px] tracking-wider text-white/70 uppercase"
                         aria-label="Stack técnico"
                     >
-                        {['OAuth 2.1', 'PKCE', 'JWT RS256', 'GDPR-ready'].map((tag) => (
-                            <li
-                                key={tag}
-                                className="inline-flex items-center gap-1.5 rounded-md border border-white/15 bg-white/[0.05] px-2 py-1 backdrop-blur-sm"
-                            >
-                                <span className="size-1 rounded-full bg-emerald-400/80" aria-hidden />
-                                {tag}
-                            </li>
-                        ))}
+                        {['OAuth 2.1', 'PKCE', 'JWT RS256', 'GDPR-ready'].map(
+                            (tag) => (
+                                <li
+                                    key={tag}
+                                    className="inline-flex items-center gap-1.5 rounded-md border border-white/15 bg-white/[0.05] px-2 py-1 backdrop-blur-sm"
+                                >
+                                    <span
+                                        className="size-1 rounded-full bg-emerald-400/80"
+                                        aria-hidden
+                                    />
+                                    {tag}
+                                </li>
+                            ),
+                        )}
                     </ul>
 
                     <div className="flex flex-wrap items-center gap-3 pt-2">
@@ -205,7 +210,10 @@ function HeroSection({
                                 className="border border-white/20 bg-white/[0.04] text-white backdrop-blur-sm hover:bg-white/[0.09] hover:text-white focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
                             >
                                 <Link href={secondaryHref} prefetch>
-                                    <BookOpen className="mr-2 size-4" aria-hidden />
+                                    <BookOpen
+                                        className="mr-2 size-4"
+                                        aria-hidden
+                                    />
                                     {secondaryLabel}
                                 </Link>
                             </Button>
@@ -226,13 +234,8 @@ function HeroSection({
  */
 function HeroCodePreview() {
     return (
-        <div
-            className="relative hidden w-full lg:block"
-            aria-hidden
-        >
-            <div
-                className="pointer-events-none absolute -inset-4 rounded-2xl bg-linear-to-br from-violet-500/20 via-fuchsia-500/10 to-transparent blur-2xl"
-            />
+        <div className="relative hidden w-full lg:block" aria-hidden>
+            <div className="pointer-events-none absolute -inset-4 rounded-2xl bg-linear-to-br from-violet-500/20 via-fuchsia-500/10 to-transparent blur-2xl" />
             <div className="relative rounded-xl border border-white/10 bg-slate-950/85 shadow-2xl backdrop-blur-md">
                 <div className="flex items-center gap-2 border-b border-white/10 px-4 py-3">
                     <span className="size-2.5 rounded-full bg-rose-400/70" />
@@ -244,28 +247,38 @@ function HeroCodePreview() {
                 </div>
                 <pre className="overflow-x-auto px-5 py-5 font-mono text-[13px] leading-[1.65] text-white/90">
                     <code>
-                        <span className="text-white/40">{'// Decoded from Authorization: Bearer <token>'}</span>
+                        <span className="text-white/40">
+                            {'// Decoded from Authorization: Bearer <token>'}
+                        </span>
                         {'\n'}
                         <span>{'{'}</span>
                         {'\n  '}
                         <span className="text-sky-300">&quot;iss&quot;</span>
                         <span className="text-white/70">: </span>
-                        <span className="text-emerald-300">&quot;https://vout.com&quot;</span>
+                        <span className="text-emerald-300">
+                            &quot;https://vout.com&quot;
+                        </span>
                         <span className="text-white/50">,</span>
                         {'\n  '}
                         <span className="text-sky-300">&quot;sub&quot;</span>
                         <span className="text-white/70">: </span>
-                        <span className="text-emerald-300">&quot;01HC8K...e2f&quot;</span>
+                        <span className="text-emerald-300">
+                            &quot;01HC8K...e2f&quot;
+                        </span>
                         <span className="text-white/50">,</span>
                         {'\n  '}
                         <span className="text-sky-300">&quot;aud&quot;</span>
                         <span className="text-white/70">: </span>
-                        <span className="text-emerald-300">&quot;your-app&quot;</span>
+                        <span className="text-emerald-300">
+                            &quot;your-app&quot;
+                        </span>
                         <span className="text-white/50">,</span>
                         {'\n  '}
                         <span className="text-sky-300">&quot;scope&quot;</span>
                         <span className="text-white/70">: </span>
-                        <span className="text-emerald-300">&quot;user:email games:read&quot;</span>
+                        <span className="text-emerald-300">
+                            &quot;user:email games:read&quot;
+                        </span>
                         <span className="text-white/50">,</span>
                         {'\n  '}
                         <span className="text-sky-300">&quot;exp&quot;</span>
@@ -336,7 +349,12 @@ function FeaturesSection({ t }: { t: TranslateFn }) {
     );
 }
 
-function FeatureCard({ icon: Icon, title, description, delay }: FeatureCardProps) {
+function FeatureCard({
+    icon: Icon,
+    title,
+    description,
+    delay,
+}: FeatureCardProps) {
     return (
         <article
             className="group animate-slide-up-fade relative overflow-hidden rounded-2xl border border-border bg-card p-6 shadow-sm transition-[box-shadow,background-color] duration-300 ease-out hover:bg-accent/30 hover:shadow-md md:p-7"
@@ -382,7 +400,9 @@ function StepsSection({ t }: { t: TranslateFn }) {
                         key={step}
                         number={step}
                         title={t(`developers.landing.steps.step_${step}.title`)}
-                        description={t(`developers.landing.steps.step_${step}.desc`)}
+                        description={t(
+                            `developers.landing.steps.step_${step}.desc`,
+                        )}
                     />
                 ))}
             </ol>
@@ -446,7 +466,9 @@ function GuidesSection({
             <div
                 className={cn(
                     'grid gap-4 md:gap-6',
-                    guides.length === 1 ? 'md:mx-auto md:max-w-2xl' : 'md:grid-cols-2',
+                    guides.length === 1
+                        ? 'md:mx-auto md:max-w-2xl'
+                        : 'md:grid-cols-2',
                 )}
             >
                 {guides.map((guide) => (
@@ -557,7 +579,12 @@ type FinalCtaSectionProps = {
     href: string;
 };
 
-function FinalCtaSection({ heading, description, cta, href }: FinalCtaSectionProps) {
+function FinalCtaSection({
+    heading,
+    description,
+    cta,
+    href,
+}: FinalCtaSectionProps) {
     return (
         <section
             aria-labelledby="developers-final-cta-heading"
@@ -578,10 +605,18 @@ function FinalCtaSection({ heading, description, cta, href }: FinalCtaSectionPro
                     {description}
                 </p>
                 <div className="pt-2">
-                    <Button asChild id="btn-developers-landing-final-cta" size="lg" className="group/cta shadow-md hover:shadow-lg">
+                    <Button
+                        asChild
+                        id="btn-developers-landing-final-cta"
+                        size="lg"
+                        className="group/cta shadow-md hover:shadow-lg"
+                    >
                         <Link href={href}>
                             {cta}
-                            <ArrowRight className="ml-2 size-4 transition-transform group-hover/cta:translate-x-0.5" aria-hidden />
+                            <ArrowRight
+                                className="ml-2 size-4 transition-transform group-hover/cta:translate-x-0.5"
+                                aria-hidden
+                            />
                         </Link>
                     </Button>
                 </div>

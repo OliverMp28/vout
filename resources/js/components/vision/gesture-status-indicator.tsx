@@ -7,20 +7,50 @@ type GestureStatusIndicatorProps = {
     className?: string;
 };
 
-const statusConfig: Record<EngineStatus, { color: string; pulse: boolean; i18nKey: string }> = {
-    running: { color: 'bg-green-500', pulse: true, i18nKey: 'vision.status.active' },
-    loading: { color: 'bg-yellow-500', pulse: true, i18nKey: 'vision.status.loading' },
-    ready: { color: 'bg-yellow-500', pulse: false, i18nKey: 'vision.status.loading' },
-    error: { color: 'bg-red-500', pulse: false, i18nKey: 'vision.status.error' },
-    paused: { color: 'bg-orange-400', pulse: false, i18nKey: 'vision.status.paused' },
-    idle: { color: 'bg-muted-foreground/40', pulse: false, i18nKey: 'vision.status.inactive' },
+const statusConfig: Record<
+    EngineStatus,
+    { color: string; pulse: boolean; i18nKey: string }
+> = {
+    running: {
+        color: 'bg-green-500',
+        pulse: true,
+        i18nKey: 'vision.status.active',
+    },
+    loading: {
+        color: 'bg-yellow-500',
+        pulse: true,
+        i18nKey: 'vision.status.loading',
+    },
+    ready: {
+        color: 'bg-yellow-500',
+        pulse: false,
+        i18nKey: 'vision.status.loading',
+    },
+    error: {
+        color: 'bg-red-500',
+        pulse: false,
+        i18nKey: 'vision.status.error',
+    },
+    paused: {
+        color: 'bg-orange-400',
+        pulse: false,
+        i18nKey: 'vision.status.paused',
+    },
+    idle: {
+        color: 'bg-muted-foreground/40',
+        pulse: false,
+        i18nKey: 'vision.status.inactive',
+    },
 };
 
 /**
  * Small status badge indicating the vision engine state.
  * Can be placed in the app header, game wrapper, or settings panel.
  */
-function GestureStatusIndicator({ status, className }: GestureStatusIndicatorProps) {
+function GestureStatusIndicator({
+    status,
+    className,
+}: GestureStatusIndicatorProps) {
     const { t } = useTranslation();
     const cfg = statusConfig[status];
 

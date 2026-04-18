@@ -1,5 +1,5 @@
 import { Transition } from '@headlessui/react';
-import { Form, Head } from '@inertiajs/react';
+import { Form, Head, usePage } from '@inertiajs/react';
 import { useRef } from 'react';
 import PasswordController from '@/actions/App/Http/Controllers/Settings/PasswordController';
 import Heading from '@/components/heading';
@@ -20,6 +20,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 export default function Password() {
+    const { auth } = usePage().props;
     const passwordInput = useRef<HTMLInputElement>(null);
     const currentPasswordInput = useRef<HTMLInputElement>(null);
 
@@ -61,6 +62,17 @@ export default function Password() {
                     >
                         {({ errors, processing, recentlySuccessful }) => (
                             <>
+                                <input
+                                    type="text"
+                                    name="username"
+                                    autoComplete="username"
+                                    defaultValue={auth?.user?.email ?? ''}
+                                    readOnly
+                                    tabIndex={-1}
+                                    aria-hidden="true"
+                                    className="sr-only"
+                                />
+
                                 <div className="grid gap-2">
                                     <Label htmlFor="current_password">
                                         Current password

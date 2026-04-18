@@ -134,12 +134,12 @@ function GameCard({ game }: GameCardProps) {
                 ) : (
                     <div className="flex size-full flex-col items-center justify-center gap-1 text-muted-foreground">
                         <ImageOff className="size-6" aria-hidden />
-                        <span className="text-[11px] uppercase tracking-wider">
+                        <span className="text-[11px] tracking-wider uppercase">
                             {t('developers.games.index.card.no_cover')}
                         </span>
                     </div>
                 )}
-                <div className="absolute right-2 top-2">
+                <div className="absolute top-2 right-2">
                     <GameStatusBadge status={game.status} />
                 </div>
             </div>

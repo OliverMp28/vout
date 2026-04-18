@@ -17,7 +17,11 @@ export type UseCookieConsentReturn = {
 };
 
 export function useCookieConsent(): UseCookieConsentReturn {
-    const consent = useSyncExternalStore(subscribeConsent, readConsent, () => null);
+    const consent = useSyncExternalStore(
+        subscribeConsent,
+        readConsent,
+        () => null,
+    );
 
     const accept = useCallback((): void => {
         writeConsent(true);

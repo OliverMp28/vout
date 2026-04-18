@@ -48,7 +48,7 @@ export default function LegalShow({
 
                 <article className="min-w-0 space-y-8">
                     <header className="space-y-4 border-b border-border/60 pb-8">
-                        <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                        <div className="flex items-center gap-2 text-xs font-medium tracking-wider text-muted-foreground uppercase">
                             <ShieldCheck className="size-3.5" aria-hidden />
                             {t('legal.eyebrow')}
                         </div>
@@ -108,7 +108,7 @@ function LegalSidebar({
 }: LegalSidebarProps) {
     return (
         <nav aria-label={label} className="lg:sticky lg:top-24 lg:self-start">
-            <p className="mb-3 hidden text-xs font-semibold uppercase tracking-wider text-muted-foreground lg:block">
+            <p className="mb-3 hidden text-xs font-semibold tracking-wider text-muted-foreground uppercase lg:block">
                 {label}
             </p>
 
@@ -131,8 +131,13 @@ function LegalSidebar({
                                         : 'text-muted-foreground hover:bg-muted hover:text-foreground',
                                 )}
                             >
-                                <FileText className="size-4 shrink-0" aria-hidden />
-                                <span className="truncate">{translate(doc.title_key)}</span>
+                                <FileText
+                                    className="size-4 shrink-0"
+                                    aria-hidden
+                                />
+                                <span className="truncate">
+                                    {translate(doc.title_key)}
+                                </span>
                             </Link>
                         </li>
                     );

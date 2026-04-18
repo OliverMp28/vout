@@ -35,13 +35,37 @@ export const PRESET_PLATFORMER: ActionPreset = {
     nameKey: 'vision.preset.platformer',
     headTrackingMode: 'gesture',
     mapping: {
-        [GestureType.BrowRaise]: { type: 'keyboard', key: 'Space', mode: 'press' },       // Saltar
-        [GestureType.MouthOpen]: { type: 'keyboard', key: 'ArrowDown', mode: 'press' },   // Agacharse
-        [GestureType.BlinkLeft]: { type: 'keyboard', key: 'KeyZ', mode: 'press' },        // Atacar
-        [GestureType.BlinkRight]: { type: 'keyboard', key: 'KeyX', mode: 'press' },       // Especial
-        [GestureType.Smile]: { type: 'keyboard', key: 'KeyC', mode: 'press' },            // Acción extra
-        [HeadDirectionType.HeadLeft]: { type: 'keyboard', key: 'ArrowLeft', mode: 'hold' },   // Mover izquierda
-        [HeadDirectionType.HeadRight]: { type: 'keyboard', key: 'ArrowRight', mode: 'hold' }, // Mover derecha
+        [GestureType.BrowRaise]: {
+            type: 'keyboard',
+            key: 'Space',
+            mode: 'press',
+        }, // Saltar
+        [GestureType.MouthOpen]: {
+            type: 'keyboard',
+            key: 'ArrowDown',
+            mode: 'press',
+        }, // Agacharse
+        [GestureType.BlinkLeft]: {
+            type: 'keyboard',
+            key: 'KeyZ',
+            mode: 'press',
+        }, // Atacar
+        [GestureType.BlinkRight]: {
+            type: 'keyboard',
+            key: 'KeyX',
+            mode: 'press',
+        }, // Especial
+        [GestureType.Smile]: { type: 'keyboard', key: 'KeyC', mode: 'press' }, // Acción extra
+        [HeadDirectionType.HeadLeft]: {
+            type: 'keyboard',
+            key: 'ArrowLeft',
+            mode: 'hold',
+        }, // Mover izquierda
+        [HeadDirectionType.HeadRight]: {
+            type: 'keyboard',
+            key: 'ArrowRight',
+            mode: 'hold',
+        }, // Mover derecha
     },
 };
 
@@ -57,12 +81,28 @@ export const PRESET_SHOOTER: ActionPreset = {
     nameKey: 'vision.preset.shooter',
     headTrackingMode: 'cursor',
     mapping: {
-        [GestureType.MouthOpen]: { type: 'mouse_click', button: 'left' },                 // Disparar
-        [GestureType.BrowRaise]: { type: 'keyboard', key: 'Space', mode: 'press' },       // Saltar/Esquivar
-        [GestureType.BlinkLeft]: { type: 'keyboard', key: 'KeyR', mode: 'press' },        // Recargar
-        [GestureType.BlinkRight]: { type: 'keyboard', key: 'KeyF', mode: 'press' },       // Interactuar
-        [GestureType.Smile]: { type: 'keyboard', key: 'KeyQ', mode: 'press' },            // Cambiar arma
-        [GestureType.BrowFrown]: { type: 'keyboard', key: 'Escape', mode: 'press' },      // Pausa
+        [GestureType.MouthOpen]: { type: 'mouse_click', button: 'left' }, // Disparar
+        [GestureType.BrowRaise]: {
+            type: 'keyboard',
+            key: 'Space',
+            mode: 'press',
+        }, // Saltar/Esquivar
+        [GestureType.BlinkLeft]: {
+            type: 'keyboard',
+            key: 'KeyR',
+            mode: 'press',
+        }, // Recargar
+        [GestureType.BlinkRight]: {
+            type: 'keyboard',
+            key: 'KeyF',
+            mode: 'press',
+        }, // Interactuar
+        [GestureType.Smile]: { type: 'keyboard', key: 'KeyQ', mode: 'press' }, // Cambiar arma
+        [GestureType.BrowFrown]: {
+            type: 'keyboard',
+            key: 'Escape',
+            mode: 'press',
+        }, // Pausa
     },
 };
 
@@ -79,14 +119,46 @@ export const PRESET_ACCESSIBLE: ActionPreset = {
     nameKey: 'vision.preset.accessible',
     headTrackingMode: 'gesture',
     mapping: {
-        [GestureType.BrowRaise]: { type: 'keyboard', key: 'Space', mode: 'press' },       // Acción principal
-        [GestureType.MouthOpen]: { type: 'keyboard', key: 'Enter', mode: 'press' },       // Confirmar
-        [GestureType.Smile]: { type: 'keyboard', key: 'ArrowUp', mode: 'press' },         // Arriba/Saltar
-        [GestureType.BrowFrown]: { type: 'keyboard', key: 'Escape', mode: 'press' },      // Pausa/Cancelar
-        [HeadDirectionType.HeadLeft]: { type: 'keyboard', key: 'ArrowLeft', mode: 'hold' },
-        [HeadDirectionType.HeadRight]: { type: 'keyboard', key: 'ArrowRight', mode: 'hold' },
-        [HeadDirectionType.HeadUp]: { type: 'keyboard', key: 'ArrowUp', mode: 'hold' },
-        [HeadDirectionType.HeadDown]: { type: 'keyboard', key: 'ArrowDown', mode: 'hold' },
+        [GestureType.BrowRaise]: {
+            type: 'keyboard',
+            key: 'Space',
+            mode: 'press',
+        }, // Acción principal
+        [GestureType.MouthOpen]: {
+            type: 'keyboard',
+            key: 'Enter',
+            mode: 'press',
+        }, // Confirmar
+        [GestureType.Smile]: {
+            type: 'keyboard',
+            key: 'ArrowUp',
+            mode: 'press',
+        }, // Arriba/Saltar
+        [GestureType.BrowFrown]: {
+            type: 'keyboard',
+            key: 'Escape',
+            mode: 'press',
+        }, // Pausa/Cancelar
+        [HeadDirectionType.HeadLeft]: {
+            type: 'keyboard',
+            key: 'ArrowLeft',
+            mode: 'hold',
+        },
+        [HeadDirectionType.HeadRight]: {
+            type: 'keyboard',
+            key: 'ArrowRight',
+            mode: 'hold',
+        },
+        [HeadDirectionType.HeadUp]: {
+            type: 'keyboard',
+            key: 'ArrowUp',
+            mode: 'hold',
+        },
+        [HeadDirectionType.HeadDown]: {
+            type: 'keyboard',
+            key: 'ArrowDown',
+            mode: 'hold',
+        },
     },
 };
 

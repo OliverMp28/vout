@@ -93,13 +93,17 @@ export function CookiePreferencesDialog({ open, onOpenChange }: Props) {
                                         {t('cookie.dialog.preferences.title')}
                                     </h3>
                                     <p className="mt-1 text-xs text-muted-foreground">
-                                        {t('cookie.dialog.preferences.description')}
+                                        {t(
+                                            'cookie.dialog.preferences.description',
+                                        )}
                                     </p>
                                 </div>
                                 <Switch
                                     checked={preferences}
                                     onCheckedChange={setPreferences}
-                                    aria-label={t('cookie.dialog.preferences.title')}
+                                    aria-label={t(
+                                        'cookie.dialog.preferences.title',
+                                    )}
                                 />
                             </header>
                         </article>
@@ -119,7 +123,10 @@ export function CookiePreferencesDialog({ open, onOpenChange }: Props) {
 
                 <DialogFooter>
                     {isAuthenticated ? (
-                        <Button type="button" onClick={() => onOpenChange(false)}>
+                        <Button
+                            type="button"
+                            onClick={() => onOpenChange(false)}
+                        >
                             {t('cookie.dialog.close')}
                         </Button>
                     ) : (

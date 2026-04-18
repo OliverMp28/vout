@@ -1,8 +1,16 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { CAPTURE_HEIGHT, CAPTURE_WIDTH, DEFAULT_MODEL_PATH, WASM_CDN_PATH } from '@/lib/mediapipe/constants';
+import {
+    CAPTURE_HEIGHT,
+    CAPTURE_WIDTH,
+    DEFAULT_MODEL_PATH,
+    WASM_CDN_PATH,
+} from '@/lib/mediapipe/constants';
 import { HeadTracker } from '@/lib/mediapipe/head-tracker';
-import type { HeadTrackerConfig, HeadTrackPosition } from '@/lib/mediapipe/head-tracker';
+import type {
+    HeadTrackerConfig,
+    HeadTrackPosition,
+} from '@/lib/mediapipe/head-tracker';
 import { TelemetryCollector } from '@/lib/mediapipe/telemetry';
 import type {
     EngineStatus,
@@ -159,14 +167,29 @@ type UseGestureEngineReturn = {
 // Hook
 // ---------------------------------------------------------------------------
 
-export function useGestureEngine(options: UseGestureEngineOptions = {}): UseGestureEngineReturn {
-    const { sensitivity = 5, videoRef: externalVideoRef, onGesture, onHeadPose, onHeadMove, onCalibrated, enableBlendshapes = false, headTrackerConfig } = options;
+export function useGestureEngine(
+    options: UseGestureEngineOptions = {},
+): UseGestureEngineReturn {
+    const {
+        sensitivity = 5,
+        videoRef: externalVideoRef,
+        onGesture,
+        onHeadPose,
+        onHeadMove,
+        onCalibrated,
+        enableBlendshapes = false,
+        headTrackerConfig,
+    } = options;
 
     const [status, setStatus] = useState<EngineStatus>('idle');
     const [lastGesture, setLastGesture] = useState<GestureEvent | null>(null);
     const [headPose, setHeadPose] = useState<HeadPose | null>(null);
-    const [headTrackPosition, setHeadTrackPosition] = useState<HeadTrackPosition | null>(null);
-    const [blendshapes, setBlendshapes] = useState<Record<string, number> | null>(null);
+    const [headTrackPosition, setHeadTrackPosition] =
+        useState<HeadTrackPosition | null>(null);
+    const [blendshapes, setBlendshapes] = useState<Record<
+        string,
+        number
+    > | null>(null);
     const [perf, setPerf] = useState<PerformanceMetrics | null>(null);
     const [baseline, setBaseline] = useState<NeutralBaseline | null>(null);
     const [error, setError] = useState<string | null>(null);
@@ -216,85 +239,99 @@ export function useGestureEngine(options: UseGestureEngineOptions = {}): UseGest
     // Manejador de mensajes del Worker
     // -----------------------------------------------------------------------
 
-    const handleWorkerMessage = useCallback((e: MessageEvent<WorkerOutMessage>) => {
-        const msg = e.data;
+    const handleWorkerMessage = useCallback(
+        (e: MessageEvent<WorkerOutMessage>) => {
+            const msg = e.data;
 
-        switch (msg.type) {
-            case 'READY':
-                // Modelo cargado — el warm-up frame se envía desde el listener
-                // onReady de startDetection. NO seteamos 'running' aquí: la
-                // primera llamada a detectForVideo compila shaders GPU
-                // (~200-500ms). Status se mantiene en 'loading' hasta que el
-                // primer RESULT confirme que el pipeline está listo.
-                break;
+            switch (msg.type) {
+                case 'READY':
+                    // Modelo cargado — el warm-up frame se envía desde el listener
+                    // onReady de startDetection. NO seteamos 'running' aquí: la
+                    // primera llamada a detectForVideo compila shaders GPU
+                    // (~200-500ms). Status se mantiene en 'loading' hasta que el
+                    // primer RESULT confirme que el pipeline está listo.
+                    break;
 
-            case 'RESULT':
-                // Warm-up completo: el primer RESULT mientras 'loading' confirma
-                // que los shaders GPU están compilados. Arrancar el capture loop
-                // real y transicionar a 'running'.
-                if (statusRef.current === 'loading') {
-                    statusRef.current = 'running';
-                    setStatus('running');
-                    if (captureLoopRef.current) {
-                        rafRef.current = requestAnimationFrame(captureLoopRef.current);
+                case 'RESULT':
+                    // Warm-up completo: el primer RESULT mientras 'loading' confirma
+                    // que los shaders GPU están compilados. Arrancar el capture loop
+                    // real y transicionar a 'running'.
+                    if (statusRef.current === 'loading') {
+                        statusRef.current = 'running';
+                        setStatus('running');
+                        if (captureLoopRef.current) {
+                            rafRef.current = requestAnimationFrame(
+                                captureLoopRef.current,
+                            );
+                        }
                     }
-                }
-                for (const gesture of msg.gestures) {
-                    setLastGesture(gesture);
-                    onGestureRef.current?.(gesture);
-                }
-                if (msg.headPose) {
-                    setHeadPose(msg.headPose);
-                    onHeadPoseRef.current?.(msg.headPose);
+                    for (const gesture of msg.gestures) {
+                        setLastGesture(gesture);
+                        onGestureRef.current?.(gesture);
+                    }
+                    if (msg.headPose) {
+                        setHeadPose(msg.headPose);
+                        onHeadPoseRef.current?.(msg.headPose);
 
-                    // Mapear orientación de cabeza a coordenadas de pantalla suavizadas.
-                    // Negaciones empíricamente verificadas — ver comentario en HeadTracker.update().
-                    const rawH = -msg.headPose.pitch;
-                    const rawV = -msg.headPose.roll;
-                    lastRawHeadRef.current = { horizontal: rawH, vertical: rawV };
-                    const pos = headTrackerRef.current.update(rawH, rawV);
-                    setHeadTrackPosition(pos);
-                    onHeadMoveRef.current?.(pos);
+                        // Mapear orientación de cabeza a coordenadas de pantalla suavizadas.
+                        // Negaciones empíricamente verificadas — ver comentario en HeadTracker.update().
+                        const rawH = -msg.headPose.pitch;
+                        const rawV = -msg.headPose.roll;
+                        lastRawHeadRef.current = {
+                            horizontal: rawH,
+                            vertical: rawV,
+                        };
+                        const pos = headTrackerRef.current.update(rawH, rawV);
+                        setHeadTrackPosition(pos);
+                        onHeadMoveRef.current?.(pos);
+                    }
+                    break;
+
+                case 'BLENDSHAPES':
+                    setBlendshapes(msg.values);
+                    break;
+
+                case 'PERFORMANCE': {
+                    setPerf(msg.metrics);
+                    // El PerformanceAdapter del worker aplica histéresis (±10%) y
+                    // camina los FPS_TIERS de constants.ts — la lógica vive en un
+                    // único lugar. Aquí solo consumimos el resultado.
+                    intervalMsRef.current = 1000 / msg.metrics.targetFps;
+                    break;
                 }
-                break;
 
-            case 'BLENDSHAPES':
-                setBlendshapes(msg.values);
-                break;
+                case 'CALIBRATED':
+                    setBaseline(msg.baseline);
+                    onCalibratedRef.current?.(msg.baseline);
+                    break;
 
-            case 'PERFORMANCE': {
-                setPerf(msg.metrics);
-                // El PerformanceAdapter del worker aplica histéresis (±10%) y
-                // camina los FPS_TIERS de constants.ts — la lógica vive en un
-                // único lugar. Aquí solo consumimos el resultado.
-                intervalMsRef.current = 1000 / msg.metrics.targetFps;
-                break;
+                case 'TELEMETRY': {
+                    const now = performance.now();
+                    telemetry.push('inferenceMs', msg.inferenceMs);
+                    telemetry.push(
+                        'e2eCursorLatencyMs',
+                        now - msg.frameTimestamp,
+                    );
+
+                    const lastTelemetry = lastTelemetryTimeRef.current;
+                    if (lastTelemetry > 0 && now > lastTelemetry) {
+                        telemetry.push(
+                            'engineFps',
+                            1000 / (now - lastTelemetry),
+                        );
+                    }
+                    lastTelemetryTimeRef.current = now;
+                    break;
+                }
+
+                case 'ERROR':
+                    setError(msg.message);
+                    setStatus('error');
+                    break;
             }
-
-            case 'CALIBRATED':
-                setBaseline(msg.baseline);
-                onCalibratedRef.current?.(msg.baseline);
-                break;
-
-            case 'TELEMETRY': {
-                const now = performance.now();
-                telemetry.push('inferenceMs', msg.inferenceMs);
-                telemetry.push('e2eCursorLatencyMs', now - msg.frameTimestamp);
-                
-                const lastTelemetry = lastTelemetryTimeRef.current;
-                if (lastTelemetry > 0 && now > lastTelemetry) {
-                    telemetry.push('engineFps', 1000 / (now - lastTelemetry));
-                }
-                lastTelemetryTimeRef.current = now;
-                break;
-            }
-
-            case 'ERROR':
-                setError(msg.message);
-                setStatus('error');
-                break;
-        }
-    }, [telemetry]);
+        },
+        [telemetry],
+    );
 
     // Ref para el loop de captura — se define dentro de startDetection y se
     // reutiliza en resumeDetection. Evita el antipatrón de useCallback auto-referencial.
@@ -331,7 +368,10 @@ export function useGestureEngine(options: UseGestureEngineOptions = {}): UseGest
             // Capturar errores no manejados del worker (ej. si el import del CDN
             // falla con CORS, o si un módulo no se resuelve).
             worker.addEventListener('error', (e) => {
-                console.error('[GestureEngine] Worker uncaught error:', e.message);
+                console.error(
+                    '[GestureEngine] Worker uncaught error:',
+                    e.message,
+                );
                 setError(e.message ?? 'Worker encountered an unexpected error');
                 setStatus('error');
                 clearInitTimeout();
@@ -340,7 +380,8 @@ export function useGestureEngine(options: UseGestureEngineOptions = {}): UseGest
             // El worker corre desde un Blob URL — las rutas relativas como
             // "/models/face_landmarker.task" no se resuelven correctamente.
             // Convertimos a URL absoluta usando el origen de la página.
-            const rawModelPath = import.meta.env.VITE_MEDIAPIPE_MODEL_PATH ?? DEFAULT_MODEL_PATH;
+            const rawModelPath =
+                import.meta.env.VITE_MEDIAPIPE_MODEL_PATH ?? DEFAULT_MODEL_PATH;
             const modelPath = rawModelPath.startsWith('/')
                 ? `${window.location.origin}${rawModelPath}`
                 : rawModelPath;
@@ -376,16 +417,22 @@ export function useGestureEngine(options: UseGestureEngineOptions = {}): UseGest
                 // Sesión 3.6 — durante `loading` el worker no procesa frames
                 // (espera READY). Bajamos a 10fps para no malgastar CPU
                 // creando ImageBitmaps que se descartan.
-                const effectiveInterval = statusRef.current === 'loading' ? 100 : intervalMsRef.current;
+                const effectiveInterval =
+                    statusRef.current === 'loading'
+                        ? 100
+                        : intervalMsRef.current;
                 if (now - lastFrameTimeRef.current < effectiveInterval) {
                     telemetry.push('frameDropRate', 1);
                     rafRef.current = requestAnimationFrame(loop);
                     return;
                 }
-                
+
                 telemetry.push('frameDropRate', 0);
                 if (lastFrameTimeRef.current > 0) {
-                    telemetry.push('captureFps', 1000 / (now - lastFrameTimeRef.current));
+                    telemetry.push(
+                        'captureFps',
+                        1000 / (now - lastFrameTimeRef.current),
+                    );
                 }
                 lastFrameTimeRef.current = now;
 
@@ -395,7 +442,11 @@ export function useGestureEngine(options: UseGestureEngineOptions = {}): UseGest
                 })
                     .then((bitmap) => {
                         w.postMessage(
-                            { type: 'FRAME', bitmap, timestamp: now } satisfies WorkerInMessage,
+                            {
+                                type: 'FRAME',
+                                bitmap,
+                                timestamp: now,
+                            } satisfies WorkerInMessage,
                             [bitmap],
                         );
                     })
@@ -417,8 +468,14 @@ export function useGestureEngine(options: UseGestureEngineOptions = {}): UseGest
             // que la inicialización colgó (ej. el CDN no responde, WASM no carga).
             initTimeoutRef.current = setTimeout(() => {
                 if (workerRef.current === worker) {
-                    console.error('[GestureEngine] Init timeout — READY not received within', INIT_TIMEOUT_MS, 'ms');
-                    setError('Gesture engine timed out during initialization. Check browser console for details.');
+                    console.error(
+                        '[GestureEngine] Init timeout — READY not received within',
+                        INIT_TIMEOUT_MS,
+                        'ms',
+                    );
+                    setError(
+                        'Gesture engine timed out during initialization. Check browser console for details.',
+                    );
                     setStatus('error');
                 }
             }, INIT_TIMEOUT_MS);
@@ -446,7 +503,11 @@ export function useGestureEngine(options: UseGestureEngineOptions = {}): UseGest
                 })
                     .then((bitmap) => {
                         w.postMessage(
-                            { type: 'FRAME', bitmap, timestamp: performance.now() } satisfies WorkerInMessage,
+                            {
+                                type: 'FRAME',
+                                bitmap,
+                                timestamp: performance.now(),
+                            } satisfies WorkerInMessage,
                             [bitmap],
                         );
                     })
@@ -472,7 +533,9 @@ export function useGestureEngine(options: UseGestureEngineOptions = {}): UseGest
         clearInitTimeout();
 
         if (workerRef.current) {
-            workerRef.current.postMessage({ type: 'DESTROY' } satisfies WorkerInMessage);
+            workerRef.current.postMessage({
+                type: 'DESTROY',
+            } satisfies WorkerInMessage);
             workerRef.current.terminate();
             workerRef.current = null;
         }
@@ -497,7 +560,9 @@ export function useGestureEngine(options: UseGestureEngineOptions = {}): UseGest
     }, [clearInitTimeout]);
 
     const calibrateNeutral = useCallback(() => {
-        workerRef.current?.postMessage({ type: 'CALIBRATE_NEUTRAL' } satisfies WorkerInMessage);
+        workerRef.current?.postMessage({
+            type: 'CALIBRATE_NEUTRAL',
+        } satisfies WorkerInMessage);
     }, []);
 
     /**
@@ -513,12 +578,16 @@ export function useGestureEngine(options: UseGestureEngineOptions = {}): UseGest
 
     const pauseDetection = useCallback(() => {
         cancelAnimationFrame(rafRef.current);
-        workerRef.current?.postMessage({ type: 'PAUSE' } satisfies WorkerInMessage);
+        workerRef.current?.postMessage({
+            type: 'PAUSE',
+        } satisfies WorkerInMessage);
         setStatus('paused');
     }, []);
 
     const resumeDetection = useCallback(() => {
-        workerRef.current?.postMessage({ type: 'RESUME' } satisfies WorkerInMessage);
+        workerRef.current?.postMessage({
+            type: 'RESUME',
+        } satisfies WorkerInMessage);
         setStatus('running');
         if (captureLoopRef.current) {
             rafRef.current = requestAnimationFrame(captureLoopRef.current);
@@ -550,7 +619,9 @@ export function useGestureEngine(options: UseGestureEngineOptions = {}): UseGest
                 clearTimeout(initTimeoutRef.current);
             }
             if (workerRef.current) {
-                workerRef.current.postMessage({ type: 'DESTROY' } satisfies WorkerInMessage);
+                workerRef.current.postMessage({
+                    type: 'DESTROY',
+                } satisfies WorkerInMessage);
                 workerRef.current.terminate();
                 workerRef.current = null;
             }

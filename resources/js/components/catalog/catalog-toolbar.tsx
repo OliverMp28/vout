@@ -40,7 +40,7 @@ export function CatalogToolbar({
                     value={search}
                     onChange={(e) => onSearchChange(e.target.value)}
                     placeholder={t('catalog.search')}
-                    className="pl-9 pr-8"
+                    className="pr-8 pl-9"
                 />
                 {search && (
                     <button

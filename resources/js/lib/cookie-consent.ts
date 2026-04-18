@@ -63,7 +63,10 @@ export function readConsent(): CookieConsent | null {
     }
     try {
         const parsed = JSON.parse(raw) as Partial<CookieConsent>;
-        if (parsed.v !== CONSENT_VERSION || typeof parsed.preferences !== 'boolean') {
+        if (
+            parsed.v !== CONSENT_VERSION ||
+            typeof parsed.preferences !== 'boolean'
+        ) {
             cached = null;
             return null;
         }
@@ -71,7 +74,10 @@ export function readConsent(): CookieConsent | null {
             v: CONSENT_VERSION,
             technical: true,
             preferences: parsed.preferences,
-            decided_at: typeof parsed.decided_at === 'string' ? parsed.decided_at : new Date().toISOString(),
+            decided_at:
+                typeof parsed.decided_at === 'string'
+                    ? parsed.decided_at
+                    : new Date().toISOString(),
         };
         return cached;
     } catch {

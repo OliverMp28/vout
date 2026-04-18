@@ -17,7 +17,11 @@
  */
 
 import { HeadDirectionType, resolveEventKey } from './action-types';
-import type { GameAction, GestureActionMapping, HeadTrackingMode } from './action-types';
+import type {
+    GameAction,
+    GestureActionMapping,
+    HeadTrackingMode,
+} from './action-types';
 import type { HeadTrackPosition } from './head-tracker';
 import type { GestureType } from './types';
 
@@ -113,7 +117,10 @@ export class ActionDispatcher {
      * Timers de auto-liberación para gestos faciales con mode:'hold'.
      * Map<eventKey, timerId>
      */
-    private readonly holdTimers = new Map<string, ReturnType<typeof setTimeout>>();
+    private readonly holdTimers = new Map<
+        string,
+        ReturnType<typeof setTimeout>
+    >();
 
     /** Direcciones de cabeza virtuales actualmente activas (umbral cruzado). */
     private readonly activeHeadDirs = new Set<HeadDirectionType>();
@@ -132,7 +139,10 @@ export class ActionDispatcher {
      * - Si el clasificador deja de disparar, el timer expira y el gesto se borra del mapa.
      * - El siguiente disparo se trata de nuevo como onset.
      */
-    private readonly gestureActiveTimers = new Map<GestureType, ReturnType<typeof setTimeout>>();
+    private readonly gestureActiveTimers = new Map<
+        GestureType,
+        ReturnType<typeof setTimeout>
+    >();
 
     constructor(
         mapping: GestureActionMapping,
@@ -172,7 +182,8 @@ export class ActionDispatcher {
 
         // Para hold-keyboard dejamos pasar aunque no sea onset: el timer de
         // auto-liberación se renueva en dispatchKeyboard, manteniendo la tecla.
-        if (!isOnset && !(action.type === 'keyboard' && action.mode === 'hold')) return;
+        if (!isOnset && !(action.type === 'keyboard' && action.mode === 'hold'))
+            return;
 
         this.executeAction(action, false);
     }
@@ -367,19 +378,29 @@ export class ActionDispatcher {
      * @param isHeadDir Si es HEAD_*: el keyup lo gestiona handleHeadMove al salir del umbral.
      *                  Si es gesto facial: se usa timer de auto-liberación (FACIAL_HOLD_EXTEND_MS).
      */
-    private dispatchKeyboard(code: string, mode: 'press' | 'hold', isHeadDir: boolean): void {
+    private dispatchKeyboard(
+        code: string,
+        mode: 'press' | 'hold',
+        isHeadDir: boolean,
+    ): void {
         const eventKey = resolveEventKey(code);
 
         if (mode === 'press') {
-            this.eventTarget.dispatchEvent(this.makeKeyEvent('keydown', eventKey, code));
-            this.eventTarget.dispatchEvent(this.makeKeyEvent('keyup', eventKey, code));
+            this.eventTarget.dispatchEvent(
+                this.makeKeyEvent('keydown', eventKey, code),
+            );
+            this.eventTarget.dispatchEvent(
+                this.makeKeyEvent('keyup', eventKey, code),
+            );
             return;
         }
 
         // Modo hold — keydown ahora, keyup diferido.
         if (!this.heldKeys.has(eventKey)) {
             this.heldKeys.set(eventKey, code);
-            this.eventTarget.dispatchEvent(this.makeKeyEvent('keydown', eventKey, code));
+            this.eventTarget.dispatchEvent(
+                this.makeKeyEvent('keydown', eventKey, code),
+            );
         }
 
         if (!isHeadDir) {
@@ -400,9 +421,27 @@ export class ActionDispatcher {
 
     private dispatchMouseClick(button: 'left' | 'right'): void {
         const buttonIndex = button === 'left' ? 0 : 2;
-        this.eventTarget.dispatchEvent(new MouseEvent('mousedown', { button: buttonIndex, bubbles: true, cancelable: true }));
-        this.eventTarget.dispatchEvent(new MouseEvent('mouseup', { button: buttonIndex, bubbles: true, cancelable: true }));
-        this.eventTarget.dispatchEvent(new MouseEvent('click', { button: buttonIndex, bubbles: true, cancelable: true }));
+        this.eventTarget.dispatchEvent(
+            new MouseEvent('mousedown', {
+                button: buttonIndex,
+                bubbles: true,
+                cancelable: true,
+            }),
+        );
+        this.eventTarget.dispatchEvent(
+            new MouseEvent('mouseup', {
+                button: buttonIndex,
+                bubbles: true,
+                cancelable: true,
+            }),
+        );
+        this.eventTarget.dispatchEvent(
+            new MouseEvent('click', {
+                button: buttonIndex,
+                bubbles: true,
+                cancelable: true,
+            }),
+        );
     }
 
     /** Libera una tecla retenida, usando el code guardado para el keyup correcto. */
@@ -410,13 +449,17 @@ export class ActionDispatcher {
         const code = this.heldKeys.get(eventKey);
         if (code === undefined) return;
         this.heldKeys.delete(eventKey);
-        this.eventTarget.dispatchEvent(this.makeKeyEvent('keyup', eventKey, code));
+        this.eventTarget.dispatchEvent(
+            this.makeKeyEvent('keyup', eventKey, code),
+        );
     }
 
     /** Libera todas las teclas retenidas y cancela todos los timers de hold. */
     private releaseAllHeldKeys(): void {
         for (const [eventKey, code] of this.heldKeys) {
-            this.eventTarget.dispatchEvent(this.makeKeyEvent('keyup', eventKey, code));
+            this.eventTarget.dispatchEvent(
+                this.makeKeyEvent('keyup', eventKey, code),
+            );
         }
         this.heldKeys.clear();
 
@@ -426,8 +469,17 @@ export class ActionDispatcher {
         this.holdTimers.clear();
     }
 
-    private makeKeyEvent(type: 'keydown' | 'keyup', key: string, code: string): KeyboardEvent {
-        return new KeyboardEvent(type, { key, code, bubbles: true, cancelable: true });
+    private makeKeyEvent(
+        type: 'keydown' | 'keyup',
+        key: string,
+        code: string,
+    ): KeyboardEvent {
+        return new KeyboardEvent(type, {
+            key,
+            code,
+            bubbles: true,
+            cancelable: true,
+        });
     }
 
     /**

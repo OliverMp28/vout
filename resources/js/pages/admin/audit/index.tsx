@@ -78,10 +78,10 @@ export default function AdminAuditIndex({
         () =>
             Boolean(
                 filters.action ||
-                    filters.admin_id ||
-                    filters.auditable_type ||
-                    filters.from ||
-                    filters.to,
+                filters.admin_id ||
+                filters.auditable_type ||
+                filters.from ||
+                filters.to,
             ),
         [filters],
     );
@@ -199,7 +199,8 @@ export default function AdminAuditIndex({
                             }
                             onValueChange={(value) =>
                                 pushFilters({
-                                    admin_id: value === ALL_VALUE ? null : value,
+                                    admin_id:
+                                        value === ALL_VALUE ? null : value,
                                 })
                             }
                         >
@@ -301,7 +302,10 @@ export default function AdminAuditIndex({
                                     router.get(auditRoutes.index().url, {})
                                 }
                             >
-                                <RefreshCcw className="mr-2 size-4" aria-hidden />
+                                <RefreshCcw
+                                    className="mr-2 size-4"
+                                    aria-hidden
+                                />
                                 {t('admin.audit.filters.clear')}
                             </Button>
                         )}
@@ -400,9 +404,7 @@ export default function AdminAuditIndex({
     );
 }
 
-AdminAuditIndex.layout = (page: ReactNode) => (
-    <AdminLayout>{page}</AdminLayout>
-);
+AdminAuditIndex.layout = (page: ReactNode) => <AdminLayout>{page}</AdminLayout>;
 
 type AuditEntryProps = {
     entry: AdminAuditLogEntry;
@@ -436,8 +438,7 @@ function AuditEntry({ entry, isExpanded, onToggle, locale }: AuditEntryProps) {
                 <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                         <span className="text-sm font-medium">
-                            {entry.admin?.name ??
-                                t('admin.audit.entry.system')}
+                            {entry.admin?.name ?? t('admin.audit.entry.system')}
                         </span>
                         <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-[11px]">
                             {entry.action}
@@ -451,12 +452,7 @@ function AuditEntry({ entry, isExpanded, onToggle, locale }: AuditEntryProps) {
                     <p className="mt-1 text-xs text-muted-foreground">
                         {entry.auditable.label ??
                             t('admin.audit.entry.unknown_target')}
-                        {entry.auditable.id && (
-                            <>
-                                {' '}·{' '}#{entry.auditable.id}
-                            </>
-                        )}
-                        {' '}·{' '}
+                        {entry.auditable.id && <> · #{entry.auditable.id}</>} ·{' '}
                         {formatTimestamp(entry.created_at, locale)}
                     </p>
                 </div>
@@ -485,7 +481,7 @@ function AuditEntry({ entry, isExpanded, onToggle, locale }: AuditEntryProps) {
                 <div className="space-y-3 border-t border-border/60 bg-muted/30 px-4 py-3 sm:px-5">
                     {entry.remark && (
                         <div className="space-y-1">
-                            <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                            <p className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
                                 {t('admin.audit.entry.remark')}
                             </p>
                             <p className="text-sm">{entry.remark}</p>
@@ -493,7 +489,7 @@ function AuditEntry({ entry, isExpanded, onToggle, locale }: AuditEntryProps) {
                     )}
                     {entry.changes && Object.keys(entry.changes).length > 0 && (
                         <div className="space-y-1">
-                            <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                            <p className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
                                 {t('admin.audit.entry.changes')}
                             </p>
                             <pre className="max-h-64 overflow-auto rounded-lg bg-background p-3 text-[11px] leading-relaxed">

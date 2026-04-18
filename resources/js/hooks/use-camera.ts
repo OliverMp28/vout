@@ -65,14 +65,20 @@ export function useCamera({ videoRef }: UseCameraOptions): UseCameraReturn {
                 setError('Camera permission denied by user.');
             } else {
                 setStatus('error');
-                setError(err instanceof Error ? err.message : 'Camera access failed');
+                setError(
+                    err instanceof Error ? err.message : 'Camera access failed',
+                );
             }
             return null;
         }
     }, [videoRef]);
 
     const reattachStream = useCallback(() => {
-        if (streamRef.current && videoRef.current && videoRef.current.srcObject !== streamRef.current) {
+        if (
+            streamRef.current &&
+            videoRef.current &&
+            videoRef.current.srcObject !== streamRef.current
+        ) {
             videoRef.current.srcObject = streamRef.current;
             videoRef.current.play().catch(() => {});
         }

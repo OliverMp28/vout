@@ -56,7 +56,9 @@ export class TelemetryCollector {
             // Extraer la porción del array que tiene datos reales (para cuando el set no está lleno aún)
             const activeCount = Math.min(totalCount, this.capacity);
             // Hacer una copia y ordenar es requerido para los percentiles
-            const sorted = Float32Array.from(buffer.slice(0, activeCount)).sort();
+            const sorted = Float32Array.from(
+                buffer.slice(0, activeCount),
+            ).sort();
 
             let sum = 0;
             for (let i = 0; i < activeCount; i++) {
@@ -80,7 +82,7 @@ export class TelemetryCollector {
      * Vacia todos los buffers internamente
      */
     reset(): void {
-        // En lugar de instanciar nuevos Maps, solo reseteamos los contadores 
+        // En lugar de instanciar nuevos Maps, solo reseteamos los contadores
         // para abusar positivamente de la pre-alojación de Float32Arrays.
         for (const key of this.counts.keys()) {
             this.counts.set(key, 0);

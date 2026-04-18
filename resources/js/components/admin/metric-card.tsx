@@ -51,7 +51,7 @@ export function MetricCard({
             )}
         >
             <div className="flex items-start justify-between gap-3">
-                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
                     {label}
                 </p>
                 <span

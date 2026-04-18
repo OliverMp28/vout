@@ -72,9 +72,7 @@ export default function Dashboard({
             <Head title={t('dashboard.title')} />
 
             <div className="flex flex-col gap-8 p-6 md:p-8 lg:p-10">
-                {onboarding.show && (
-                    <OnboardingHero steps={onboarding.steps} />
-                )}
+                {onboarding.show && <OnboardingHero steps={onboarding.steps} />}
 
                 <DashboardHeader
                     name={greeting.name}

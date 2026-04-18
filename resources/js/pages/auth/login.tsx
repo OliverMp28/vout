@@ -73,7 +73,9 @@ export default function Login({
 
                             <div className="space-y-2">
                                 <div className="flex items-center justify-between">
-                                    <Label htmlFor="password">{t('auth.login.password')}</Label>
+                                    <Label htmlFor="password">
+                                        {t('auth.login.password')}
+                                    </Label>
                                     {canResetPassword && (
                                         <TextLink
                                             href={request()}

@@ -94,10 +94,7 @@ export default function AdminCategoriesEdit({ category }: Props) {
                                     errors.name ? 'name-error' : undefined
                                 }
                             />
-                            <InputError
-                                id="name-error"
-                                message={errors.name}
-                            />
+                            <InputError id="name-error" message={errors.name} />
                         </div>
 
                         <Button type="submit" disabled={saving}>
@@ -109,9 +106,7 @@ export default function AdminCategoriesEdit({ category }: Props) {
                         <Panel title={t('admin.categories.edit.title')}>
                             <dl className="grid gap-4">
                                 <MetaRow
-                                    label={t(
-                                        'admin.categories.edit.meta.slug',
-                                    )}
+                                    label={t('admin.categories.edit.meta.slug')}
                                     value={category.slug}
                                     monospace
                                 />
@@ -263,9 +258,7 @@ function DangerZone({ category }: { category: AdminCategoryDetail }) {
                             id="cat-delete-confirm"
                             type="text"
                             value={confirmation}
-                            onChange={(e) =>
-                                setConfirmation(e.target.value)
-                            }
+                            onChange={(e) => setConfirmation(e.target.value)}
                             autoComplete="off"
                             spellCheck={false}
                             className="font-mono text-sm"

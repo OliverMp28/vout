@@ -55,7 +55,9 @@ export default function DevelopersDashboardCreate() {
     const { data, setData, post, processing, errors, reset } =
         useForm<AppFormData>(DEFAULT_FORM);
 
-    const profile: ProfileKind = data.requires_auth ? 'with-idp' : 'client-only';
+    const profile: ProfileKind = data.requires_auth
+        ? 'with-idp'
+        : 'client-only';
 
     // Última origin derivada de app_url. Permite distinguir entre "el dev no
     // ha tocado el dominio principal" (lo actualizamos) y "lo editó a mano"
@@ -97,8 +99,7 @@ export default function DevelopersDashboardCreate() {
             if (derived !== null) {
                 const current = nextOrigins[0] ?? '';
                 const wasAuto =
-                    current === '' ||
-                    current === lastDerivedOriginRef.current;
+                    current === '' || current === lastDerivedOriginRef.current;
                 if (wasAuto) {
                     nextOrigins[0] = derived;
                     lastDerivedOriginRef.current = derived;
@@ -203,7 +204,9 @@ export default function DevelopersDashboardCreate() {
                 >
                     <div className="space-y-6">
                         <Section
-                            title={t('developers.dashboard.create.profile.heading')}
+                            title={t(
+                                'developers.dashboard.create.profile.heading',
+                            )}
                             description={t(
                                 'developers.dashboard.create.profile.description',
                             )}
@@ -243,7 +246,9 @@ export default function DevelopersDashboardCreate() {
                         </Section>
 
                         <Section
-                            title={t('developers.dashboard.create.meta.heading')}
+                            title={t(
+                                'developers.dashboard.create.meta.heading',
+                            )}
                             description={t(
                                 'developers.dashboard.create.meta.description',
                             )}
@@ -280,7 +285,9 @@ export default function DevelopersDashboardCreate() {
                                     hintLabel={t(
                                         'developers.hints.app_url.label',
                                     )}
-                                    hintBody={t('developers.hints.app_url.body')}
+                                    hintBody={t(
+                                        'developers.hints.app_url.body',
+                                    )}
                                 />
                                 <Input
                                     id="app_url"
@@ -295,7 +302,8 @@ export default function DevelopersDashboardCreate() {
                                     required
                                     maxLength={255}
                                     aria-invalid={
-                                        errors.app_url !== undefined || undefined
+                                        errors.app_url !== undefined ||
+                                        undefined
                                     }
                                     placeholder="https://mi-app.com"
                                     className="font-mono text-sm"
@@ -318,9 +326,7 @@ export default function DevelopersDashboardCreate() {
                             <div className="grid gap-2">
                                 <LabelWithHint
                                     htmlFor="allowed-origin-primary"
-                                    label={t(
-                                        'developers.form.allowed_origins',
-                                    )}
+                                    label={t('developers.form.allowed_origins')}
                                     hintLabel={t(
                                         'developers.hints.allowed_origins.label',
                                     )}
@@ -404,15 +410,20 @@ export default function DevelopersDashboardCreate() {
                                                             <Input
                                                                 type="text"
                                                                 value={value}
-                                                                onChange={(event) =>
+                                                                onChange={(
+                                                                    event,
+                                                                ) =>
                                                                     updateExtraOrigin(
                                                                         index,
-                                                                        event.target
+                                                                        event
+                                                                            .target
                                                                             .value,
                                                                     )
                                                                 }
                                                                 autoComplete="off"
-                                                                spellCheck={false}
+                                                                spellCheck={
+                                                                    false
+                                                                }
                                                                 maxLength={255}
                                                                 aria-invalid={
                                                                     fieldError !==
@@ -423,7 +434,9 @@ export default function DevelopersDashboardCreate() {
                                                                 className="font-mono text-sm"
                                                             />
                                                             <InputError
-                                                                message={fieldError}
+                                                                message={
+                                                                    fieldError
+                                                                }
                                                             />
                                                         </div>
                                                         <Button
@@ -460,7 +473,10 @@ export default function DevelopersDashboardCreate() {
                                         }
                                         className="gap-1.5"
                                     >
-                                        <Plus className="size-3.5" aria-hidden />
+                                        <Plus
+                                            className="size-3.5"
+                                            aria-hidden
+                                        />
                                         {t('developers.form.add_entry')}
                                     </Button>
                                 </CollapsibleContent>
@@ -554,9 +570,7 @@ export default function DevelopersDashboardCreate() {
                                         />
                                     </div>
                                     <p className="text-xs text-muted-foreground">
-                                        {t(
-                                            'developers.form.client_type.note',
-                                        )}
+                                        {t('developers.form.client_type.note')}
                                     </p>
                                 </div>
                                 <InputError message={errors.confidential} />
@@ -581,8 +595,10 @@ export default function DevelopersDashboardCreate() {
                     </div>
 
                     <aside
-                        className="order-first h-fit space-y-4 rounded-2xl border border-border bg-card p-6 text-sm shadow-sm lg:order-0 lg:sticky lg:top-24"
-                        aria-label={t('developers.dashboard.create.help.heading')}
+                        className="order-first h-fit space-y-4 rounded-2xl border border-border bg-card p-6 text-sm shadow-sm lg:sticky lg:top-24 lg:order-0"
+                        aria-label={t(
+                            'developers.dashboard.create.help.heading',
+                        )}
                     >
                         <h2 className="text-base font-semibold tracking-tight">
                             {t('developers.dashboard.create.help.heading')}
@@ -613,7 +629,9 @@ function Section({ title, description, children }: SectionProps) {
                     {title}
                 </h2>
                 {description && (
-                    <p className="text-sm text-muted-foreground">{description}</p>
+                    <p className="text-sm text-muted-foreground">
+                        {description}
+                    </p>
                 )}
             </div>
             <div className="space-y-4">{children}</div>

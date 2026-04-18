@@ -16,7 +16,8 @@ export function useCatalogFilters({ filters }: UseCatalogFiltersOptions) {
             const merged = { ...filters, ...newFilters };
 
             const params: Record<string, string | string[]> = {};
-            if (merged.categories.length > 0) params.categories = merged.categories;
+            if (merged.categories.length > 0)
+                params.categories = merged.categories;
             if (merged.search) params.search = merged.search;
             if (merged.sort !== 'popular') params.sort = merged.sort;
 

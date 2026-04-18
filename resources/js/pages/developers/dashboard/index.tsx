@@ -181,7 +181,7 @@ function StatusBadge({ isActive }: { isActive: boolean }) {
         <Badge
             variant={isActive ? 'default' : 'secondary'}
             className={cn(
-                'shrink-0 text-[10px] font-semibold uppercase tracking-wider',
+                'shrink-0 text-[10px] font-semibold tracking-wider uppercase',
                 isActive
                     ? 'bg-emerald-500/15 text-emerald-600 hover:bg-emerald-500/20 dark:text-emerald-400'
                     : 'bg-muted text-muted-foreground',
@@ -204,7 +204,7 @@ function ProfileBadge({ icon: Icon, label, tone }: ProfileBadgeProps) {
     return (
         <span
             className={cn(
-                'inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider',
+                'inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-medium tracking-wider uppercase',
                 tone === 'primary'
                     ? 'bg-primary/10 text-primary'
                     : 'bg-muted text-muted-foreground',

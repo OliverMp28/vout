@@ -45,7 +45,10 @@ type AdminSharedContext = {
  * El contador de pendientes se recibe vía prop compartida `admin` desde
  * HandleInertiaRequests — sólo se popula en rutas `admin.*`.
  */
-export default function AdminLayout({ children, breadcrumbs }: AdminLayoutProps) {
+export default function AdminLayout({
+    children,
+    breadcrumbs,
+}: AdminLayoutProps) {
     const { t } = useTranslation();
     const { isCurrentUrl, isCurrentOrParentUrl } = useCurrentUrl();
     const adminShared = (usePage().props.admin ?? null) as AdminSharedContext;

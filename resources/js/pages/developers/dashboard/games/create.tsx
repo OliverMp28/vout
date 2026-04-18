@@ -6,10 +6,7 @@ import { Button } from '@/components/ui/button';
 import { useTranslation } from '@/hooks/use-translation';
 import DevelopersLayout from '@/layouts/developers-layout';
 import developers from '@/routes/developers';
-import type {
-    DevelopersGameCreateProps,
-    GameFormData,
-} from '@/types';
+import type { DevelopersGameCreateProps, GameFormData } from '@/types';
 
 const { games: gamesRoutes } = developers;
 

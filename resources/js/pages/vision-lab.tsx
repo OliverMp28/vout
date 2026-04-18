@@ -1,5 +1,17 @@
 import { Head } from '@inertiajs/react';
-import { Activity, Brain, Crosshair, Download, Eye, Gauge, Loader2, Pause, Play, RotateCcw, Zap } from 'lucide-react';
+import {
+    Activity,
+    Brain,
+    Crosshair,
+    Download,
+    Eye,
+    Gauge,
+    Loader2,
+    Pause,
+    Play,
+    RotateCcw,
+    Zap,
+} from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { Badge } from '@/components/ui/badge';
@@ -21,7 +33,12 @@ import { useCamera } from '@/hooks/use-camera';
 import { useGestureEngine } from '@/hooks/use-gesture-engine';
 import AppLayout from '@/layouts/app-layout';
 import { ALL_PRESETS, PRESET_PLATFORMER } from '@/lib/mediapipe/action-presets';
-import type { ActionTrigger, GameAction, GestureActionMapping, HeadTrackingMode } from '@/lib/mediapipe/action-types';
+import type {
+    ActionTrigger,
+    GameAction,
+    GestureActionMapping,
+    HeadTrackingMode,
+} from '@/lib/mediapipe/action-types';
 import type { TelemetrySnapshot } from '@/lib/mediapipe/telemetry';
 import { GestureType } from '@/lib/mediapipe/types';
 import type { GestureEvent } from '@/lib/mediapipe/types';
@@ -50,13 +67,19 @@ const GESTURE_LABELS: Record<string, string> = {
     [GestureType.MouthPucker]: 'Mouth Pucker',
 };
 
-function actionLabel(mapping: GestureActionMapping, gesture: ActionTrigger): string {
+function actionLabel(
+    mapping: GestureActionMapping,
+    gesture: ActionTrigger,
+): string {
     const action = mapping[gesture];
     if (!action || action.type === 'none') return '—';
     switch (action.type) {
-        case 'keyboard': return `⌨ ${action.key} (${action.mode})`;
-        case 'mouse_click': return `🖱 Click ${action.button}`;
-        case 'game_event': return `🎮 ${action.event}`;
+        case 'keyboard':
+            return `⌨ ${action.key} (${action.mode})`;
+        case 'mouse_click':
+            return `🖱 Click ${action.button}`;
+        case 'game_event':
+            return `🎮 ${action.event}`;
     }
 }
 
@@ -70,14 +93,17 @@ export default function VisionLab() {
     const [dispatchLog, setDispatchLog] = useState<DispatchLogEntry[]>([]);
     const [dispatchEnabled, setDispatchEnabled] = useState(false);
     const [selectedPresetIndex, setSelectedPresetIndex] = useState(0);
-    const [telemetrySnap, setTelemetrySnap] = useState<TelemetrySnapshot | null>(null);
+    const [telemetrySnap, setTelemetrySnap] =
+        useState<TelemetrySnapshot | null>(null);
 
     const logIdRef = useRef(0);
     const dispatchLogIdRef = useRef(0);
 
     // Active mapping from the selected preset — memoized to keep dispatcher stable.
     const activeMapping = useMemo<GestureActionMapping>(
-        () => ALL_PRESETS[selectedPresetIndex]?.mapping ?? PRESET_PLATFORMER.mapping,
+        () =>
+            ALL_PRESETS[selectedPresetIndex]?.mapping ??
+            PRESET_PLATFORMER.mapping,
         [selectedPresetIndex],
     );
     const activeHeadMode = useMemo<HeadTrackingMode>(
@@ -96,29 +122,33 @@ export default function VisionLab() {
         enabled: dispatchEnabled,
     });
 
-    const handleGesture = useCallback((event: GestureEvent) => {
-        // Update gesture detection log.
-        setGestureLog((prev) => {
-            const entry = { ...event, id: ++logIdRef.current };
-            const next = [entry, ...prev];
-            return next.length > 20 ? next.slice(0, 20) : next;
-        });
-
-        // Dispatch action and add to dispatch log if enabled.
-        dispatcher.onGesture(event);
-        if (dispatchEnabled) {
-            setDispatchLog((prev) => {
-                const entry: DispatchLogEntry = {
-                    id: ++dispatchLogIdRef.current,
-                    gestureLabel: GESTURE_LABELS[event.gesture] ?? event.gesture,
-                    actionLabel: actionLabel(activeMapping, event.gesture),
-                    timestamp: event.timestamp,
-                };
+    const handleGesture = useCallback(
+        (event: GestureEvent) => {
+            // Update gesture detection log.
+            setGestureLog((prev) => {
+                const entry = { ...event, id: ++logIdRef.current };
                 const next = [entry, ...prev];
                 return next.length > 20 ? next.slice(0, 20) : next;
             });
-        }
-    }, [dispatcher, dispatchEnabled, activeMapping]);
+
+            // Dispatch action and add to dispatch log if enabled.
+            dispatcher.onGesture(event);
+            if (dispatchEnabled) {
+                setDispatchLog((prev) => {
+                    const entry: DispatchLogEntry = {
+                        id: ++dispatchLogIdRef.current,
+                        gestureLabel:
+                            GESTURE_LABELS[event.gesture] ?? event.gesture,
+                        actionLabel: actionLabel(activeMapping, event.gesture),
+                        timestamp: event.timestamp,
+                    };
+                    const next = [entry, ...prev];
+                    return next.length > 20 ? next.slice(0, 20) : next;
+                });
+            }
+        },
+        [dispatcher, dispatchEnabled, activeMapping],
+    );
 
     const engine = useGestureEngine({
         sensitivity,
@@ -144,7 +174,7 @@ export default function VisionLab() {
             releaseHeldKeys();
         }
     }, [engine.status, releaseHeldKeys]);
-    
+
     // Telemetry display loop
     useEffect(() => {
         if (engine.status !== 'running' && engine.status !== 'paused') return;
@@ -209,7 +239,9 @@ export default function VisionLab() {
                             <Brain className="size-5 text-primary" />
                         </div>
                         <div>
-                            <h1 className="text-xl font-semibold">Vision Lab</h1>
+                            <h1 className="text-xl font-semibold">
+                                Vision Lab
+                            </h1>
                             <p className="text-sm text-muted-foreground">
                                 MediaPipe FaceLandmarker debug panel (dev-only)
                             </p>
@@ -250,12 +282,18 @@ export default function VisionLab() {
                                     Loading model…
                                 </Button>
                             ) : engine.status === 'running' ? (
-                                <Button variant="secondary" onClick={engine.pauseDetection}>
+                                <Button
+                                    variant="secondary"
+                                    onClick={engine.pauseDetection}
+                                >
                                     <Pause className="size-4" />
                                     Pause
                                 </Button>
                             ) : engine.status === 'paused' ? (
-                                <Button variant="secondary" onClick={engine.resumeDetection}>
+                                <Button
+                                    variant="secondary"
+                                    onClick={engine.resumeDetection}
+                                >
                                     <Play className="size-4" />
                                     Resume
                                 </Button>
@@ -281,7 +319,7 @@ export default function VisionLab() {
                             step={1}
                             className="w-32"
                         />
-                        <span className="w-6 text-center text-xs tabular-nums text-muted-foreground">
+                        <span className="w-6 text-center text-xs text-muted-foreground tabular-nums">
                             {sensitivity}
                         </span>
                     </div>
@@ -302,20 +340,21 @@ export default function VisionLab() {
                             />
 
                             {/* Virtual cursor overlay */}
-                            {engine.headTrackPosition && engine.status === 'running' && (
-                                <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-xl">
-                                    <div
-                                        className="absolute size-5 -translate-x-1/2 -translate-y-1/2 transition-[left,top] duration-75"
-                                        style={{
-                                            left: `${engine.headTrackPosition.x * 100}%`,
-                                            top: `${engine.headTrackPosition.y * 100}%`,
-                                        }}
-                                    >
-                                        <div className="size-full rounded-full border-2 border-white bg-primary/60 shadow-[0_0_8px_rgba(168,85,247,0.6)]" />
-                                        <div className="absolute inset-0 animate-ping rounded-full bg-primary/30" />
+                            {engine.headTrackPosition &&
+                                engine.status === 'running' && (
+                                    <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-xl">
+                                        <div
+                                            className="absolute size-5 -translate-x-1/2 -translate-y-1/2 transition-[left,top] duration-75"
+                                            style={{
+                                                left: `${engine.headTrackPosition.x * 100}%`,
+                                                top: `${engine.headTrackPosition.y * 100}%`,
+                                            }}
+                                        >
+                                            <div className="size-full rounded-full border-2 border-white bg-primary/60 shadow-[0_0_8px_rgba(168,85,247,0.6)]" />
+                                            <div className="absolute inset-0 animate-ping rounded-full bg-primary/30" />
+                                        </div>
                                     </div>
-                                </div>
-                            )}
+                                )}
                         </div>
 
                         {/* Head pose + tracking coords */}
@@ -326,27 +365,47 @@ export default function VisionLab() {
                                     Head Tracking
                                 </h3>
                                 <div className="grid grid-cols-3 gap-2 text-center">
-                                    {(['yaw', 'pitch', 'roll'] as const).map((axis) => (
-                                        <div key={axis}>
-                                            <div className="text-[10px] uppercase text-muted-foreground">{axis}</div>
-                                            <div className="font-mono text-sm tabular-nums">
-                                                {(engine.headPose![axis] * 45).toFixed(1)}°
+                                    {(['yaw', 'pitch', 'roll'] as const).map(
+                                        (axis) => (
+                                            <div key={axis}>
+                                                <div className="text-[10px] text-muted-foreground uppercase">
+                                                    {axis}
+                                                </div>
+                                                <div className="font-mono text-sm tabular-nums">
+                                                    {(
+                                                        engine.headPose![axis] *
+                                                        45
+                                                    ).toFixed(1)}
+                                                    °
+                                                </div>
                                             </div>
-                                        </div>
-                                    ))}
+                                        ),
+                                    )}
                                 </div>
                                 {engine.headTrackPosition && (
                                     <div className="mt-2 grid grid-cols-2 gap-2 border-t border-border/30 pt-2 text-center">
                                         <div>
-                                            <div className="text-[10px] uppercase text-muted-foreground">Cursor X</div>
+                                            <div className="text-[10px] text-muted-foreground uppercase">
+                                                Cursor X
+                                            </div>
                                             <div className="font-mono text-sm tabular-nums">
-                                                {(engine.headTrackPosition.x * 100).toFixed(1)}%
+                                                {(
+                                                    engine.headTrackPosition.x *
+                                                    100
+                                                ).toFixed(1)}
+                                                %
                                             </div>
                                         </div>
                                         <div>
-                                            <div className="text-[10px] uppercase text-muted-foreground">Cursor Y</div>
+                                            <div className="text-[10px] text-muted-foreground uppercase">
+                                                Cursor Y
+                                            </div>
                                             <div className="font-mono text-sm tabular-nums">
-                                                {(engine.headTrackPosition.y * 100).toFixed(1)}%
+                                                {(
+                                                    engine.headTrackPosition.y *
+                                                    100
+                                                ).toFixed(1)}
+                                                %
                                             </div>
                                         </div>
                                     </div>
@@ -368,7 +427,10 @@ export default function VisionLab() {
                                 </p>
                             ) : (
                                 sortedBlendshapes.map(([name, value]) => (
-                                    <div key={name} className="flex items-center gap-2">
+                                    <div
+                                        key={name}
+                                        className="flex items-center gap-2"
+                                    >
                                         <span className="w-36 truncate text-[10px] text-muted-foreground">
                                             {name}
                                         </span>
@@ -376,12 +438,16 @@ export default function VisionLab() {
                                             <div
                                                 className={cn(
                                                     'h-full rounded-full transition-all duration-100',
-                                                    value > 0.5 ? 'bg-green-500' : 'bg-primary/60',
+                                                    value > 0.5
+                                                        ? 'bg-green-500'
+                                                        : 'bg-primary/60',
                                                 )}
-                                                style={{ width: `${Math.min(100, value * 100)}%` }}
+                                                style={{
+                                                    width: `${Math.min(100, value * 100)}%`,
+                                                }}
                                             />
                                         </div>
-                                        <span className="w-10 text-right font-mono text-[10px] tabular-nums text-muted-foreground">
+                                        <span className="w-10 text-right font-mono text-[10px] text-muted-foreground tabular-nums">
                                             {value.toFixed(2)}
                                         </span>
                                     </div>
@@ -400,33 +466,96 @@ export default function VisionLab() {
                                     Telemetry
                                 </h2>
                                 <div className="flex gap-2">
-                                    <Button variant="secondary" size="sm" className="h-6 text-[10px]" onClick={() => { engine.telemetry.reset(); setTelemetrySnap(null); }}>Reset</Button>
-                                    <Button variant="secondary" size="sm" className="h-6 text-[10px]" onClick={handleExportTelemetry} disabled={!telemetrySnap || Object.keys(telemetrySnap).length === 0}>
-                                        <Download className="size-3 mr-1" />
+                                    <Button
+                                        variant="secondary"
+                                        size="sm"
+                                        className="h-6 text-[10px]"
+                                        onClick={() => {
+                                            engine.telemetry.reset();
+                                            setTelemetrySnap(null);
+                                        }}
+                                    >
+                                        Reset
+                                    </Button>
+                                    <Button
+                                        variant="secondary"
+                                        size="sm"
+                                        className="h-6 text-[10px]"
+                                        onClick={handleExportTelemetry}
+                                        disabled={
+                                            !telemetrySnap ||
+                                            Object.keys(telemetrySnap)
+                                                .length === 0
+                                        }
+                                    >
+                                        <Download className="mr-1 size-3" />
                                         CSV
                                     </Button>
                                 </div>
                             </div>
                             <div className="rounded-lg border border-border/50 bg-background/50 p-3">
-                                {telemetrySnap && Object.keys(telemetrySnap).length > 0 ? (
+                                {telemetrySnap &&
+                                Object.keys(telemetrySnap).length > 0 ? (
                                     <div className="space-y-3">
-                                        <div className="grid grid-cols-4 gap-2 text-center text-[10px] uppercase tracking-wider text-muted-foreground border-b border-border/30 pb-1">
-                                            <div className="text-left font-semibold">Metric</div>
-                                            <div className="font-semibold">P50</div>
-                                            <div className="font-semibold">P95</div>
-                                            <div className="font-semibold">Avg</div>
-                                        </div>
-                                        {Object.entries(telemetrySnap).sort().map(([key, stats]) => (
-                                            <div key={key} className="grid grid-cols-4 gap-2 text-center font-mono text-xs items-center">
-                                                <div className="text-left truncate text-muted-foreground font-sans text-[11px]" title={key}>{key}</div>
-                                                <div className={key === 'inferenceMs' && stats.p50 > 30 ? 'text-red-400 font-medium' : ''}>{stats.p50.toFixed(1)}</div>
-                                                <div className={key === 'inferenceMs' && stats.p95 > 50 ? 'text-red-400 font-medium' : ''}>{stats.p95.toFixed(1)}</div>
-                                                <div>{stats.avg.toFixed(1)}</div>
+                                        <div className="grid grid-cols-4 gap-2 border-b border-border/30 pb-1 text-center text-[10px] tracking-wider text-muted-foreground uppercase">
+                                            <div className="text-left font-semibold">
+                                                Metric
                                             </div>
-                                        ))}
+                                            <div className="font-semibold">
+                                                P50
+                                            </div>
+                                            <div className="font-semibold">
+                                                P95
+                                            </div>
+                                            <div className="font-semibold">
+                                                Avg
+                                            </div>
+                                        </div>
+                                        {Object.entries(telemetrySnap)
+                                            .sort()
+                                            .map(([key, stats]) => (
+                                                <div
+                                                    key={key}
+                                                    className="grid grid-cols-4 items-center gap-2 text-center font-mono text-xs"
+                                                >
+                                                    <div
+                                                        className="truncate text-left font-sans text-[11px] text-muted-foreground"
+                                                        title={key}
+                                                    >
+                                                        {key}
+                                                    </div>
+                                                    <div
+                                                        className={
+                                                            key ===
+                                                                'inferenceMs' &&
+                                                            stats.p50 > 30
+                                                                ? 'font-medium text-red-400'
+                                                                : ''
+                                                        }
+                                                    >
+                                                        {stats.p50.toFixed(1)}
+                                                    </div>
+                                                    <div
+                                                        className={
+                                                            key ===
+                                                                'inferenceMs' &&
+                                                            stats.p95 > 50
+                                                                ? 'font-medium text-red-400'
+                                                                : ''
+                                                        }
+                                                    >
+                                                        {stats.p95.toFixed(1)}
+                                                    </div>
+                                                    <div>
+                                                        {stats.avg.toFixed(1)}
+                                                    </div>
+                                                </div>
+                                            ))}
                                     </div>
                                 ) : (
-                                    <p className="py-2 text-center text-xs text-muted-foreground">No telemetry data</p>
+                                    <p className="py-2 text-center text-xs text-muted-foreground">
+                                        No telemetry data
+                                    </p>
                                 )}
                             </div>
                         </div>
@@ -441,16 +570,29 @@ export default function VisionLab() {
                                 {engine.performance ? (
                                     <div className="grid grid-cols-3 gap-3 text-center">
                                         <div>
-                                            <div className="text-[10px] uppercase text-muted-foreground">FPS</div>
-                                            <div className="font-mono text-lg tabular-nums">{engine.performance.fps}</div>
+                                            <div className="text-[10px] text-muted-foreground uppercase">
+                                                FPS
+                                            </div>
+                                            <div className="font-mono text-lg tabular-nums">
+                                                {engine.performance.fps}
+                                            </div>
                                         </div>
                                         <div>
-                                            <div className="text-[10px] uppercase text-muted-foreground">Inference</div>
-                                            <div className="font-mono text-lg tabular-nums">{engine.performance.inferenceMs}ms</div>
+                                            <div className="text-[10px] text-muted-foreground uppercase">
+                                                Inference
+                                            </div>
+                                            <div className="font-mono text-lg tabular-nums">
+                                                {engine.performance.inferenceMs}
+                                                ms
+                                            </div>
                                         </div>
                                         <div>
-                                            <div className="text-[10px] uppercase text-muted-foreground">Target</div>
-                                            <div className="font-mono text-lg tabular-nums">{engine.performance.targetFps}</div>
+                                            <div className="text-[10px] text-muted-foreground uppercase">
+                                                Target
+                                            </div>
+                                            <div className="font-mono text-lg tabular-nums">
+                                                {engine.performance.targetFps}
+                                            </div>
                                         </div>
                                     </div>
                                 ) : (
@@ -466,7 +608,9 @@ export default function VisionLab() {
                             <div className="rounded-lg border border-green-500/30 bg-green-500/5 p-3">
                                 <p className="text-xs text-green-600 dark:text-green-400">
                                     Neutral baseline captured at{' '}
-                                    {new Date(engine.baseline.capturedAt).toLocaleTimeString()}
+                                    {new Date(
+                                        engine.baseline.capturedAt,
+                                    ).toLocaleTimeString()}
                                 </p>
                             </div>
                         )}
@@ -474,7 +618,9 @@ export default function VisionLab() {
                         {/* Gesture event log */}
                         <div className="space-y-3">
                             <div className="flex items-center justify-between">
-                                <h2 className="text-sm font-medium">Gesture Log</h2>
+                                <h2 className="text-sm font-medium">
+                                    Gesture Log
+                                </h2>
                                 {gestureLog.length > 0 && (
                                     <Button
                                         variant="secondary"
@@ -495,13 +641,21 @@ export default function VisionLab() {
                                     gestureLog.map((entry) => (
                                         <div
                                             key={entry.id}
-                                            className="flex items-center justify-between rounded-md px-2 py-1 text-xs transition-colors animate-in fade-in slide-in-from-top-1"
+                                            className="flex animate-in items-center justify-between rounded-md px-2 py-1 text-xs transition-colors fade-in slide-in-from-top-1"
                                         >
-                                            <Badge variant="secondary" className="font-mono text-[10px]">
-                                                {GESTURE_LABELS[entry.gesture] ?? entry.gesture}
+                                            <Badge
+                                                variant="secondary"
+                                                className="font-mono text-[10px]"
+                                            >
+                                                {GESTURE_LABELS[
+                                                    entry.gesture
+                                                ] ?? entry.gesture}
                                             </Badge>
                                             <span className="font-mono text-muted-foreground">
-                                                {entry.confidence.toFixed(2)} @ {new Date(entry.timestamp).toLocaleTimeString()}
+                                                {entry.confidence.toFixed(2)} @{' '}
+                                                {new Date(
+                                                    entry.timestamp,
+                                                ).toLocaleTimeString()}
                                             </span>
                                         </div>
                                     ))
@@ -522,18 +676,27 @@ export default function VisionLab() {
                         <div className="flex flex-wrap items-center gap-4">
                             {/* Preset selector */}
                             <div className="flex items-center gap-2">
-                                <Label className="text-xs text-muted-foreground">Preset</Label>
+                                <Label className="text-xs text-muted-foreground">
+                                    Preset
+                                </Label>
                                 <Select
                                     value={String(selectedPresetIndex)}
-                                    onValueChange={(v) => setSelectedPresetIndex(Number(v))}
+                                    onValueChange={(v) =>
+                                        setSelectedPresetIndex(Number(v))
+                                    }
                                 >
                                     <SelectTrigger size="sm" className="w-32">
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
                                         {ALL_PRESETS.map((preset, i) => (
-                                            <SelectItem key={preset.nameKey} value={String(i)}>
-                                                {preset.nameKey.split('.').pop()}
+                                            <SelectItem
+                                                key={preset.nameKey}
+                                                value={String(i)}
+                                            >
+                                                {preset.nameKey
+                                                    .split('.')
+                                                    .pop()}
                                             </SelectItem>
                                         ))}
                                     </SelectContent>
@@ -542,7 +705,10 @@ export default function VisionLab() {
 
                             {/* Enable/disable toggle */}
                             <div className="flex items-center gap-2">
-                                <Label htmlFor="dispatch-toggle" className="text-xs text-muted-foreground">
+                                <Label
+                                    htmlFor="dispatch-toggle"
+                                    className="text-xs text-muted-foreground"
+                                >
                                     Dispatch enabled
                                 </Label>
                                 <Switch
@@ -567,7 +733,12 @@ export default function VisionLab() {
 
                     {/* Active mapping summary */}
                     <div className="mb-3 flex flex-wrap gap-1.5">
-                        {(Object.entries(activeMapping) as [ActionTrigger, GameAction | undefined][]).map(([trigger, action]) => {
+                        {(
+                            Object.entries(activeMapping) as [
+                                ActionTrigger,
+                                GameAction | undefined,
+                            ][]
+                        ).map(([trigger, action]) => {
                             if (!action || action.type === 'none') return null;
                             const label = GESTURE_LABELS[trigger] ?? trigger;
                             const aLabel = actionLabel(activeMapping, trigger);
@@ -576,7 +747,9 @@ export default function VisionLab() {
                                     key={trigger}
                                     className="flex items-center gap-1 rounded border border-border/40 bg-background/60 px-2 py-0.5 text-[10px]"
                                 >
-                                    <span className="text-muted-foreground">{label}</span>
+                                    <span className="text-muted-foreground">
+                                        {label}
+                                    </span>
                                     <span className="text-primary/60">→</span>
                                     <span className="font-mono">{aLabel}</span>
                                 </div>
@@ -588,7 +761,8 @@ export default function VisionLab() {
                     <div className="h-40 space-y-1 overflow-y-auto rounded-lg border border-border/40 bg-background/50 p-3">
                         {!dispatchEnabled ? (
                             <p className="py-6 text-center text-xs text-muted-foreground">
-                                Enable dispatch to see actions fired in real-time
+                                Enable dispatch to see actions fired in
+                                real-time
                             </p>
                         ) : dispatchLog.length === 0 ? (
                             <p className="py-6 text-center text-xs text-muted-foreground">
@@ -598,16 +772,23 @@ export default function VisionLab() {
                             dispatchLog.map((entry) => (
                                 <div
                                     key={entry.id}
-                                    className="flex items-center justify-between rounded-md px-2 py-1 text-xs animate-in fade-in slide-in-from-top-1"
+                                    className="flex animate-in items-center justify-between rounded-md px-2 py-1 text-xs fade-in slide-in-from-top-1"
                                 >
                                     <div className="flex items-center gap-2">
-                                        <Badge variant="outline" className="font-mono text-[10px]">
+                                        <Badge
+                                            variant="outline"
+                                            className="font-mono text-[10px]"
+                                        >
                                             {entry.gestureLabel}
                                         </Badge>
-                                        <span className="text-primary">{entry.actionLabel}</span>
+                                        <span className="text-primary">
+                                            {entry.actionLabel}
+                                        </span>
                                     </div>
                                     <span className="font-mono text-[10px] text-muted-foreground">
-                                        {new Date(entry.timestamp).toLocaleTimeString()}
+                                        {new Date(
+                                            entry.timestamp,
+                                        ).toLocaleTimeString()}
                                     </span>
                                 </div>
                             ))

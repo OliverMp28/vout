@@ -45,9 +45,7 @@ export function FirstPartyAction({ app }: { app: AdminAppDetail }) {
     return (
         <ActionRow
             title={t('admin.apps.show.actions.first_party.title')}
-            description={t(
-                'admin.apps.show.actions.first_party.description',
-            )}
+            description={t('admin.apps.show.actions.first_party.description')}
             action={
                 <Button
                     type="button"
@@ -96,9 +94,7 @@ export function SuspendAction({ app }: { app: AdminAppDetail }) {
     return (
         <ActionRow
             title={t('admin.apps.show.actions.suspend.title')}
-            description={t(
-                'admin.apps.show.actions.suspend.description',
-            )}
+            description={t('admin.apps.show.actions.suspend.description')}
             action={
                 <>
                     <Button
@@ -190,15 +186,12 @@ export function SuspendAction({ app }: { app: AdminAppDetail }) {
                                     variant="destructive"
                                     onClick={handleSuspend}
                                     disabled={
-                                        processing ||
-                                        data.remark.length < 10
+                                        processing || data.remark.length < 10
                                     }
                                     className="gap-2"
                                 >
                                     <Ban className="size-4" aria-hidden />
-                                    {t(
-                                        'admin.apps.show.actions.suspend.cta',
-                                    )}
+                                    {t('admin.apps.show.actions.suspend.cta')}
                                 </Button>
                             </DialogFooter>
                         </DialogContent>
@@ -227,9 +220,7 @@ export function ReactivateAction({ app }: { app: AdminAppDetail }) {
     return (
         <ActionRow
             title={t('admin.apps.show.actions.reactivate.title')}
-            description={t(
-                'admin.apps.show.actions.reactivate.description',
-            )}
+            description={t('admin.apps.show.actions.reactivate.description')}
             action={
                 <>
                     <Button
@@ -298,10 +289,7 @@ export function ReactivateAction({ app }: { app: AdminAppDetail }) {
                                     disabled={processing}
                                     className="gap-2"
                                 >
-                                    <Play
-                                        className="size-4"
-                                        aria-hidden
-                                    />
+                                    <Play className="size-4" aria-hidden />
                                     {t(
                                         'admin.apps.show.actions.reactivate.cta',
                                     )}
@@ -337,9 +325,7 @@ export function DeleteAction({ app }: { app: AdminAppDetail }) {
     return (
         <ActionRow
             title={t('admin.apps.show.actions.delete.title')}
-            description={t(
-                'admin.apps.show.actions.delete.description',
-            )}
+            description={t('admin.apps.show.actions.delete.description')}
             action={
                 <>
                     <Button
@@ -441,13 +427,8 @@ export function DeleteAction({ app }: { app: AdminAppDetail }) {
                                     disabled={!canDelete || processing}
                                     className="gap-2"
                                 >
-                                    <Trash2
-                                        className="size-4"
-                                        aria-hidden
-                                    />
-                                    {t(
-                                        'admin.apps.show.actions.delete.cta',
-                                    )}
+                                    <Trash2 className="size-4" aria-hidden />
+                                    {t('admin.apps.show.actions.delete.cta')}
                                 </Button>
                             </DialogFooter>
                         </DialogContent>

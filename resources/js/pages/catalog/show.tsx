@@ -36,9 +36,7 @@ export default function CatalogShow({
     const [isFavorite, setIsFavorite] = useState(
         userInteraction?.is_favorite ?? false,
     );
-    const [isSaved, setIsSaved] = useState(
-        userInteraction?.is_saved ?? false,
-    );
+    const [isSaved, setIsSaved] = useState(userInteraction?.is_saved ?? false);
 
     const handleToggleFavorite = useCallback(() => {
         if (!isAuthenticated) return;
@@ -85,7 +83,7 @@ export default function CatalogShow({
                 {/* Hero */}
                 <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
                     {/* Cover */}
-                    <div className="relative aspect-video overflow-hidden rounded-xl bg-muted ring-1 ring-border/60 shadow-[0_20px_60px_-24px_rgba(0,0,0,0.35)]">
+                    <div className="relative aspect-video overflow-hidden rounded-xl bg-muted shadow-[0_20px_60px_-24px_rgba(0,0,0,0.35)] ring-1 ring-border/60">
                         {game.cover_image ? (
                             <img
                                 src={game.cover_image}
@@ -116,10 +114,7 @@ export default function CatalogShow({
                         {game.categories.length > 0 && (
                             <div className="flex flex-wrap gap-1.5">
                                 {game.categories.map((cat) => (
-                                    <Badge
-                                        key={cat.id}
-                                        variant="secondary"
-                                    >
+                                    <Badge key={cat.id} variant="secondary">
                                         {cat.name}
                                     </Badge>
                                 ))}

@@ -160,8 +160,13 @@ function IdlePanel({
     return (
         <div className="flex h-full flex-col gap-6 overflow-y-auto p-1">
             {/* Estado */}
-            <section aria-labelledby="play-status-heading" className="space-y-3">
-                <SectionLabel id="play-status-heading">{t('play.panel.status')}</SectionLabel>
+            <section
+                aria-labelledby="play-status-heading"
+                className="space-y-3"
+            >
+                <SectionLabel id="play-status-heading">
+                    {t('play.panel.status')}
+                </SectionLabel>
                 <div className="relative overflow-hidden rounded-xl border border-border/60 bg-linear-to-b from-background/80 to-background/40 p-3.5 shadow-sm">
                     <StatusRow
                         label={t('play.panel.engine')}
@@ -235,8 +240,13 @@ function RunningPanel({
     return (
         <div className="flex h-full flex-col gap-6 overflow-y-auto p-1">
             {/* ── Estado del motor ─────────────────────────────────────────── */}
-            <section aria-labelledby="play-status-heading" className="space-y-3">
-                <SectionLabel id="play-status-heading">{t('play.panel.status')}</SectionLabel>
+            <section
+                aria-labelledby="play-status-heading"
+                className="space-y-3"
+            >
+                <SectionLabel id="play-status-heading">
+                    {t('play.panel.status')}
+                </SectionLabel>
                 <div className="relative overflow-hidden rounded-xl border border-border/60 bg-linear-to-b from-background/80 to-background/40 p-3.5 shadow-sm">
                     <StatusRow
                         label={t('play.panel.engine')}
@@ -277,7 +287,10 @@ function RunningPanel({
             <section className="space-y-3">
                 <div className="flex items-center justify-between gap-3">
                     <div className="flex flex-col">
-                        <Label htmlFor="play-dispatch-toggle" className="text-sm font-medium">
+                        <Label
+                            htmlFor="play-dispatch-toggle"
+                            className="text-sm font-medium"
+                        >
                             {t('play.panel.dispatch')}
                         </Label>
                         <span className="text-xs text-muted-foreground">
@@ -288,7 +301,9 @@ function RunningPanel({
                         id="play-dispatch-toggle"
                         checked={dispatchEnabled}
                         onCheckedChange={onToggleDispatch}
-                        disabled={!isRunning || handshakeStatus !== 'authenticated'}
+                        disabled={
+                            !isRunning || handshakeStatus !== 'authenticated'
+                        }
                         aria-label={t('play.panel.dispatch')}
                     />
                 </div>
@@ -297,10 +312,13 @@ function RunningPanel({
             {/* ── Sensibilidad ─────────────────────────────────────────────── */}
             <section className="space-y-3">
                 <div className="flex items-center justify-between">
-                    <Label htmlFor="play-sensitivity" className="text-sm font-medium">
+                    <Label
+                        htmlFor="play-sensitivity"
+                        className="text-sm font-medium"
+                    >
                         {t('play.panel.sensitivity')}
                     </Label>
-                    <span className="font-mono text-xs tabular-nums text-muted-foreground">
+                    <span className="font-mono text-xs text-muted-foreground tabular-nums">
                         {sensitivity}
                     </span>
                 </div>
@@ -357,7 +375,7 @@ function RunningPanel({
                     {lastGesture ? (
                         <span
                             key={lastGesture}
-                            className="animate-in fade-in zoom-in-95 font-mono text-sm font-medium tracking-wide text-primary"
+                            className="animate-in font-mono text-sm font-medium tracking-wide text-primary zoom-in-95 fade-in"
                         >
                             {lastGesture}
                         </span>
@@ -373,8 +391,12 @@ function RunningPanel({
             {isRunning && fps !== null && (
                 <section className="space-y-2">
                     <details
-                        className="group rounded-xl border border-border/60 bg-background/40 transition-colors hover:bg-background/60 open:bg-background/60"
-                        onToggle={(e) => setAdvancedOpen((e.target as HTMLDetailsElement).open)}
+                        className="group rounded-xl border border-border/60 bg-background/40 transition-colors open:bg-background/60 hover:bg-background/60"
+                        onToggle={(e) =>
+                            setAdvancedOpen(
+                                (e.target as HTMLDetailsElement).open,
+                            )
+                        }
                     >
                         <summary className="flex cursor-pointer list-none items-center justify-between gap-2 rounded-xl px-3 py-2.5 text-xs font-medium text-muted-foreground transition-all focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none">
                             <span className="flex items-center gap-1.5">
@@ -393,7 +415,7 @@ function RunningPanel({
                                 <span className="text-muted-foreground">
                                     {t('play.panel.fps')}
                                 </span>
-                                <span className="font-mono font-medium tabular-nums text-foreground">
+                                <span className="font-mono font-medium text-foreground tabular-nums">
                                     {fps}
                                 </span>
                             </div>
@@ -425,7 +447,13 @@ function RunningPanel({
 // Subcomponentes compartidos
 // ---------------------------------------------------------------------------
 
-function SectionLabel({ id, children }: { id?: string; children: React.ReactNode }) {
+function SectionLabel({
+    id,
+    children,
+}: {
+    id?: string;
+    children: React.ReactNode;
+}) {
     return (
         <h3
             id={id}
@@ -460,7 +488,12 @@ function StatusRow({
                             )}
                         />
                     )}
-                    <span className={cn('relative inline-flex size-2 rounded-full', color)} />
+                    <span
+                        className={cn(
+                            'relative inline-flex size-2 rounded-full',
+                            color,
+                        )}
+                    />
                 </span>
                 <span className="font-medium text-foreground">{text}</span>
             </span>

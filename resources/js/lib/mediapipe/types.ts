@@ -82,7 +82,12 @@ export type WorkerConfig = {
 // ---------------------------------------------------------------------------
 
 export type WorkerInMessage =
-    | { type: 'INIT'; modelPath: string; wasmPath: string; config: WorkerConfig }
+    | {
+          type: 'INIT';
+          modelPath: string;
+          wasmPath: string;
+          config: WorkerConfig;
+      }
     | { type: 'FRAME'; bitmap: ImageBitmap; timestamp: number }
     | { type: 'SET_CONFIG'; config: Partial<WorkerConfig> }
     | { type: 'CALIBRATE_NEUTRAL' }
@@ -103,9 +108,20 @@ export type WorkerOutMessage =
 // Gesture engine status (React-side)
 // ---------------------------------------------------------------------------
 
-export type EngineStatus = 'idle' | 'loading' | 'ready' | 'running' | 'paused' | 'error';
+export type EngineStatus =
+    | 'idle'
+    | 'loading'
+    | 'ready'
+    | 'running'
+    | 'paused'
+    | 'error';
 
-export type CameraStatus = 'idle' | 'requesting' | 'active' | 'denied' | 'error';
+export type CameraStatus =
+    | 'idle'
+    | 'requesting'
+    | 'active'
+    | 'denied'
+    | 'error';
 
 // ---------------------------------------------------------------------------
 // Gesture mapping (DB ↔ frontend)

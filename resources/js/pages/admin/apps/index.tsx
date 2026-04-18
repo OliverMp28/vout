@@ -74,7 +74,9 @@ export default function AdminAppsIndex({ apps, filters }: Props) {
                         <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
                         <Input
                             type="search"
-                            placeholder={t('admin.apps.index.search_placeholder')}
+                            placeholder={t(
+                                'admin.apps.index.search_placeholder',
+                            )}
                             defaultValue={filters.search ?? ''}
                             onChange={(e) => handleSearch(e.target.value)}
                             className="pl-9"
@@ -114,7 +116,7 @@ export default function AdminAppsIndex({ apps, filters }: Props) {
                 ) : (
                     <div className="overflow-hidden rounded-xl border border-border">
                         <table className="w-full text-sm">
-                            <thead className="border-b border-border bg-muted/40 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                            <thead className="border-b border-border bg-muted/40 text-left text-xs font-medium tracking-wide text-muted-foreground uppercase">
                                 <tr>
                                     <th className="px-4 py-3">
                                         {t('admin.apps.table.name')}
@@ -178,9 +180,7 @@ export default function AdminAppsIndex({ apps, filters }: Props) {
     );
 }
 
-AdminAppsIndex.layout = (page: ReactNode) => (
-    <AdminLayout>{page}</AdminLayout>
-);
+AdminAppsIndex.layout = (page: ReactNode) => <AdminLayout>{page}</AdminLayout>;
 
 function AppRow({ app }: { app: AdminAppListItem }) {
     const { t } = useTranslation();

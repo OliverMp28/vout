@@ -5,7 +5,10 @@ import { useCookieConsent } from '@/hooks/use-cookie-consent';
 import { useTranslation } from '@/hooks/use-translation';
 import { home } from '@/routes';
 import { index as catalogIndex } from '@/routes/catalog';
-import { docs as developersDocs, landing as developersLanding } from '@/routes/developers';
+import {
+    docs as developersDocs,
+    landing as developersLanding,
+} from '@/routes/developers';
 import { show as legalShow } from '@/routes/legal';
 
 const GITHUB_REPO_URL = 'https://github.com/OliverMp28/vout';
@@ -40,7 +43,10 @@ export function AppFooter() {
             <div className="mx-auto max-w-7xl px-4 py-12 md:px-6 lg:px-8">
                 <div className="grid gap-12 md:grid-cols-2 lg:grid-cols-[1.3fr_1fr_1fr_1fr]">
                     <div className="space-y-6">
-                        <Link href={home().url} className="flex items-center gap-2">
+                        <Link
+                            href={home().url}
+                            className="flex items-center gap-2"
+                        >
                             <AppLogo />
                         </Link>
                         <p className="max-w-xs text-sm text-muted-foreground">
@@ -60,7 +66,7 @@ export function AppFooter() {
                     </div>
 
                     <div>
-                        <h3 className="text-xs font-semibold uppercase tracking-wider text-foreground">
+                        <h3 className="text-xs font-semibold tracking-wider text-foreground uppercase">
                             {t('footer.platform')}
                         </h3>
                         <ul className="mt-4 space-y-3">
@@ -78,7 +84,7 @@ export function AppFooter() {
                     </div>
 
                     <div>
-                        <h3 className="text-xs font-semibold uppercase tracking-wider text-foreground">
+                        <h3 className="text-xs font-semibold tracking-wider text-foreground uppercase">
                             {t('footer.developers')}
                         </h3>
                         <ul className="mt-4 space-y-3">
@@ -106,7 +112,7 @@ export function AppFooter() {
                     </div>
 
                     <div>
-                        <h3 className="text-xs font-semibold uppercase tracking-wider text-foreground">
+                        <h3 className="text-xs font-semibold tracking-wider text-foreground uppercase">
                             {t('footer.legal.title')}
                         </h3>
                         <ul className="mt-4 space-y-3">
@@ -126,7 +132,8 @@ export function AppFooter() {
 
                 <div className="mt-12 flex flex-col items-center justify-between gap-3 border-t border-border/40 pt-8 sm:flex-row">
                     <p className="text-center text-sm text-muted-foreground sm:text-left">
-                        &copy; {currentYear} Vout Ecosystem. {t('footer.rights')}
+                        &copy; {currentYear} Vout Ecosystem.{' '}
+                        {t('footer.rights')}
                     </p>
                     <button
                         type="button"

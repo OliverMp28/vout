@@ -113,7 +113,7 @@ export default function Appearance({ activeGestureConfig }: AppearanceProps) {
                                 <div className="animate-in duration-500 ease-out fade-in slide-in-from-top-4">
                                     <div className="flex h-32 w-full items-center justify-center rounded-xl border-2 border-dashed border-primary/20 bg-primary/5 md:h-48">
                                         <div className="space-y-2 text-center">
-                                            <Smile className="mx-auto h-8 w-8 text-primary/40 animate-bounce" />
+                                            <Smile className="mx-auto h-8 w-8 animate-bounce text-primary/40" />
                                             <p className="text-sm font-medium text-primary/60">
                                                 Mascot Preview Area
                                             </p>
@@ -151,7 +151,7 @@ export default function Appearance({ activeGestureConfig }: AppearanceProps) {
 
                             {/* Calibration Wizard (shown when gestures enabled) */}
                             {data.gestures_enabled && (
-                                <div className="space-y-6 animate-in fade-in slide-in-from-top-4 duration-500">
+                                <div className="animate-in space-y-6 duration-500 fade-in slide-in-from-top-4">
                                     {/*
                                      * Aviso de procesamiento local exigido por el plan de Fase 5.
                                      * MediaPipe procesa los frames en el propio navegador mediante
@@ -167,33 +167,56 @@ export default function Appearance({ activeGestureConfig }: AppearanceProps) {
                                         />
                                         <div className="space-y-1.5 text-sm">
                                             <p className="font-medium text-emerald-900 dark:text-emerald-100">
-                                                {t('appearance.camera_notice.title')}
+                                                {t(
+                                                    'appearance.camera_notice.title',
+                                                )}
                                             </p>
                                             <p className="text-xs leading-relaxed text-emerald-800/90 dark:text-emerald-200/80">
-                                                {t('appearance.camera_notice.desc')}
+                                                {t(
+                                                    'appearance.camera_notice.desc',
+                                                )}
                                             </p>
                                             <Link
-                                                href={legalShow('privacidad').url}
+                                                href={
+                                                    legalShow('privacidad').url
+                                                }
                                                 target="_blank"
                                                 rel="noopener noreferrer"
                                                 className="inline-flex items-center text-xs font-medium text-emerald-700 underline-offset-2 hover:underline dark:text-emerald-300"
                                             >
-                                                {t('appearance.camera_notice.link')}
+                                                {t(
+                                                    'appearance.camera_notice.link',
+                                                )}
                                             </Link>
                                         </div>
                                     </div>
 
                                     <CalibrationWizard
-                                        saveUrl={activeGestureConfig ? `/gesture-configs/${activeGestureConfig.id}` : '/gesture-configs'}
-                                        saveMethod={activeGestureConfig ? 'put' : 'post'}
-                                        hasExistingProfile={!!activeGestureConfig}
-                                        existingProfileName={activeGestureConfig?.profile_name}
-                                        initialSensitivity={activeGestureConfig?.sensitivity ?? 5}
+                                        saveUrl={
+                                            activeGestureConfig
+                                                ? `/gesture-configs/${activeGestureConfig.id}`
+                                                : '/gesture-configs'
+                                        }
+                                        saveMethod={
+                                            activeGestureConfig ? 'put' : 'post'
+                                        }
+                                        hasExistingProfile={
+                                            !!activeGestureConfig
+                                        }
+                                        existingProfileName={
+                                            activeGestureConfig?.profile_name
+                                        }
+                                        initialSensitivity={
+                                            activeGestureConfig?.sensitivity ??
+                                            5
+                                        }
                                     />
 
                                     {/* Mapping editor: solo visible si ya existe un perfil activo */}
                                     {activeGestureConfig && (
-                                        <GestureMappingEditor config={activeGestureConfig} />
+                                        <GestureMappingEditor
+                                            config={activeGestureConfig}
+                                        />
                                     )}
                                 </div>
                             )}

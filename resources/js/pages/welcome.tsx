@@ -9,7 +9,11 @@ import PortalLayout from '@/layouts/portal-layout';
 import { index as catalogIndex } from '@/routes/catalog';
 import type { WelcomeProps } from '@/types';
 
-export default function Welcome({ featured, popular, canRegister }: WelcomeProps) {
+export default function Welcome({
+    featured,
+    popular,
+    canRegister,
+}: WelcomeProps) {
     const { auth } = usePage().props;
     const { t } = useTranslation();
     const isGuest = !auth?.user;
@@ -23,9 +27,7 @@ export default function Welcome({ featured, popular, canRegister }: WelcomeProps
 
             <div className="space-y-10">
                 {/* Netflix-style carousel — primary hero */}
-                {hasFeatured && (
-                    <FeaturedCarousel games={featured.data} />
-                )}
+                {hasFeatured && <FeaturedCarousel games={featured.data} />}
 
                 {/* Fallback hero when no featured games */}
                 {!hasFeatured && (
@@ -111,10 +113,12 @@ export default function Welcome({ featured, popular, canRegister }: WelcomeProps
                     </div>
                 )}
 
-
                 {/* Popular Games */}
                 {hasPopular && (
-                    <section className="space-y-4" aria-labelledby="section-popular">
+                    <section
+                        className="space-y-4"
+                        aria-labelledby="section-popular"
+                    >
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2.5">
                                 <span
@@ -147,4 +151,3 @@ export default function Welcome({ featured, popular, canRegister }: WelcomeProps
         </PortalLayout>
     );
 }
-

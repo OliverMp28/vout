@@ -1,5 +1,5 @@
-import { Clock, Flame, Gamepad2, Tag  } from 'lucide-react';
-import type {LucideIcon} from 'lucide-react';
+import { Clock, Flame, Gamepad2, Tag } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { useTranslation } from '@/hooks/use-translation';
 
 export type DashboardStats = {

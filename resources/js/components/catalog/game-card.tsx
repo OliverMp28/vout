@@ -161,7 +161,7 @@ export function GameCard({ game }: Props) {
 
             {/* Info */}
             <div className="flex flex-1 flex-col gap-1.5 p-3">
-                <h3 className="line-clamp-1 text-sm font-semibold leading-tight text-foreground transition-colors group-hover:text-primary">
+                <h3 className="line-clamp-1 text-sm leading-tight font-semibold text-foreground transition-colors group-hover:text-primary">
                     {game.name}
                 </h3>
 

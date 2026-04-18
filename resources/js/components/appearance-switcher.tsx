@@ -25,7 +25,8 @@ const OPTIONS: readonly Option[] = [
 ] as const;
 
 export function AppearanceSwitcher() {
-    const { appearance, resolvedAppearance, updateAppearance } = useAppearance();
+    const { appearance, resolvedAppearance, updateAppearance } =
+        useAppearance();
     const { t } = useTranslation();
 
     const TriggerIcon = resolvedAppearance === 'dark' ? Moon : Sun;

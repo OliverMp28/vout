@@ -29,9 +29,7 @@ export default function LibraryFavorites({ games }: Props) {
                 ) : (
                     <GameEmptyState
                         title={t('library.favorites.empty.title')}
-                        description={t(
-                            'library.favorites.empty.description',
-                        )}
+                        description={t('library.favorites.empty.description')}
                         actionLabel={t('library.explore')}
                         actionHref={catalogIndex.url()}
                     />

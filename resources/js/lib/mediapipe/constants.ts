@@ -18,7 +18,11 @@ import { GestureType } from './types';
  */
 export const GESTURE_BLENDSHAPE_MAP: Record<GestureType, string[]> = {
     // Gestos originales
-    [GestureType.BrowRaise]: ['browInnerUp', 'browOuterUpLeft', 'browOuterUpRight'],
+    [GestureType.BrowRaise]: [
+        'browInnerUp',
+        'browOuterUpLeft',
+        'browOuterUpRight',
+    ],
     [GestureType.MouthOpen]: ['jawOpen'],
     [GestureType.BlinkLeft]: ['eyeBlinkLeft'],
     [GestureType.BlinkRight]: ['eyeBlinkRight'],
@@ -164,7 +168,8 @@ export const CAPTURE_HEIGHT = 240;
 // Model defaults
 // ---------------------------------------------------------------------------
 
-export const DEFAULT_MODEL_PATH = 'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task';
+export const DEFAULT_MODEL_PATH =
+    'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task';
 
 // ---------------------------------------------------------------------------
 // MediaPipe CDN — versión fija
@@ -183,8 +188,7 @@ export const MEDIAPIPE_VERSION = '0.10.3';
  * y del directorio WASM. Centralizada aquí para que un cambio de versión
  * propague automáticamente a ambos.
  */
-export const MEDIAPIPE_CDN_BASE =
-    `https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${MEDIAPIPE_VERSION}`;
+export const MEDIAPIPE_CDN_BASE = `https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${MEDIAPIPE_VERSION}`;
 
 /**
  * Ruta CDN al directorio WASM. FilesetResolver.forVisionTasks() usa esta URL

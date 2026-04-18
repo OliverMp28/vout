@@ -1,11 +1,5 @@
 import { Head, Link } from '@inertiajs/react';
-import {
-    ArrowLeft,
-    ExternalLink,
-    Sparkles,
-    User,
-    XCircle,
-} from 'lucide-react';
+import { ArrowLeft, ExternalLink, Sparkles, User, XCircle } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { EditPanel } from '@/components/admin/games/edit-panel';
 import {
@@ -92,7 +86,10 @@ export default function AdminGamesShow({
                 </header>
 
                 {game.status === 'rejected' && game.rejection_reason && (
-                    <Alert variant="destructive" className="border-destructive/40">
+                    <Alert
+                        variant="destructive"
+                        className="border-destructive/40"
+                    >
                         <XCircle className="size-4" />
                         <AlertTitle>
                             {t('admin.games.show.rejected_banner.title')}
@@ -124,9 +121,7 @@ export default function AdminGamesShow({
     );
 }
 
-AdminGamesShow.layout = (page: ReactNode) => (
-    <AdminLayout>{page}</AdminLayout>
-);
+AdminGamesShow.layout = (page: ReactNode) => <AdminLayout>{page}</AdminLayout>;
 
 // ── Info Panels ──────────────────────────────────────────────────────
 
@@ -149,7 +144,7 @@ function DetailsPanel({ game }: { game: AdminGameDetail }) {
                     <dt className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
                         {t('admin.games.show.details.description')}
                     </dt>
-                    <dd className="whitespace-pre-line text-sm">
+                    <dd className="text-sm whitespace-pre-line">
                         {game.description}
                     </dd>
                 </div>

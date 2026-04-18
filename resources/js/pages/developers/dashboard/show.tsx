@@ -109,9 +109,13 @@ export default function DevelopersDashboardShow({
                                     {app.name}
                                 </h1>
                                 <Badge
-                                    variant={app.suspended_at ? 'destructive' : 'secondary'}
+                                    variant={
+                                        app.suspended_at
+                                            ? 'destructive'
+                                            : 'secondary'
+                                    }
                                     className={cn(
-                                        'shrink-0 text-[10px] font-semibold uppercase tracking-wider',
+                                        'shrink-0 text-[10px] font-semibold tracking-wider uppercase',
                                         app.suspended_at
                                             ? ''
                                             : app.is_active
@@ -120,13 +124,22 @@ export default function DevelopersDashboardShow({
                                     )}
                                 >
                                     {app.suspended_at && (
-                                        <ShieldOff className="mr-1 size-3" aria-hidden />
+                                        <ShieldOff
+                                            className="mr-1 size-3"
+                                            aria-hidden
+                                        />
                                     )}
                                     {app.suspended_at
-                                        ? t('developers.dashboard.show.status.suspended')
+                                        ? t(
+                                              'developers.dashboard.show.status.suspended',
+                                          )
                                         : app.is_active
-                                          ? t('developers.dashboard.index.status.active')
-                                          : t('developers.dashboard.index.status.paused')}
+                                          ? t(
+                                                'developers.dashboard.index.status.active',
+                                            )
+                                          : t(
+                                                'developers.dashboard.index.status.paused',
+                                            )}
                                 </Badge>
                             </div>
                             <p className="truncate font-mono text-xs text-muted-foreground">
@@ -156,14 +169,19 @@ export default function DevelopersDashboardShow({
                 </header>
 
                 {app.suspended_at && (
-                    <Alert variant="destructive" className="border-destructive/40">
+                    <Alert
+                        variant="destructive"
+                        className="border-destructive/40"
+                    >
                         <ShieldOff className="size-4" />
                         <AlertTitle>
                             {t('developers.dashboard.show.suspended.title')}
                         </AlertTitle>
                         <AlertDescription>
                             {app.suspension_reason ??
-                                t('developers.dashboard.show.suspended.default_reason')}
+                                t(
+                                    'developers.dashboard.show.suspended.default_reason',
+                                )}
                         </AlertDescription>
                     </Alert>
                 )}
@@ -289,7 +307,7 @@ function MetaRow({ label, value, monospace }: MetaRowProps) {
             </dt>
             <dd
                 className={cn(
-                    'break-all text-sm',
+                    'text-sm break-all',
                     monospace && 'font-mono text-xs',
                 )}
             >
@@ -337,7 +355,10 @@ function CredentialsPanel({
                     <code className="flex-1 overflow-x-auto rounded-md border border-border bg-background px-3 py-2 font-mono text-sm break-all">
                         {clientId}
                     </code>
-                    <CopyButton value={clientId} label={t('developers.secret.copy')} />
+                    <CopyButton
+                        value={clientId}
+                        label={t('developers.secret.copy')}
+                    />
                 </div>
             </div>
 
@@ -424,7 +445,10 @@ type IssueCredentialsPanelProps = {
  * redirect_uris (validados contra los `allowed_origins` actuales de la app)
  * y elige confidencialidad. El secreto se devuelve una sola vez vía flash.
  */
-function IssueCredentialsPanel({ app, isSuspended }: IssueCredentialsPanelProps) {
+function IssueCredentialsPanel({
+    app,
+    isSuspended,
+}: IssueCredentialsPanelProps) {
     const { t } = useTranslation();
 
     type IssueFormData = {
@@ -456,10 +480,14 @@ function IssueCredentialsPanel({ app, isSuspended }: IssueCredentialsPanelProps)
             <Alert variant="default" className="border-destructive/40">
                 <KeyRound className="size-4 text-destructive" />
                 <AlertTitle>
-                    {t('developers.dashboard.show.credentials.issue.reason_title')}
+                    {t(
+                        'developers.dashboard.show.credentials.issue.reason_title',
+                    )}
                 </AlertTitle>
                 <AlertDescription>
-                    {t('developers.dashboard.show.credentials.issue.reason_body')}
+                    {t(
+                        'developers.dashboard.show.credentials.issue.reason_body',
+                    )}
                 </AlertDescription>
             </Alert>
 
@@ -467,10 +495,14 @@ function IssueCredentialsPanel({ app, isSuspended }: IssueCredentialsPanelProps)
                 <Alert variant="destructive" className="border-destructive/40">
                     <ShieldOff className="size-4" />
                     <AlertTitle>
-                        {t('developers.dashboard.show.credentials.issue.blocked_title')}
+                        {t(
+                            'developers.dashboard.show.credentials.issue.blocked_title',
+                        )}
                     </AlertTitle>
                     <AlertDescription>
-                        {t('developers.dashboard.show.credentials.issue.blocked_body')}
+                        {t(
+                            'developers.dashboard.show.credentials.issue.blocked_body',
+                        )}
                     </AlertDescription>
                 </Alert>
             )}
@@ -557,8 +589,7 @@ function OriginsPanel({ app, redirectUris, requiresAuth }: OriginsPanelProps) {
     const { data, setData, put, processing, errors, isDirty, reset } =
         useForm<OriginsFormData>({
             allowed_origins: [...app.allowed_origins],
-            redirect_uris:
-                redirectUris !== null ? [...redirectUris] : [],
+            redirect_uris: redirectUris !== null ? [...redirectUris] : [],
         });
 
     const handleSubmit = (event: SubmitEvent<HTMLFormElement>): void => {
@@ -659,7 +690,9 @@ function DangerPanel({ app }: DangerPanelProps) {
                 }
                 description={
                     isSuspended
-                        ? t('developers.dashboard.show.suspended.action_blocked')
+                        ? t(
+                              'developers.dashboard.show.suspended.action_blocked',
+                          )
                         : app.is_active
                           ? t(
                                 'developers.dashboard.show.danger.pause.description',
@@ -679,12 +712,16 @@ function DangerPanel({ app }: DangerPanelProps) {
                         {app.is_active ? (
                             <>
                                 <Pause className="size-4" aria-hidden />
-                                {t('developers.dashboard.show.danger.pause.cta')}
+                                {t(
+                                    'developers.dashboard.show.danger.pause.cta',
+                                )}
                             </>
                         ) : (
                             <>
                                 <Play className="size-4" aria-hidden />
-                                {t('developers.dashboard.show.danger.resume.cta')}
+                                {t(
+                                    'developers.dashboard.show.danger.resume.cta',
+                                )}
                             </>
                         )}
                     </Button>
@@ -721,7 +758,9 @@ function DeleteSection({ app }: DeleteSectionProps) {
     return (
         <DangerRow
             title={t('developers.dashboard.show.danger.delete.title')}
-            description={t('developers.dashboard.show.danger.delete.description')}
+            description={t(
+                'developers.dashboard.show.danger.delete.description',
+            )}
             action={
                 <>
                     <Button
@@ -761,7 +800,10 @@ function DeleteSection({ app }: DeleteSectionProps) {
                                 </DialogDescription>
                             </DialogHeader>
 
-                            <Alert variant="default" className="border-destructive/40">
+                            <Alert
+                                variant="default"
+                                className="border-destructive/40"
+                            >
                                 <AlertTriangle className="size-4 text-destructive" />
                                 <AlertTitle>
                                     {t(
@@ -865,9 +907,7 @@ function Panel({ title, description, children, tone = 'default' }: PanelProps) {
         <section
             className={cn(
                 'space-y-4 rounded-2xl border bg-card p-6 shadow-sm',
-                tone === 'danger'
-                    ? 'border-destructive/30'
-                    : 'border-border',
+                tone === 'danger' ? 'border-destructive/30' : 'border-border',
             )}
         >
             <div className="space-y-1">
@@ -880,7 +920,9 @@ function Panel({ title, description, children, tone = 'default' }: PanelProps) {
                     {title}
                 </h2>
                 {description && (
-                    <p className="text-sm text-muted-foreground">{description}</p>
+                    <p className="text-sm text-muted-foreground">
+                        {description}
+                    </p>
                 )}
             </div>
             <div className="space-y-4">{children}</div>
@@ -898,7 +940,7 @@ function ProfileChip({ icon: Icon, label, tone }: ProfileChipProps) {
     return (
         <span
             className={cn(
-                'inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-[11px] font-medium uppercase tracking-wider',
+                'inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-[11px] font-medium tracking-wider uppercase',
                 tone === 'primary'
                     ? 'bg-primary/10 text-primary'
                     : 'bg-muted text-muted-foreground',

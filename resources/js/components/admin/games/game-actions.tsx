@@ -354,13 +354,8 @@ export function DeleteAction({ game }: { game: AdminGameDetail }) {
                                     disabled={!canDelete || processing}
                                     className="gap-2"
                                 >
-                                    <Trash2
-                                        className="size-4"
-                                        aria-hidden
-                                    />
-                                    {t(
-                                        'admin.games.show.actions.delete.cta',
-                                    )}
+                                    <Trash2 className="size-4" aria-hidden />
+                                    {t('admin.games.show.actions.delete.cta')}
                                 </Button>
                             </DialogFooter>
                         </DialogContent>

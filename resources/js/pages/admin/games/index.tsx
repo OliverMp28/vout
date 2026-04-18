@@ -167,7 +167,7 @@ export default function AdminGamesIndex({
                 ) : (
                     <div className="overflow-hidden rounded-xl border border-border">
                         <table className="w-full text-sm">
-                            <thead className="border-b border-border bg-muted/40 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                            <thead className="border-b border-border bg-muted/40 text-left text-xs font-medium tracking-wide text-muted-foreground uppercase">
                                 <tr>
                                     <th className="px-4 py-3">
                                         {t('admin.games.table.name')}
@@ -231,9 +231,7 @@ export default function AdminGamesIndex({
     );
 }
 
-AdminGamesIndex.layout = (page: ReactNode) => (
-    <AdminLayout>{page}</AdminLayout>
-);
+AdminGamesIndex.layout = (page: ReactNode) => <AdminLayout>{page}</AdminLayout>;
 
 function GameRow({ game }: { game: AdminGameListItem }) {
     const { t } = useTranslation();

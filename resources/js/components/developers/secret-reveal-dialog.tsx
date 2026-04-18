@@ -109,7 +109,9 @@ export function SecretRevealDialog({
 
                 <Alert variant="default" className="border-destructive/40">
                     <AlertTriangle className="size-4 text-destructive" />
-                    <AlertTitle>{t('developers.secret.warning_title')}</AlertTitle>
+                    <AlertTitle>
+                        {t('developers.secret.warning_title')}
+                    </AlertTitle>
                     <AlertDescription>
                         {t('developers.secret.warning_body')}
                     </AlertDescription>

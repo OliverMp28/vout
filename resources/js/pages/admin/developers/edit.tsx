@@ -141,10 +141,7 @@ export default function AdminDevelopersEdit({
                                     errors.name ? 'name-error' : undefined
                                 }
                             />
-                            <InputError
-                                id="name-error"
-                                message={errors.name}
-                            />
+                            <InputError id="name-error" message={errors.name} />
                         </div>
 
                         <div className="space-y-2">
@@ -182,9 +179,7 @@ export default function AdminDevelopersEdit({
                             <Textarea
                                 id="bio"
                                 value={data.bio}
-                                onChange={(e) =>
-                                    setData('bio', e.target.value)
-                                }
+                                onChange={(e) => setData('bio', e.target.value)}
                                 placeholder={t(
                                     'admin.developers.form.bio_placeholder',
                                 )}
@@ -195,10 +190,7 @@ export default function AdminDevelopersEdit({
                                     errors.bio ? 'bio-error' : undefined
                                 }
                             />
-                            <InputError
-                                id="bio-error"
-                                message={errors.bio}
-                            />
+                            <InputError id="bio-error" message={errors.bio} />
                         </div>
 
                         <div className="space-y-2">
@@ -238,9 +230,7 @@ export default function AdminDevelopersEdit({
                         <Panel title={t('admin.developers.edit.title')}>
                             <dl className="grid gap-4">
                                 <MetaRow
-                                    label={t(
-                                        'admin.developers.edit.meta.slug',
-                                    )}
+                                    label={t('admin.developers.edit.meta.slug')}
                                     value={developer.slug}
                                     monospace
                                 />
@@ -338,7 +328,10 @@ function OwnershipPanel({
     };
 
     return (
-        <Panel title={t('admin.developers.edit.ownership.title')} tone="primary">
+        <Panel
+            title={t('admin.developers.edit.ownership.title')}
+            tone="primary"
+        >
             {developer.owner ? (
                 <div className="space-y-1 rounded-lg border border-border/60 bg-muted/20 p-3">
                     <p className="text-sm font-medium">
@@ -564,9 +557,7 @@ function DangerZone({ developer }: { developer: AdminDeveloperDetail }) {
                             id="dev-delete-confirm"
                             type="text"
                             value={confirmation}
-                            onChange={(e) =>
-                                setConfirmation(e.target.value)
-                            }
+                            onChange={(e) => setConfirmation(e.target.value)}
                             autoComplete="off"
                             spellCheck={false}
                             className="font-mono text-sm"

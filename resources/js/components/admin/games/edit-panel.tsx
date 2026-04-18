@@ -287,8 +287,7 @@ function ChipGroup({
                                     checked
                                         ? 'border-primary bg-primary/10 text-primary'
                                         : 'border-border bg-card text-muted-foreground hover:bg-muted',
-                                    disabled &&
-                                        'cursor-not-allowed opacity-60',
+                                    disabled && 'cursor-not-allowed opacity-60',
                                 )}
                             >
                                 <Checkbox

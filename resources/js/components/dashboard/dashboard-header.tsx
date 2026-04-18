@@ -58,7 +58,7 @@ export function DashboardHeader({ name, hourOfDay }: Props) {
                 >
                     {t(`dashboard.greeting.${greetingKey}`, { name })}
                 </h1>
-                <p className="text-sm capitalize text-muted-foreground">
+                <p className="text-sm text-muted-foreground capitalize">
                     {subtitle}
                 </p>
             </div>

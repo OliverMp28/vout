@@ -92,7 +92,7 @@ export function EngineOverlay({
             <div
                 className={cn(
                     'glass-card pointer-events-auto relative w-full max-w-md overflow-hidden rounded-2xl p-7 shadow-2xl',
-                    'animate-in fade-in zoom-in-95 duration-300',
+                    'animate-in duration-300 zoom-in-95 fade-in',
                 )}
             >
                 {/* Acento decorativo: halo radial sutil que diferencia idle (invitador) de error (urgente) */}
@@ -112,8 +112,12 @@ export function EngineOverlay({
                             <IconBubble tone="primary">
                                 <Loader2 className="size-7 animate-spin text-primary" />
                             </IconBubble>
-                            <OverlayHeading>{t('play.overlay.handshake.title')}</OverlayHeading>
-                            <OverlayBody>{t('play.overlay.handshake.description')}</OverlayBody>
+                            <OverlayHeading>
+                                {t('play.overlay.handshake.title')}
+                            </OverlayHeading>
+                            <OverlayBody>
+                                {t('play.overlay.handshake.description')}
+                            </OverlayBody>
                         </>
                     )}
 
@@ -122,8 +126,12 @@ export function EngineOverlay({
                             <IconBubble tone="primary">
                                 <Loader2 className="size-7 animate-spin text-primary" />
                             </IconBubble>
-                            <OverlayHeading>{t('play.overlay.loading.title')}</OverlayHeading>
-                            <OverlayBody>{t('play.overlay.loading.description')}</OverlayBody>
+                            <OverlayHeading>
+                                {t('play.overlay.loading.title')}
+                            </OverlayHeading>
+                            <OverlayBody>
+                                {t('play.overlay.loading.description')}
+                            </OverlayBody>
                         </>
                     )}
 
@@ -132,9 +140,17 @@ export function EngineOverlay({
                             <IconBubble tone="destructive">
                                 <RefreshCw className="size-7 text-destructive" />
                             </IconBubble>
-                            <OverlayHeading>{t('play.overlay.timeout.title')}</OverlayHeading>
-                            <OverlayBody>{t('play.overlay.timeout.description')}</OverlayBody>
-                            <Button onClick={onRetryGame} variant="secondary" className="mt-2">
+                            <OverlayHeading>
+                                {t('play.overlay.timeout.title')}
+                            </OverlayHeading>
+                            <OverlayBody>
+                                {t('play.overlay.timeout.description')}
+                            </OverlayBody>
+                            <Button
+                                onClick={onRetryGame}
+                                variant="secondary"
+                                className="mt-2"
+                            >
                                 {t('play.overlay.error.retry')}
                             </Button>
                         </>
@@ -145,11 +161,18 @@ export function EngineOverlay({
                             <IconBubble tone="destructive">
                                 <AlertTriangle className="size-7 text-destructive" />
                             </IconBubble>
-                            <OverlayHeading>{t('play.overlay.error.title')}</OverlayHeading>
+                            <OverlayHeading>
+                                {t('play.overlay.error.title')}
+                            </OverlayHeading>
                             <OverlayBody>
-                                {errorMessage ?? t('play.overlay.error.description')}
+                                {errorMessage ??
+                                    t('play.overlay.error.description')}
                             </OverlayBody>
-                            <Button onClick={onRetry} variant="secondary" className="mt-2">
+                            <Button
+                                onClick={onRetry}
+                                variant="secondary"
+                                className="mt-2"
+                            >
                                 {t('play.overlay.error.retry')}
                             </Button>
                         </>
@@ -189,9 +212,17 @@ function IconBubble({
 }
 
 function OverlayHeading({ children }: { children: React.ReactNode }) {
-    return <h2 className="text-lg font-semibold tracking-tight text-foreground">{children}</h2>;
+    return (
+        <h2 className="text-lg font-semibold tracking-tight text-foreground">
+            {children}
+        </h2>
+    );
 }
 
 function OverlayBody({ children }: { children: React.ReactNode }) {
-    return <p className="max-w-xs text-sm leading-relaxed text-muted-foreground">{children}</p>;
+    return (
+        <p className="max-w-xs text-sm leading-relaxed text-muted-foreground">
+            {children}
+        </p>
+    );
 }

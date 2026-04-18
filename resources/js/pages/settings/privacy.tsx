@@ -55,11 +55,14 @@ export default function Privacy({ consent, has_password }: Props) {
     ];
 
     const acceptedDate = consent.terms_accepted_at
-        ? new Date(consent.terms_accepted_at).toLocaleDateString(locale ?? 'es', {
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric',
-          })
+        ? new Date(consent.terms_accepted_at).toLocaleDateString(
+              locale ?? 'es',
+              {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric',
+              },
+          )
         : null;
 
     return (
@@ -91,7 +94,9 @@ export default function Privacy({ consent, has_password }: Props) {
                                         <dd className="text-right font-medium">
                                             {acceptedDate ?? (
                                                 <span className="text-muted-foreground">
-                                                    {t('privacy.consent.unknown')}
+                                                    {t(
+                                                        'privacy.consent.unknown',
+                                                    )}
                                                 </span>
                                             )}
                                         </dd>
@@ -108,7 +113,10 @@ export default function Privacy({ consent, has_password }: Props) {
                                             {consent.privacy_version_accepted !==
                                                 consent.current_privacy_version && (
                                                 <span className="ml-2 text-xs text-muted-foreground">
-                                                    {t('privacy.consent.current')}:{' '}
+                                                    {t(
+                                                        'privacy.consent.current',
+                                                    )}
+                                                    :{' '}
                                                     <code className="rounded bg-muted px-2 py-0.5 font-mono">
                                                         {
                                                             consent.current_privacy_version
@@ -126,16 +134,14 @@ export default function Privacy({ consent, has_password }: Props) {
                                             className="mt-0.5 size-4 shrink-0"
                                             aria-hidden="true"
                                         />
-                                        <p>{t('privacy.consent.reaccept_warn')}</p>
+                                        <p>
+                                            {t('privacy.consent.reaccept_warn')}
+                                        </p>
                                     </div>
                                 )}
 
                                 <div className="mt-4 flex flex-wrap gap-2">
-                                    <Button
-                                        asChild
-                                        variant="outline"
-                                        size="sm"
-                                    >
+                                    <Button asChild variant="outline" size="sm">
                                         <Link
                                             href={legalShow('privacidad').url}
                                             target="_blank"
@@ -148,11 +154,7 @@ export default function Privacy({ consent, has_password }: Props) {
                                             {t('privacy.consent.read_privacy')}
                                         </Link>
                                     </Button>
-                                    <Button
-                                        asChild
-                                        variant="outline"
-                                        size="sm"
-                                    >
+                                    <Button asChild variant="outline" size="sm">
                                         <Link
                                             href={legalShow('terminos').url}
                                             target="_blank"
@@ -242,7 +244,7 @@ export default function Privacy({ consent, has_password }: Props) {
                     </section>
 
                     {/* Delete account (RGPD art. 17) */}
-                    <section className="rounded-xl border border-red-200/60 bg-red-50/40 p-6 shadow-sm dark:border-red-500/20 dark:bg-red-500/5 md:p-8">
+                    <section className="rounded-xl border border-red-200/60 bg-red-50/40 p-6 shadow-sm md:p-8 dark:border-red-500/20 dark:bg-red-500/5">
                         <div className="flex items-start gap-4">
                             <div className="shrink-0 rounded-lg bg-red-500/10 p-3">
                                 <AlertTriangle className="h-6 w-6 text-red-500" />
@@ -260,7 +262,9 @@ export default function Privacy({ consent, has_password }: Props) {
                                             className="mt-0.5 size-4 shrink-0 text-red-500"
                                             aria-hidden="true"
                                         />
-                                        <span>{t('privacy.delete.what_erased')}</span>
+                                        <span>
+                                            {t('privacy.delete.what_erased')}
+                                        </span>
                                     </li>
                                     <li className="flex items-start gap-2">
                                         <CheckCircle2
@@ -268,7 +272,9 @@ export default function Privacy({ consent, has_password }: Props) {
                                             aria-hidden="true"
                                         />
                                         <span>
-                                            {t('privacy.delete.what_anonymized')}
+                                            {t(
+                                                'privacy.delete.what_anonymized',
+                                            )}
                                         </span>
                                     </li>
                                 </ul>
@@ -365,7 +371,9 @@ export default function Privacy({ consent, has_password }: Props) {
                                                         </DialogClose>
                                                         <Button
                                                             variant="destructive"
-                                                            disabled={processing}
+                                                            disabled={
+                                                                processing
+                                                            }
                                                             asChild
                                                         >
                                                             <button

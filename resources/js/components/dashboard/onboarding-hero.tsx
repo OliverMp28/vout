@@ -84,7 +84,7 @@ export function OnboardingHero({ steps }: Props) {
             </Button>
 
             <div className="relative space-y-1 pr-10">
-                <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-primary">
+                <div className="flex items-center gap-2 text-xs font-medium tracking-wide text-primary uppercase">
                     <Sparkles className="size-3.5" aria-hidden="true" />
                     {t('dashboard.onboarding.eyebrow')}
                 </div>
@@ -177,7 +177,7 @@ function OnboardingStepCard({ step, index }: OnboardingStepCardProps) {
                 className={cn(
                     'mt-auto inline-flex items-center gap-1 text-xs font-medium text-primary',
                     'transition-colors hover:text-primary/80',
-                    'focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+                    'focus-visible:rounded-sm focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none',
                 )}
             >
                 {cta}

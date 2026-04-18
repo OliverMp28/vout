@@ -13,7 +13,10 @@ import { show } from '@/routes/two-factor';
 import { edit as editPassword } from '@/routes/user-password';
 import type { NavItem, Auth } from '@/types';
 
-const getSidebarNavItems = (user: Auth['user'], t: (key: string) => string): NavItem[] => {
+const getSidebarNavItems = (
+    user: Auth['user'],
+    t: (key: string) => string,
+): NavItem[] => {
     const items: NavItem[] = [
         {
             title: t('nav.profile'),

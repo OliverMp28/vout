@@ -110,10 +110,7 @@ export default function DevelopersGamesShow({
                 )}
 
                 {game.status === 'published' && (
-                    <Alert
-                        variant="default"
-                        className="border-emerald-500/40"
-                    >
+                    <Alert variant="default" className="border-emerald-500/40">
                         <CheckCircle2 className="size-4 text-emerald-600 dark:text-emerald-400" />
                         <AlertTitle>
                             {t('developers.games.show.published.title')}
@@ -125,7 +122,10 @@ export default function DevelopersGamesShow({
                 )}
 
                 {game.registered_app?.is_suspended && (
-                    <Alert variant="destructive" className="border-destructive/40">
+                    <Alert
+                        variant="destructive"
+                        className="border-destructive/40"
+                    >
                         <ShieldOff className="size-4" />
                         <AlertTitle>
                             {t('developers.games.show.app_suspended.title')}
@@ -240,9 +240,7 @@ function DangerZone({ game }: DangerZoneProps) {
                             ? t(
                                   'developers.games.show.danger.delete.description',
                               )
-                            : t(
-                                  'developers.games.show.danger.not_deletable',
-                              )}
+                            : t('developers.games.show.danger.not_deletable')}
                     </p>
                 </div>
                 <Button
@@ -344,9 +342,7 @@ function DangerZone({ game }: DangerZoneProps) {
                             className="gap-2"
                         >
                             <Trash2 className="size-4" aria-hidden />
-                            {t(
-                                'developers.games.show.danger.delete.cta',
-                            )}
+                            {t('developers.games.show.danger.delete.cta')}
                         </Button>
                     </DialogFooter>
                 </DialogContent>

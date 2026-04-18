@@ -29,7 +29,8 @@ export const HeadDirectionType = {
     HeadDown: 'HEAD_DOWN',
 } as const;
 
-export type HeadDirectionType = (typeof HeadDirectionType)[keyof typeof HeadDirectionType];
+export type HeadDirectionType =
+    (typeof HeadDirectionType)[keyof typeof HeadDirectionType];
 
 // ---------------------------------------------------------------------------
 // ActionTrigger — identificador unificado para las claves del gesture_mapping
@@ -186,10 +187,18 @@ export function normalizeGestureMapping(raw: unknown): GestureActionMapping {
 
     const result: GestureActionMapping = {};
 
-    for (const [trigger, value] of Object.entries(raw as Record<string, unknown>)) {
+    for (const [trigger, value] of Object.entries(
+        raw as Record<string, unknown>,
+    )) {
         if (typeof value === 'string') {
-            result[trigger as ActionTrigger] = LEGACY_ACTION_MAP[value] ?? { type: 'none' };
-        } else if (typeof value === 'object' && value !== null && 'type' in value) {
+            result[trigger as ActionTrigger] = LEGACY_ACTION_MAP[value] ?? {
+                type: 'none',
+            };
+        } else if (
+            typeof value === 'object' &&
+            value !== null &&
+            'type' in value
+        ) {
             result[trigger as ActionTrigger] = value as GameAction;
         }
     }

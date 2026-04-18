@@ -51,7 +51,7 @@ export function MetaRow({ label, value, monospace }: MetaRowProps) {
             </dt>
             <dd
                 className={cn(
-                    'break-all text-sm',
+                    'text-sm break-all',
                     monospace && 'font-mono text-xs',
                 )}
             >
@@ -73,9 +73,7 @@ export function ActionRow({ title, description, action }: ActionRowProps) {
     return (
         <div className="flex flex-col gap-3 border-b border-border/60 py-4 first:pt-0 last:border-b-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between">
             <div className="space-y-1">
-                <p className="text-sm font-semibold tracking-tight">
-                    {title}
-                </p>
+                <p className="text-sm font-semibold tracking-tight">{title}</p>
                 <p className="text-xs text-muted-foreground">{description}</p>
             </div>
             <div className="flex shrink-0 items-center gap-2">{action}</div>

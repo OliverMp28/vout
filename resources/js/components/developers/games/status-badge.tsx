@@ -9,14 +9,10 @@ type StatusBadgeProps = {
     className?: string;
 };
 
-const VARIANT: Record<
-    GameStatus,
-    { icon: typeof Clock; className: string }
-> = {
+const VARIANT: Record<GameStatus, { icon: typeof Clock; className: string }> = {
     draft: {
         icon: FileText,
-        className:
-            'bg-muted text-muted-foreground border border-border/60',
+        className: 'bg-muted text-muted-foreground border border-border/60',
     },
     pending_review: {
         icon: Clock,
@@ -50,7 +46,7 @@ export function GameStatusBadge({ status, className }: StatusBadgeProps) {
     return (
         <Badge
             className={cn(
-                'inline-flex shrink-0 items-center gap-1 text-[10px] font-semibold uppercase tracking-wider',
+                'inline-flex shrink-0 items-center gap-1 text-[10px] font-semibold tracking-wider uppercase',
                 variant.className,
                 className,
             )}

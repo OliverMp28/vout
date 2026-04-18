@@ -1,5 +1,5 @@
 import ReactMarkdown from 'react-markdown';
-import type {Components} from 'react-markdown';
+import type { Components } from 'react-markdown';
 import rehypeHighlight from 'rehype-highlight';
 import remarkGfm from 'remark-gfm';
 import { cn } from '@/lib/utils';
@@ -81,7 +81,8 @@ const markdownComponents: Components = {
         <p className={cn('mt-4 leading-7', className)} {...props} />
     ),
     a: ({ className, href, ...props }) => {
-        const isExternal = typeof href === 'string' && /^https?:\/\//.test(href);
+        const isExternal =
+            typeof href === 'string' && /^https?:\/\//.test(href);
 
         return (
             <a
@@ -127,10 +128,7 @@ const markdownComponents: Components = {
         />
     ),
     hr: ({ className, ...props }) => (
-        <hr
-            className={cn('my-10 border-border/60', className)}
-            {...props}
-        />
+        <hr className={cn('my-10 border-border/60', className)} {...props} />
     ),
     table: ({ className, ...props }) => (
         <div className="mt-6 w-full overflow-x-auto rounded-lg border border-border/60">
@@ -172,7 +170,10 @@ const markdownComponents: Components = {
 
         if (isBlock) {
             return (
-                <code className={cn(className, 'font-mono text-[0.9em]')} {...props}>
+                <code
+                    className={cn(className, 'font-mono text-[0.9em]')}
+                    {...props}
+                >
                     {children}
                 </code>
             );
@@ -203,10 +204,7 @@ const markdownComponents: Components = {
         <img
             alt={alt ?? ''}
             loading="lazy"
-            className={cn(
-                'mt-6 rounded-lg border border-border/60',
-                className,
-            )}
+            className={cn('mt-6 rounded-lg border border-border/60', className)}
             {...props}
         />
     ),

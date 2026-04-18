@@ -76,10 +76,14 @@ const TRIGGER_I18N: Record<string, string> = {
 /** Acción por defecto cuando el usuario cambia de tipo de acción. */
 function defaultActionForType(type: string): GameAction {
     switch (type) {
-        case 'keyboard': return { type: 'keyboard', key: 'Space', mode: 'press' };
-        case 'mouse_click': return { type: 'mouse_click', button: 'left' };
-        case 'game_event': return { type: 'game_event', event: 'ACTION' };
-        default: return { type: 'none' };
+        case 'keyboard':
+            return { type: 'keyboard', key: 'Space', mode: 'press' };
+        case 'mouse_click':
+            return { type: 'mouse_click', button: 'left' };
+        case 'game_event':
+            return { type: 'game_event', event: 'ACTION' };
+        default:
+            return { type: 'none' };
     }
 }
 
@@ -88,11 +92,14 @@ function actionLabel(action: GameAction | undefined): string {
     if (!action || action.type === 'none') return '—';
     switch (action.type) {
         case 'keyboard': {
-            const keyDisplay = action.key === 'Space' ? 'Space' : resolveEventKey(action.key);
+            const keyDisplay =
+                action.key === 'Space' ? 'Space' : resolveEventKey(action.key);
             return `${keyDisplay} (${action.mode})`;
         }
-        case 'mouse_click': return `Click ${action.button}`;
-        case 'game_event': return `Event: ${action.event}`;
+        case 'mouse_click':
+            return `Click ${action.button}`;
+        case 'game_event':
+            return `Event: ${action.event}`;
     }
 }
 
@@ -114,21 +121,31 @@ function ActionEditor({
         <div className="flex flex-wrap items-end gap-3 pt-3">
             {/* Tipo de acción */}
             <div className="space-y-1">
-                <Label className="text-[10px] uppercase text-muted-foreground">
+                <Label className="text-[10px] text-muted-foreground uppercase">
                     {t('vision.action.type')}
                 </Label>
                 <Select
                     value={action.type}
-                    onValueChange={(type) => onChange(defaultActionForType(type))}
+                    onValueChange={(type) =>
+                        onChange(defaultActionForType(type))
+                    }
                 >
                     <SelectTrigger size="sm" className="w-32">
                         <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="keyboard">{t('vision.action.keyboard')}</SelectItem>
-                        <SelectItem value="mouse_click">{t('vision.action.mouse_click')}</SelectItem>
-                        <SelectItem value="game_event">{t('vision.action.game_event')}</SelectItem>
-                        <SelectItem value="none">{t('vision.action.none')}</SelectItem>
+                        <SelectItem value="keyboard">
+                            {t('vision.action.keyboard')}
+                        </SelectItem>
+                        <SelectItem value="mouse_click">
+                            {t('vision.action.mouse_click')}
+                        </SelectItem>
+                        <SelectItem value="game_event">
+                            {t('vision.action.game_event')}
+                        </SelectItem>
+                        <SelectItem value="none">
+                            {t('vision.action.none')}
+                        </SelectItem>
                     </SelectContent>
                 </Select>
             </div>
@@ -137,16 +154,18 @@ function ActionEditor({
             {action.type === 'keyboard' && (
                 <>
                     <div className="space-y-1">
-                        <Label className="text-[10px] uppercase text-muted-foreground">
+                        <Label className="text-[10px] text-muted-foreground uppercase">
                             {t('vision.action.key_label')}
                         </Label>
                         <KeyPicker
                             value={action.key}
-                            onValueChange={(key) => onChange({ ...action, key })}
+                            onValueChange={(key) =>
+                                onChange({ ...action, key })
+                            }
                         />
                     </div>
                     <div className="space-y-1">
-                        <Label className="text-[10px] uppercase text-muted-foreground">
+                        <Label className="text-[10px] text-muted-foreground uppercase">
                             {t('vision.action.mode_label')}
                         </Label>
                         <ToggleGroup
@@ -155,11 +174,19 @@ function ActionEditor({
                             size="sm"
                             value={action.mode}
                             onValueChange={(mode) => {
-                                if (mode) onChange({ ...action, mode: mode as 'press' | 'hold' });
+                                if (mode)
+                                    onChange({
+                                        ...action,
+                                        mode: mode as 'press' | 'hold',
+                                    });
                             }}
                         >
-                            <ToggleGroupItem value="press">{t('vision.action.mode.press')}</ToggleGroupItem>
-                            <ToggleGroupItem value="hold">{t('vision.action.mode.hold')}</ToggleGroupItem>
+                            <ToggleGroupItem value="press">
+                                {t('vision.action.mode.press')}
+                            </ToggleGroupItem>
+                            <ToggleGroupItem value="hold">
+                                {t('vision.action.mode.hold')}
+                            </ToggleGroupItem>
                         </ToggleGroup>
                     </div>
                 </>
@@ -168,7 +195,7 @@ function ActionEditor({
             {/* Campos específicos de clic de ratón */}
             {action.type === 'mouse_click' && (
                 <div className="space-y-1">
-                    <Label className="text-[10px] uppercase text-muted-foreground">
+                    <Label className="text-[10px] text-muted-foreground uppercase">
                         {t('vision.action.button_label')}
                     </Label>
                     <ToggleGroup
@@ -177,11 +204,19 @@ function ActionEditor({
                         size="sm"
                         value={action.button}
                         onValueChange={(button) => {
-                            if (button) onChange({ ...action, button: button as 'left' | 'right' });
+                            if (button)
+                                onChange({
+                                    ...action,
+                                    button: button as 'left' | 'right',
+                                });
                         }}
                     >
-                        <ToggleGroupItem value="left">{t('vision.action.button.left')}</ToggleGroupItem>
-                        <ToggleGroupItem value="right">{t('vision.action.button.right')}</ToggleGroupItem>
+                        <ToggleGroupItem value="left">
+                            {t('vision.action.button.left')}
+                        </ToggleGroupItem>
+                        <ToggleGroupItem value="right">
+                            {t('vision.action.button.right')}
+                        </ToggleGroupItem>
                     </ToggleGroup>
                 </div>
             )}
@@ -230,12 +265,18 @@ function TriggerRow({
             >
                 <span className="flex items-center gap-1.5 text-sm font-medium">
                     {hasConflict && (
-                        <AlertTriangle className="size-3.5 text-amber-500" aria-hidden="true" />
+                        <AlertTriangle
+                            className="size-3.5 text-amber-500"
+                            aria-hidden="true"
+                        />
                     )}
                     {label}
                 </span>
                 <div className="flex items-center gap-2">
-                    <Badge variant="secondary" className="font-mono text-[10px]">
+                    <Badge
+                        variant="secondary"
+                        className="font-mono text-[10px]"
+                    >
                         {actionLabel(action)}
                     </Badge>
                     {!disabled && (
@@ -250,7 +291,7 @@ function TriggerRow({
             </button>
 
             {expanded && !disabled && (
-                <div className="animate-in fade-in slide-in-from-top-1 duration-200">
+                <div className="animate-in duration-200 fade-in slide-in-from-top-1">
                     <ActionEditor action={action} onChange={onAction} />
                 </div>
             )}
@@ -318,13 +359,17 @@ function GestureMappingEditor({ config }: GestureMappingEditorProps) {
     }, [config.id, mapping, headMode]);
 
     return (
-        <div className="space-y-5 animate-in fade-in slide-in-from-top-4 duration-500">
+        <div className="animate-in space-y-5 duration-500 fade-in slide-in-from-top-4">
             {/* Título */}
             <div className="flex items-start gap-3">
                 <Gamepad2 className="mt-0.5 size-4 text-primary" />
                 <div>
-                    <h3 className="text-base font-medium">{t('vision.mapping.title')}</h3>
-                    <p className="mt-0.5 text-sm text-muted-foreground">{t('vision.mapping.desc')}</p>
+                    <h3 className="text-base font-medium">
+                        {t('vision.mapping.title')}
+                    </h3>
+                    <p className="mt-0.5 text-sm text-muted-foreground">
+                        {t('vision.mapping.desc')}
+                    </p>
                 </div>
             </div>
 
@@ -332,16 +377,25 @@ function GestureMappingEditor({ config }: GestureMappingEditorProps) {
             <div className="flex flex-wrap items-end gap-4">
                 {/* Selector de preset */}
                 <div className="space-y-1">
-                    <Label className="text-[10px] uppercase text-muted-foreground">
+                    <Label className="text-[10px] text-muted-foreground uppercase">
                         {t('vision.mapping.preset')}
                     </Label>
-                    <Select onValueChange={(idx) => applyPreset(ALL_PRESETS[Number(idx)])}>
+                    <Select
+                        onValueChange={(idx) =>
+                            applyPreset(ALL_PRESETS[Number(idx)])
+                        }
+                    >
                         <SelectTrigger size="sm" className="w-36">
-                            <SelectValue placeholder={t('vision.mapping.preset')} />
+                            <SelectValue
+                                placeholder={t('vision.mapping.preset')}
+                            />
                         </SelectTrigger>
                         <SelectContent>
                             {ALL_PRESETS.map((preset, i) => (
-                                <SelectItem key={preset.nameKey} value={String(i)}>
+                                <SelectItem
+                                    key={preset.nameKey}
+                                    value={String(i)}
+                                >
                                     {t(preset.nameKey)}
                                 </SelectItem>
                             ))}
@@ -351,7 +405,7 @@ function GestureMappingEditor({ config }: GestureMappingEditorProps) {
 
                 {/* Modo de head tracking */}
                 <div className="space-y-1">
-                    <Label className="text-[10px] uppercase text-muted-foreground">
+                    <Label className="text-[10px] text-muted-foreground uppercase">
                         {t('vision.mapping.head_mode')}
                     </Label>
                     <ToggleGroup
@@ -363,9 +417,15 @@ function GestureMappingEditor({ config }: GestureMappingEditorProps) {
                             if (mode) setHeadMode(mode as HeadTrackingMode);
                         }}
                     >
-                        <ToggleGroupItem value="cursor">{t('vision.head_tracking.cursor')}</ToggleGroupItem>
-                        <ToggleGroupItem value="gesture">{t('vision.head_tracking.gesture')}</ToggleGroupItem>
-                        <ToggleGroupItem value="disabled">{t('vision.head_tracking.disabled')}</ToggleGroupItem>
+                        <ToggleGroupItem value="cursor">
+                            {t('vision.head_tracking.cursor')}
+                        </ToggleGroupItem>
+                        <ToggleGroupItem value="gesture">
+                            {t('vision.head_tracking.gesture')}
+                        </ToggleGroupItem>
+                        <ToggleGroupItem value="disabled">
+                            {t('vision.head_tracking.disabled')}
+                        </ToggleGroupItem>
                     </ToggleGroup>
                 </div>
             </div>
@@ -380,7 +440,7 @@ function GestureMappingEditor({ config }: GestureMappingEditorProps) {
 
             {/* Sección: Gestos faciales */}
             <div className="space-y-2">
-                <h4 className="text-xs font-medium uppercase text-muted-foreground">
+                <h4 className="text-xs font-medium text-muted-foreground uppercase">
                     {t('vision.mapping.facial_gestures')}
                 </h4>
                 <div className="space-y-1.5">
@@ -398,7 +458,7 @@ function GestureMappingEditor({ config }: GestureMappingEditorProps) {
 
             {/* Sección: Movimiento de cabeza */}
             <div className="space-y-2">
-                <h4 className="text-xs font-medium uppercase text-muted-foreground">
+                <h4 className="text-xs font-medium text-muted-foreground uppercase">
                     {t('vision.mapping.head_movement')}
                 </h4>
                 {headMode !== 'gesture' && (

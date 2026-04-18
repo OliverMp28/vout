@@ -1,4 +1,7 @@
-type Translator = (key: string, params?: Record<string, string | number>) => string;
+type Translator = (
+    key: string,
+    params?: Record<string, string | number>,
+) => string;
 
 const MINUTE = 60;
 const HOUR = 60 * MINUTE;

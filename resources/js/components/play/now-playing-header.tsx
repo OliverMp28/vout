@@ -62,7 +62,7 @@ export function NowPlayingHeader({
                     <p className="text-[11px] font-semibold tracking-wider text-primary/80 uppercase">
                         {t('play.now_playing')}
                     </p>
-                    <h1 className="truncate text-xl font-semibold leading-tight tracking-tight sm:text-2xl">
+                    <h1 className="truncate text-xl leading-tight font-semibold tracking-tight sm:text-2xl">
                         {gameName}
                     </h1>
                     {gameDescription && (
@@ -86,7 +86,11 @@ export function NowPlayingHeader({
                             className="gap-2 shadow-sm transition-all duration-200 hover:shadow-md"
                             aria-expanded={panelOpen}
                             aria-controls={panelId}
-                            aria-label={panelOpen ? t('play.panel.close_panel') : t('play.panel.open_panel')}
+                            aria-label={
+                                panelOpen
+                                    ? t('play.panel.close_panel')
+                                    : t('play.panel.open_panel')
+                            }
                         >
                             <Settings2 className="size-4" />
                             {t('play.panel.toggle')}
@@ -109,7 +113,9 @@ export function NowPlayingHeader({
                                 {t('play.panel.title_hint')}
                             </SheetDescription>
                         </SheetHeader>
-                        <div className="overflow-y-auto px-4 pb-6 pt-2">{panelContent}</div>
+                        <div className="overflow-y-auto px-4 pt-2 pb-6">
+                            {panelContent}
+                        </div>
                     </SheetContent>
                 </Sheet>
             </div>

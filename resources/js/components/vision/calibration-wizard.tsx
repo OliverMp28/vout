@@ -36,13 +36,34 @@ type CalibrationWizardProps = {
 type WizardStep = 'camera' | 'baseline' | 'test';
 
 const GESTURE_TESTS = [
-    { gesture: GestureType.BrowRaise, i18nKey: 'vision.calibration.step3.test_brow' },
-    { gesture: GestureType.MouthOpen, i18nKey: 'vision.calibration.step3.test_mouth' },
-    { gesture: GestureType.BlinkLeft, i18nKey: 'vision.calibration.step3.test_blink_l' },
-    { gesture: GestureType.BlinkRight, i18nKey: 'vision.calibration.step3.test_blink_r' },
-    { gesture: GestureType.Smile, i18nKey: 'vision.calibration.step3.test_smile' },
-    { gesture: GestureType.BrowFrown, i18nKey: 'vision.calibration.step3.test_brow_frown' },
-    { gesture: GestureType.MouthPucker, i18nKey: 'vision.calibration.step3.test_mouth_pucker' },
+    {
+        gesture: GestureType.BrowRaise,
+        i18nKey: 'vision.calibration.step3.test_brow',
+    },
+    {
+        gesture: GestureType.MouthOpen,
+        i18nKey: 'vision.calibration.step3.test_mouth',
+    },
+    {
+        gesture: GestureType.BlinkLeft,
+        i18nKey: 'vision.calibration.step3.test_blink_l',
+    },
+    {
+        gesture: GestureType.BlinkRight,
+        i18nKey: 'vision.calibration.step3.test_blink_r',
+    },
+    {
+        gesture: GestureType.Smile,
+        i18nKey: 'vision.calibration.step3.test_smile',
+    },
+    {
+        gesture: GestureType.BrowFrown,
+        i18nKey: 'vision.calibration.step3.test_brow_frown',
+    },
+    {
+        gesture: GestureType.MouthPucker,
+        i18nKey: 'vision.calibration.step3.test_mouth_pucker',
+    },
 ] as const;
 
 // ---------------------------------------------------------------------------
@@ -66,10 +87,14 @@ function CalibrationWizard({
     // Estado del wizard — solo el mínimo necesario que no se pueda derivar.
     const [step, setStep] = useState<WizardStep>('camera');
     const [sensitivity, setSensitivity] = useState(initialSensitivity);
-    const [detectedGestures, setDetectedGestures] = useState<Set<GestureType>>(new Set());
+    const [detectedGestures, setDetectedGestures] = useState<Set<GestureType>>(
+        new Set(),
+    );
     const [saving, setSaving] = useState(false);
     // 'idle' | 'capturing' | 'done' — reemplaza los booleans calibrating/calibrated.
-    const [calibrationState, setCalibrationState] = useState<'idle' | 'capturing' | 'done'>('idle');
+    const [calibrationState, setCalibrationState] = useState<
+        'idle' | 'capturing' | 'done'
+    >('idle');
 
     // El videoRef es propiedad de este componente — se comparte con useCamera y CameraPreview.
     const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -131,7 +156,12 @@ function CalibrationWizard({
     // Auto-iniciar el motor de detección al entrar en el paso baseline o test,
     // siempre que la cámara esté activa y el motor no esté corriendo.
     useEffect(() => {
-        if ((step === 'baseline' || step === 'test') && camera.status === 'active' && engine.status === 'idle' && videoRef.current) {
+        if (
+            (step === 'baseline' || step === 'test') &&
+            camera.status === 'active' &&
+            engine.status === 'idle' &&
+            videoRef.current
+        ) {
             engine.startDetection(videoRef.current);
         }
     }, [step, camera.status, engine]);
@@ -196,8 +226,10 @@ function CalibrationWizard({
 
     if (hasExistingProfile && !reconfiguring) {
         return (
-            <div className="space-y-4 animate-in fade-in slide-in-from-top-4 duration-500">
-                <h3 className="text-base font-medium">{t('vision.calibration.title')}</h3>
+            <div className="animate-in space-y-4 duration-500 fade-in slide-in-from-top-4">
+                <h3 className="text-base font-medium">
+                    {t('vision.calibration.title')}
+                </h3>
 
                 <div className="flex items-center gap-4 rounded-lg border border-green-500/30 bg-green-500/5 p-4">
                     <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-green-500 text-white">
@@ -208,7 +240,8 @@ function CalibrationWizard({
                             {existingProfileName ?? 'Default'}
                         </p>
                         <p className="text-xs text-muted-foreground">
-                            {t('vision.calibration.summary_sensitivity')}: {initialSensitivity}/10
+                            {t('vision.calibration.summary_sensitivity')}:{' '}
+                            {initialSensitivity}/10
                         </p>
                     </div>
                 </div>
@@ -232,13 +265,16 @@ function CalibrationWizard({
     const progressPercent = ((stepIndex + 1) / 3) * 100;
 
     return (
-        <div className="space-y-5 animate-in fade-in slide-in-from-top-4 duration-500">
+        <div className="animate-in space-y-5 duration-500 fade-in slide-in-from-top-4">
             <div className="flex items-center justify-between">
                 <div>
-                    <h3 className="text-base font-medium">{t('vision.calibration.title')}</h3>
+                    <h3 className="text-base font-medium">
+                        {t('vision.calibration.title')}
+                    </h3>
                     {hasExistingProfile && existingProfileName && (
                         <p className="mt-0.5 text-xs text-muted-foreground">
-                            {t('vision.calibration.active_profile')}: {existingProfileName}
+                            {t('vision.calibration.active_profile')}:{' '}
+                            {existingProfileName}
                         </p>
                     )}
                 </div>
@@ -251,20 +287,33 @@ function CalibrationWizard({
             {step === 'camera' && (
                 <div className="space-y-4">
                     <div>
-                        <p className="text-sm font-medium">{t('vision.calibration.step1.title')}</p>
+                        <p className="text-sm font-medium">
+                            {t('vision.calibration.step1.title')}
+                        </p>
                         <p className="mt-1 text-sm text-muted-foreground">
                             {t('vision.calibration.step1.desc')}
                         </p>
                     </div>
 
-                    <CameraPreview ref={videoRef} active={camera.status === 'active'} compact />
+                    <CameraPreview
+                        ref={videoRef}
+                        active={camera.status === 'active'}
+                        compact
+                    />
 
                     {camera.status === 'denied' && (
-                        <p className="text-sm text-destructive">{t('vision.calibration.step1.denied')}</p>
+                        <p className="text-sm text-destructive">
+                            {t('vision.calibration.step1.denied')}
+                        </p>
                     )}
 
-                    <Button onClick={handleEnableCamera} disabled={camera.status === 'requesting'}>
-                        {camera.status === 'requesting' && <Loader2 className="size-4 animate-spin" />}
+                    <Button
+                        onClick={handleEnableCamera}
+                        disabled={camera.status === 'requesting'}
+                    >
+                        {camera.status === 'requesting' && (
+                            <Loader2 className="size-4 animate-spin" />
+                        )}
                         {t('vision.calibration.step1.button')}
                     </Button>
                 </div>
@@ -274,29 +323,41 @@ function CalibrationWizard({
             {step === 'baseline' && (
                 <div className="space-y-4">
                     <div>
-                        <p className="text-sm font-medium">{t('vision.calibration.step2.title')}</p>
+                        <p className="text-sm font-medium">
+                            {t('vision.calibration.step2.title')}
+                        </p>
                         <p className="mt-1 text-sm text-muted-foreground">
                             {t('vision.calibration.step2.desc')}
                         </p>
                     </div>
 
-                    <CameraPreview ref={videoRef} active={camera.status === 'active'} compact />
+                    <CameraPreview
+                        ref={videoRef}
+                        active={camera.status === 'active'}
+                        compact
+                    />
 
                     <Button
                         onClick={handleCaptureBaseline}
-                        disabled={calibrationState !== 'idle' || engine.status !== 'running'}
+                        disabled={
+                            calibrationState !== 'idle' ||
+                            engine.status !== 'running'
+                        }
                     >
-                        {(calibrationState === 'capturing' || engine.status === 'loading') && (
+                        {(calibrationState === 'capturing' ||
+                            engine.status === 'loading') && (
                             <Loader2 className="size-4 animate-spin" />
                         )}
-                        {calibrationState === 'done' && <Check className="size-4" />}
+                        {calibrationState === 'done' && (
+                            <Check className="size-4" />
+                        )}
                         {engine.status === 'loading'
                             ? t('vision.status.loading')
                             : calibrationState === 'capturing'
-                                ? t('vision.calibration.step2.capturing')
-                                : calibrationState === 'done'
-                                    ? t('vision.calibration.step2.done')
-                                    : t('vision.calibration.step2.button')}
+                              ? t('vision.calibration.step2.capturing')
+                              : calibrationState === 'done'
+                                ? t('vision.calibration.step2.done')
+                                : t('vision.calibration.step2.button')}
                     </Button>
                 </div>
             )}
@@ -305,14 +366,20 @@ function CalibrationWizard({
             {step === 'test' && (
                 <div className="space-y-5">
                     <div>
-                        <p className="text-sm font-medium">{t('vision.calibration.step3.title')}</p>
+                        <p className="text-sm font-medium">
+                            {t('vision.calibration.step3.title')}
+                        </p>
                         <p className="mt-1 text-sm text-muted-foreground">
                             {t('vision.calibration.step3.desc')}
                         </p>
                     </div>
 
                     <div className="flex flex-col items-start gap-5 sm:flex-row">
-                        <CameraPreview ref={videoRef} active={camera.status === 'active'} compact />
+                        <CameraPreview
+                            ref={videoRef}
+                            active={camera.status === 'active'}
+                            compact
+                        />
 
                         <div className="w-full space-y-3 sm:max-h-48 sm:overflow-y-auto sm:pr-1">
                             {GESTURE_TESTS.map(({ gesture, i18nKey }) => {
@@ -330,12 +397,18 @@ function CalibrationWizard({
                                         <div
                                             className={cn(
                                                 'flex size-5 items-center justify-center rounded-full transition-colors',
-                                                detected ? 'bg-green-500 text-white' : 'bg-muted',
+                                                detected
+                                                    ? 'bg-green-500 text-white'
+                                                    : 'bg-muted',
                                             )}
                                         >
-                                            {detected && <Check className="size-3" />}
+                                            {detected && (
+                                                <Check className="size-3" />
+                                            )}
                                         </div>
-                                        <span className="text-sm">{t(i18nKey)}</span>
+                                        <span className="text-sm">
+                                            {t(i18nKey)}
+                                        </span>
                                     </div>
                                 );
                             })}
@@ -344,8 +417,10 @@ function CalibrationWizard({
 
                     <div className="space-y-2">
                         <div className="flex items-center justify-between">
-                            <Label>{t('vision.calibration.step3.sensitivity')}</Label>
-                            <span className="text-sm tabular-nums text-muted-foreground">
+                            <Label>
+                                {t('vision.calibration.step3.sensitivity')}
+                            </Label>
+                            <span className="text-sm text-muted-foreground tabular-nums">
                                 {sensitivity}/10
                             </span>
                         </div>
@@ -360,8 +435,12 @@ function CalibrationWizard({
 
                     <div className="flex items-center gap-3">
                         <Button onClick={handleSave} disabled={saving}>
-                            {saving && <Loader2 className="size-4 animate-spin" />}
-                            {saving ? t('vision.calibration.saving') : t('vision.calibration.save')}
+                            {saving && (
+                                <Loader2 className="size-4 animate-spin" />
+                            )}
+                            {saving
+                                ? t('vision.calibration.saving')
+                                : t('vision.calibration.save')}
                             {!saving && <ChevronRight className="size-4" />}
                         </Button>
 

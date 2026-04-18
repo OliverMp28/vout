@@ -65,7 +65,8 @@ export function UrlPathInput({
                 aria-invalid={invalid || undefined}
                 className={cn(
                     'font-mono text-sm',
-                    invalid && 'border-destructive focus-visible:ring-destructive',
+                    invalid &&
+                        'border-destructive focus-visible:ring-destructive',
                 )}
                 maxLength={500}
             />
@@ -88,7 +89,8 @@ export function UrlPathInput({
             className={cn(
                 'flex flex-wrap items-stretch overflow-hidden rounded-md border border-input bg-background shadow-xs sm:flex-nowrap',
                 'focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/40',
-                invalid && 'border-destructive focus-within:ring-destructive/40',
+                invalid &&
+                    'border-destructive focus-within:ring-destructive/40',
                 disabled && 'opacity-60',
             )}
         >

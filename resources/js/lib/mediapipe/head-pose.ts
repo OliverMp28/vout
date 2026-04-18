@@ -22,7 +22,10 @@ import type { HeadPose } from './types';
  * @param matrix    - Flat 16-element array (column-major order).
  * @param timestamp - Frame timestamp in ms.
  */
-export function extractHeadPose(matrix: ArrayLike<number>, timestamp: number): HeadPose | null {
+export function extractHeadPose(
+    matrix: ArrayLike<number>,
+    timestamp: number,
+): HeadPose | null {
     if (!matrix || matrix.length < 16) return null;
 
     // MediaPipe provides a column-major 4×4 matrix. Extract the rotation

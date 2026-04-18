@@ -31,9 +31,13 @@ export function FeaturedCarousel({ games }: Props) {
             setProgressKey((k) => k + 1);
             if (fromUser) {
                 setIsUserInteracting(true);
-                if (interactionTimerRef.current) clearTimeout(interactionTimerRef.current);
+                if (interactionTimerRef.current)
+                    clearTimeout(interactionTimerRef.current);
                 // Resume auto-advance after 8s of no interaction
-                interactionTimerRef.current = setTimeout(() => setIsUserInteracting(false), 8000);
+                interactionTimerRef.current = setTimeout(
+                    () => setIsUserInteracting(false),
+                    8000,
+                );
             }
             setTimeout(() => setIsTransitioning(false), 700);
         },
@@ -52,9 +56,15 @@ export function FeaturedCarousel({ games }: Props) {
     useEffect(() => {
         const list = thumbnailListRef.current;
         if (!list) return;
-        const activeThumb = list.querySelector(`[data-thumb-index="${activeIndex}"]`) as HTMLElement | null;
+        const activeThumb = list.querySelector(
+            `[data-thumb-index="${activeIndex}"]`,
+        ) as HTMLElement | null;
         if (activeThumb) {
-            activeThumb.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+            activeThumb.scrollIntoView({
+                behavior: 'smooth',
+                block: 'nearest',
+                inline: 'center',
+            });
         }
     }, [activeIndex]);
 
@@ -70,8 +80,14 @@ export function FeaturedCarousel({ games }: Props) {
     // Keyboard navigation
     const handleKeyDown = useCallback(
         (e: React.KeyboardEvent) => {
-            if (e.key === 'ArrowLeft') { e.preventDefault(); goPrev(); }
-            if (e.key === 'ArrowRight') { e.preventDefault(); goNext(); }
+            if (e.key === 'ArrowLeft') {
+                e.preventDefault();
+                goPrev();
+            }
+            if (e.key === 'ArrowRight') {
+                e.preventDefault();
+                goNext();
+            }
         },
         [goNext, goPrev],
     );
@@ -85,7 +101,7 @@ export function FeaturedCarousel({ games }: Props) {
         <section
             className={cn(
                 'group/carousel relative overflow-hidden rounded-2xl',
-                'ring-1 ring-white/10 shadow-[0_20px_60px_-20px_rgba(0,0,0,0.45)]',
+                'shadow-[0_20px_60px_-20px_rgba(0,0,0,0.45)] ring-1 ring-white/10',
                 'dark:ring-white/5',
             )}
             style={{ height: 'clamp(340px, 50vw, 560px)' }}
@@ -181,7 +197,7 @@ export function FeaturedCarousel({ games }: Props) {
                     )}
 
                     {/* Game name */}
-                    <h2 className="mb-2 text-2xl font-bold leading-tight text-white drop-shadow-lg md:text-3xl lg:text-4xl">
+                    <h2 className="mb-2 text-2xl leading-tight font-bold text-white drop-shadow-lg md:text-3xl lg:text-4xl">
                         {activeGame.name}
                     </h2>
 
@@ -227,10 +243,13 @@ export function FeaturedCarousel({ games }: Props) {
 
                         <div
                             ref={thumbnailListRef}
-                            className="relative z-10 flex gap-2.5 overflow-x-auto px-6 pb-4 pt-3 md:px-10 md:pb-5"
+                            className="relative z-10 flex gap-2.5 overflow-x-auto px-6 pt-3 pb-4 md:px-10 md:pb-5"
                             role="tablist"
                             aria-label={t('carousel.indicators')}
-                            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                            style={{
+                                scrollbarWidth: 'none',
+                                msOverflowStyle: 'none',
+                            }}
                         >
                             {games.map((game, index) => {
                                 const isActive = index === activeIndex;
@@ -245,12 +264,15 @@ export function FeaturedCarousel({ games }: Props) {
                                         onClick={() => goTo(index, true)}
                                         className={cn(
                                             'group/thumb relative shrink-0 overflow-hidden rounded-lg border-2 transition-all duration-300',
-                                            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70',
+                                            'focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:outline-none',
                                             isActive
-                                                ? 'border-primary shadow-[0_0_14px_2px_var(--color-primary)] opacity-100'
-                                                : 'border-white/15 opacity-50 hover:opacity-85 hover:border-white/40',
+                                                ? 'border-primary opacity-100 shadow-[0_0_14px_2px_var(--color-primary)]'
+                                                : 'border-white/15 opacity-50 hover:border-white/40 hover:opacity-85',
                                         )}
-                                        style={{ width: '100px', height: '68px' }}
+                                        style={{
+                                            width: '100px',
+                                            height: '68px',
+                                        }}
                                     >
                                         {/* Cover image or gradient fallback */}
                                         {game.cover_image ? (
@@ -276,19 +298,23 @@ export function FeaturedCarousel({ games }: Props) {
                                         <div className="absolute inset-0 bg-linear-to-t from-black/75 via-black/10 to-transparent" />
 
                                         {/* Game name at bottom */}
-                                        <span className="absolute right-0 bottom-0 left-0 px-1.5 pb-1 text-center text-[9px] font-semibold leading-tight text-white drop-shadow-sm line-clamp-2">
+                                        <span className="absolute right-0 bottom-0 left-0 line-clamp-2 px-1.5 pb-1 text-center text-[9px] leading-tight font-semibold text-white drop-shadow-sm">
                                             {game.name}
                                         </span>
 
                                         {/* Active indicator: primary-colored bottom bar */}
-                                        {isActive && !isHovered && !isUserInteracting && (
-                                            <span
-                                                key={progressKey}
-                                                className="carousel-progress-bar absolute bottom-0 left-0 h-0.5 w-full bg-primary"
-                                            />
-                                        )}
+                                        {isActive &&
+                                            !isHovered &&
+                                            !isUserInteracting && (
+                                                <span
+                                                    key={progressKey}
+                                                    className="carousel-progress-bar absolute bottom-0 left-0 h-0.5 w-full bg-primary"
+                                                />
+                                            )}
 
-                                        <span className="sr-only">{game.name}</span>
+                                        <span className="sr-only">
+                                            {game.name}
+                                        </span>
                                     </button>
                                 );
                             })}
@@ -306,8 +332,8 @@ export function FeaturedCarousel({ games }: Props) {
                         aria-label={t('carousel.prev')}
                         className={cn(
                             'absolute top-1/3 left-3 z-20 -translate-y-1/2 rounded-full border border-white/25 bg-black/45 p-2.5 text-white backdrop-blur-sm transition-all duration-300',
-                            'hover:bg-black/70 hover:scale-110 hover:border-white/50',
-                            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70',
+                            'hover:scale-110 hover:border-white/50 hover:bg-black/70',
+                            'focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:outline-none',
                             'opacity-40 group-hover/carousel:opacity-100',
                         )}
                     >
@@ -319,8 +345,8 @@ export function FeaturedCarousel({ games }: Props) {
                         aria-label={t('carousel.next')}
                         className={cn(
                             'absolute top-1/3 right-3 z-20 -translate-y-1/2 rounded-full border border-white/25 bg-black/45 p-2.5 text-white backdrop-blur-sm transition-all duration-300',
-                            'hover:bg-black/70 hover:scale-110 hover:border-white/50',
-                            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70',
+                            'hover:scale-110 hover:border-white/50 hover:bg-black/70',
+                            'focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:outline-none',
                             'opacity-40 group-hover/carousel:opacity-100',
                         )}
                     >

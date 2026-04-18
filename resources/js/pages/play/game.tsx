@@ -51,7 +51,11 @@ type PlayGameProps = {
 // Componente
 // ---------------------------------------------------------------------------
 
-export default function PlayGame({ game, activeGestureConfig, accessToken }: PlayGameProps) {
+export default function PlayGame({
+    game,
+    activeGestureConfig,
+    accessToken,
+}: PlayGameProps) {
     const { t } = useTranslation();
     const { auth } = usePage<{ auth: Auth }>().props;
 
@@ -70,7 +74,7 @@ export default function PlayGame({ game, activeGestureConfig, accessToken }: Pla
         const handler = (e: KeyboardEvent) => {
             if (e.ctrlKey && e.key.toLowerCase() === 'm') {
                 e.preventDefault();
-                setShowTelemetry(prev => !prev);
+                setShowTelemetry((prev) => !prev);
             }
         };
         window.addEventListener('keydown', handler);
@@ -78,9 +82,12 @@ export default function PlayGame({ game, activeGestureConfig, accessToken }: Pla
     }, []);
 
     // ── Callback imperativo para el cursor (evita setState a 30fps) ────────
-    const handleCursorMove = useCallback((x: number, y: number, visible: boolean) => {
-        cursorRef.current?.setPosition(x, y, visible);
-    }, []);
+    const handleCursorMove = useCallback(
+        (x: number, y: number, visible: boolean) => {
+            cursorRef.current?.setPosition(x, y, visible);
+        },
+        [],
+    );
 
     // ── Orquestador ────────────────────────────────────────────────────────
     const {
@@ -147,7 +154,7 @@ export default function PlayGame({ game, activeGestureConfig, accessToken }: Pla
             {/* Enlace de salto para usuarios de teclado — visualmente oculto, visible al recibir foco */}
             <a
                 href="#game-frame"
-                className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-primary focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-primary-foreground focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
+                className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:rounded-lg focus:bg-primary focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-primary-foreground focus:shadow-lg focus:ring-2 focus:ring-primary/50 focus:outline-none"
             >
                 {t('play.skip_to_game')}
             </a>
@@ -170,14 +177,13 @@ export default function PlayGame({ game, activeGestureConfig, accessToken }: Pla
 
             {/* Layout principal: iframe + panel desktop */}
             <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
-
                 {/* ── Contenedor del iframe ───────────────────────────────── */}
                 <div
                     id="game-frame"
                     className={cn(
                         'group relative aspect-video w-full overflow-hidden rounded-2xl border bg-black transition-all duration-500',
                         engine.status === 'running'
-                            ? 'border-primary/40 shadow-2xl shadow-primary/20 ring-1 ring-primary/30'
+                            ? 'border-primary/40 shadow-2xl ring-1 shadow-primary/20 ring-primary/30'
                             : 'border-border/60 shadow-xl shadow-black/20',
                     )}
                 >
@@ -207,12 +213,16 @@ export default function PlayGame({ game, activeGestureConfig, accessToken }: Pla
                         ref={iframeRef}
                         src={game.embed_url}
                         title={game.name}
-                        aria-label={t('play.iframe.aria_label', { game: game.name })}
+                        aria-label={t('play.iframe.aria_label', {
+                            game: game.name,
+                        })}
                         sandbox="allow-scripts allow-same-origin"
                         allow="autoplay; fullscreen"
                         className={cn(
                             'absolute inset-0 size-full border-0 transition-opacity duration-700 ease-out',
-                            handshake.status === 'authenticated' ? 'opacity-100' : 'opacity-0',
+                            handshake.status === 'authenticated'
+                                ? 'opacity-100'
+                                : 'opacity-0',
                         )}
                     />
 
@@ -223,21 +233,36 @@ export default function PlayGame({ game, activeGestureConfig, accessToken }: Pla
 
                     {/* Overlay debug de Telemetría */}
                     {showTelemetry && telemetrySnap && (
-                        <div className="absolute top-4 left-4 z-50 rounded-lg border border-white/10 bg-black/80 p-3 text-white shadow-xl backdrop-blur-md pointer-events-none">
-                            <div className="text-xs font-bold mb-2 flex items-center justify-between border-b border-white/20 pb-1">
+                        <div className="pointer-events-none absolute top-4 left-4 z-50 rounded-lg border border-white/10 bg-black/80 p-3 text-white shadow-xl backdrop-blur-md">
+                            <div className="mb-2 flex items-center justify-between border-b border-white/20 pb-1 text-xs font-bold">
                                 <span>Telemetry</span>
-                                <span className="opacity-50 font-normal ml-4">Ctrl+M to hide</span>
+                                <span className="ml-4 font-normal opacity-50">
+                                    Ctrl+M to hide
+                                </span>
                             </div>
                             <div className="space-y-1 font-mono text-[10px]">
-                                {Object.entries(telemetrySnap).sort().map(([key, stats]: any) => (
-                                    <div key={key} className="flex justify-between gap-6">
-                                        <span className="opacity-70">{key}</span>
-                                        <span>
-                                            <span className="opacity-50">p50:</span> {stats.p50.toFixed(1)}
-                                            <span className="opacity-50 ml-1">avg:</span> {stats.avg.toFixed(1)}
-                                        </span>
-                                    </div>
-                                ))}
+                                {Object.entries(telemetrySnap)
+                                    .sort()
+                                    .map(([key, stats]: any) => (
+                                        <div
+                                            key={key}
+                                            className="flex justify-between gap-6"
+                                        >
+                                            <span className="opacity-70">
+                                                {key}
+                                            </span>
+                                            <span>
+                                                <span className="opacity-50">
+                                                    p50:
+                                                </span>{' '}
+                                                {stats.p50.toFixed(1)}
+                                                <span className="ml-1 opacity-50">
+                                                    avg:
+                                                </span>{' '}
+                                                {stats.avg.toFixed(1)}
+                                            </span>
+                                        </div>
+                                    ))}
                             </div>
                         </div>
                     )}
@@ -272,7 +297,12 @@ export default function PlayGame({ game, activeGestureConfig, accessToken }: Pla
 
             {/* ── Anuncio a11y para cambios de estado del motor ──────────── */}
             {/* Región live polite, visualmente oculta pero leída por SR */}
-            <div role="status" aria-live="polite" aria-atomic="true" className="sr-only">
+            <div
+                role="status"
+                aria-live="polite"
+                aria-atomic="true"
+                className="sr-only"
+            >
                 {t(`play.engine.${engine.status}`)}
             </div>
 
@@ -280,7 +310,12 @@ export default function PlayGame({ game, activeGestureConfig, accessToken }: Pla
             {/* Solo activo cuando el dispatch está habilitado — evita spam de SR */}
             {/* cuando el usuario no usa control facial activamente.              */}
             {dispatchEnabled && lastGesture && (
-                <div role="alert" aria-live="assertive" aria-atomic="true" className="sr-only">
+                <div
+                    role="alert"
+                    aria-live="assertive"
+                    aria-atomic="true"
+                    className="sr-only"
+                >
                     {t('play.a11y.gesture_detected', { gesture: lastGesture })}
                 </div>
             )}

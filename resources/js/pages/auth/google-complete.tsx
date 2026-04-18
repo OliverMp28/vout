@@ -57,9 +57,15 @@ export default function GoogleComplete({ name, email }: Props) {
                                         id="accept_terms"
                                         name="accept_terms"
                                         checked={acceptTerms}
-                                        onCheckedChange={(value) => setAcceptTerms(value === true)}
+                                        onCheckedChange={(value) =>
+                                            setAcceptTerms(value === true)
+                                        }
                                         aria-invalid={!!errors.accept_terms}
-                                        aria-describedby={errors.accept_terms ? 'accept_terms-error' : undefined}
+                                        aria-describedby={
+                                            errors.accept_terms
+                                                ? 'accept_terms-error'
+                                                : undefined
+                                        }
                                         className="mt-0.5"
                                     />
                                     <div className="space-y-1">
@@ -67,21 +73,27 @@ export default function GoogleComplete({ name, email }: Props) {
                                             htmlFor="accept_terms"
                                             className="text-sm leading-snug font-normal"
                                         >
-                                            {t('auth.consent.terms.label_prefix')}{' '}
+                                            {t(
+                                                'auth.consent.terms.label_prefix',
+                                            )}{' '}
                                             <TextLink
                                                 href={legalShow('terminos')}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
                                             >
-                                                {t('auth.consent.terms.link_terms')}
-                                            </TextLink>
-                                            {' '}{t('auth.consent.terms.label_and')}{' '}
+                                                {t(
+                                                    'auth.consent.terms.link_terms',
+                                                )}
+                                            </TextLink>{' '}
+                                            {t('auth.consent.terms.label_and')}{' '}
                                             <TextLink
                                                 href={legalShow('privacidad')}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
                                             >
-                                                {t('auth.consent.terms.link_privacy')}
+                                                {t(
+                                                    'auth.consent.terms.link_privacy',
+                                                )}
                                             </TextLink>
                                             .
                                         </Label>
@@ -124,7 +136,11 @@ export default function GoogleComplete({ name, email }: Props) {
                                         </div>
                                     </div>
                                 */}
-                                <input type="hidden" name="confirm_age" value="1" />
+                                <input
+                                    type="hidden"
+                                    name="confirm_age"
+                                    value="1"
+                                />
                                 <InputError message={errors.accept_terms} />
                             </div>
 

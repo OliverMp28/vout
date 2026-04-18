@@ -61,7 +61,10 @@ export type VoutCursorMessage = {
     y: number;
 };
 
-export type VoutToGameMessage = VoutAuthMessage | VoutActionMessage | VoutCursorMessage;
+export type VoutToGameMessage =
+    | VoutAuthMessage
+    | VoutActionMessage
+    | VoutCursorMessage;
 
 // ---------------------------------------------------------------------------
 // Game → Vout (mensajes que el portal RECIBE del iframe)
@@ -102,7 +105,12 @@ export type GameToVoutMessage = GameReadyMessage | GameStateMessage;
  * - `error`          → fallo en validación de origen, token ausente o iframe inválido.
  * - `timeout`        → el iframe cargó pero no envió READY en el tiempo esperado.
  */
-export type HandshakeStatus = 'waiting' | 'ready' | 'authenticated' | 'error' | 'timeout';
+export type HandshakeStatus =
+    | 'waiting'
+    | 'ready'
+    | 'authenticated'
+    | 'error'
+    | 'timeout';
 
 // ---------------------------------------------------------------------------
 // Type guards
@@ -124,12 +132,19 @@ export function isGameMessage(data: unknown): data is GameToVoutMessage {
     switch (candidate.type) {
         case 'READY': {
             const ready = candidate as { suggestedPreset?: unknown };
-            return ready.suggestedPreset === undefined || typeof ready.suggestedPreset === 'string';
+            return (
+                ready.suggestedPreset === undefined ||
+                typeof ready.suggestedPreset === 'string'
+            );
         }
         case 'GAME_STATE': {
             const state = candidate as { state?: unknown; score?: unknown };
-            const validState = state.state === 'playing' || state.state === 'paused' || state.state === 'ended';
-            const validScore = state.score === undefined || typeof state.score === 'number';
+            const validState =
+                state.state === 'playing' ||
+                state.state === 'paused' ||
+                state.state === 'ended';
+            const validScore =
+                state.score === undefined || typeof state.score === 'number';
             return validState && validScore;
         }
         default:
@@ -164,6 +179,9 @@ export function extractOrigin(url: string): string | null {
  * implícito. Coherente con la política de seguridad documentada en
  * `vout-context.md` §5.1.
  */
-export function isOriginAllowed(origin: string, allowedOrigins: readonly string[]): boolean {
+export function isOriginAllowed(
+    origin: string,
+    allowedOrigins: readonly string[],
+): boolean {
     return allowedOrigins.includes(origin);
 }

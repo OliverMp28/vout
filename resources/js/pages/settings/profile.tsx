@@ -66,12 +66,17 @@ export default function Profile({
                                             <div className="flex items-center gap-4">
                                                 <Avatar className="h-16 w-16 border-2 border-primary/20">
                                                     <AvatarImage
-                                                        src={auth.user.avatar ?? undefined}
+                                                        src={
+                                                            auth.user.avatar ??
+                                                            undefined
+                                                        }
                                                         alt={auth.user.name}
                                                         className="object-cover"
                                                     />
                                                     <AvatarFallback className="bg-neutral-200 text-base font-medium text-black dark:bg-neutral-700 dark:text-white">
-                                                        {getInitials(auth.user.name)}
+                                                        {getInitials(
+                                                            auth.user.name,
+                                                        )}
                                                     </AvatarFallback>
                                                 </Avatar>
                                                 <div className="flex-1">
@@ -103,7 +108,9 @@ export default function Profile({
                                                 name="name"
                                                 required
                                                 autoComplete="name"
-                                                placeholder={t('profile.fields.name')}
+                                                placeholder={t(
+                                                    'profile.fields.name',
+                                                )}
                                             />
                                             <InputError
                                                 className="mt-2"
@@ -124,7 +131,9 @@ export default function Profile({
                                                 name="username"
                                                 required
                                                 autoComplete="username"
-                                                placeholder={t('profile.fields.username')}
+                                                placeholder={t(
+                                                    'profile.fields.username',
+                                                )}
                                             />
                                             <InputError
                                                 className="mt-2"
@@ -145,7 +154,9 @@ export default function Profile({
                                             name="email"
                                             required
                                             autoComplete="email"
-                                            placeholder={t('profile.fields.email')}
+                                            placeholder={t(
+                                                'profile.fields.email',
+                                            )}
                                         />
                                         <InputError
                                             className="mt-2"
@@ -154,13 +165,17 @@ export default function Profile({
                                     </div>
 
                                     <div className="grid gap-2">
-                                        <Label htmlFor="bio">{t('profile.fields.bio')}</Label>
+                                        <Label htmlFor="bio">
+                                            {t('profile.fields.bio')}
+                                        </Label>
                                         <textarea
                                             id="bio"
                                             className="mt-1 block min-h-[100px] w-full rounded-md border border-input bg-background/50 px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
                                             defaultValue={auth.user.bio || ''}
                                             name="bio"
-                                            placeholder={t('profile.fields.bio_placeholder')}
+                                            placeholder={t(
+                                                'profile.fields.bio_placeholder',
+                                            )}
                                         />
                                         <InputError
                                             className="mt-2"

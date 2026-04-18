@@ -19,7 +19,10 @@
 import { useCallback, useEffect, useRef } from 'react';
 
 import { ActionDispatcher } from '@/lib/mediapipe/action-dispatcher';
-import type { GestureActionMapping, HeadTrackingMode } from '@/lib/mediapipe/action-types';
+import type {
+    GestureActionMapping,
+    HeadTrackingMode,
+} from '@/lib/mediapipe/action-types';
 import type { HeadTrackPosition } from '@/lib/mediapipe/head-tracker';
 import type { GestureEvent } from '@/lib/mediapipe/types';
 

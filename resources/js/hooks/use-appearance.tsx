@@ -13,7 +13,11 @@ export type UseAppearanceReturn = {
     readonly updateAppearance: (mode: Appearance) => void;
 };
 
-const APPEARANCE_VALUES: readonly Appearance[] = ['light', 'dark', 'system'] as const;
+const APPEARANCE_VALUES: readonly Appearance[] = [
+    'light',
+    'dark',
+    'system',
+] as const;
 const COOKIE_NAME = 'appearance';
 const STORAGE_KEY = 'appearance';
 
@@ -21,7 +25,8 @@ const listeners = new Set<() => void>();
 let currentAppearance: Appearance = 'system';
 
 const isAppearance = (value: unknown): value is Appearance =>
-    typeof value === 'string' && (APPEARANCE_VALUES as readonly string[]).includes(value);
+    typeof value === 'string' &&
+    (APPEARANCE_VALUES as readonly string[]).includes(value);
 
 const prefersDark = (): boolean => {
     if (typeof window === 'undefined') {
@@ -108,7 +113,9 @@ export function initializeTheme(): void {
 export function useAppearance(): UseAppearanceReturn {
     const page = usePage<{ auth: Auth }>();
     const user = page.props.auth?.user ?? null;
-    const dbAppearance: Appearance | null = isAppearance(user?.settings?.appearance)
+    const dbAppearance: Appearance | null = isAppearance(
+        user?.settings?.appearance,
+    )
         ? (user!.settings!.appearance as Appearance)
         : null;
     const isAuthenticated = user !== null;

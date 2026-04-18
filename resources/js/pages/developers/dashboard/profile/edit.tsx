@@ -246,7 +246,9 @@ export default function DevelopersProfileEdit({
 
                             <div className="grid gap-2">
                                 <Label htmlFor="profile-logo">
-                                    {t('developers.profile.form.logo_url.label')}
+                                    {t(
+                                        'developers.profile.form.logo_url.label',
+                                    )}
                                 </Label>
                                 <Input
                                     id="profile-logo"
@@ -282,7 +284,9 @@ export default function DevelopersProfileEdit({
                                       ? t(
                                             'developers.profile.form.submit_update',
                                         )
-                                      : t('developers.profile.form.submit_claim')}
+                                      : t(
+                                            'developers.profile.form.submit_claim',
+                                        )}
                             </Button>
                         </div>
                     </form>
@@ -296,9 +300,7 @@ export default function DevelopersProfileEdit({
                         />
 
                         {isClaimed && profile && (
-                            <Panel
-                                title={t('developers.profile.meta.title')}
-                            >
+                            <Panel title={t('developers.profile.meta.title')}>
                                 <dl className="grid gap-4">
                                     <MetaRow
                                         label={t(
@@ -360,8 +362,10 @@ type PreviewCardProps = {
 
 function PreviewCard({ name, bio, website, logo }: PreviewCardProps) {
     const { t } = useTranslation();
-    const displayName = name.trim() || t('developers.profile.preview.placeholder_name');
-    const displayBio = bio.trim() || t('developers.profile.preview.placeholder_bio');
+    const displayName =
+        name.trim() || t('developers.profile.preview.placeholder_name');
+    const displayBio =
+        bio.trim() || t('developers.profile.preview.placeholder_bio');
     const hostname = safeHostname(website);
 
     return (

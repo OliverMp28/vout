@@ -52,7 +52,9 @@ export function classifyGestures(
 
         // Subtract the neutral baseline if available.
         if (baseline) {
-            const baselineMax = Math.max(...keys.map((k) => baseline.blendshapes[k] ?? 0));
+            const baselineMax = Math.max(
+                ...keys.map((k) => baseline.blendshapes[k] ?? 0),
+            );
             raw = Math.max(0, raw - baselineMax);
         }
 

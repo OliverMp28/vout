@@ -1,5 +1,11 @@
 import { Link } from '@inertiajs/react';
-import { BookOpen, Gamepad2, LayoutGrid, Sparkles, UserRound } from 'lucide-react';
+import {
+    BookOpen,
+    Gamepad2,
+    LayoutGrid,
+    Sparkles,
+    UserRound,
+} from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useCurrentUrl } from '@/hooks/use-current-url';
 import { useTranslation } from '@/hooks/use-translation';

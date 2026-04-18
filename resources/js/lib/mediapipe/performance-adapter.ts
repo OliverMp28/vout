@@ -54,7 +54,8 @@ export class PerformanceAdapter {
             this.samples.shift();
         }
 
-        const avgMs = this.samples.reduce((a, b) => a + b, 0) / this.samples.length;
+        const avgMs =
+            this.samples.reduce((a, b) => a + b, 0) / this.samples.length;
 
         // Intentar SUBIR de tier (índice más bajo = más rápido) si hay margen.
         while (this.currentTierIndex > 0) {

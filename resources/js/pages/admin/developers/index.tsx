@@ -11,11 +11,7 @@ import type { ReactNode } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import {
-    Tabs,
-    TabsList,
-    TabsTrigger,
-} from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useTranslation } from '@/hooks/use-translation';
 import AdminLayout from '@/layouts/admin-layout';
 import admin from '@/routes/admin';
@@ -132,7 +128,7 @@ export default function AdminDevelopersIndex({ developers, filters }: Props) {
                 ) : (
                     <div className="overflow-hidden rounded-xl border border-border">
                         <table className="w-full text-sm">
-                            <thead className="border-b border-border bg-muted/40 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                            <thead className="border-b border-border bg-muted/40 text-left text-xs font-medium tracking-wide text-muted-foreground uppercase">
                                 <tr>
                                     <th className="px-4 py-3">
                                         {t('admin.developers.table.name')}
@@ -243,9 +239,8 @@ export default function AdminDevelopersIndex({ developers, filters }: Props) {
                                             >
                                                 <Link
                                                     href={
-                                                        devRoutes.edit(
-                                                            dev.slug,
-                                                        ).url
+                                                        devRoutes.edit(dev.slug)
+                                                            .url
                                                     }
                                                 >
                                                     {t(

@@ -43,7 +43,11 @@ import type { RefObject } from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { isGameMessage, isOriginAllowed } from '@/lib/iframe/types';
-import type { GameToVoutMessage, HandshakeStatus, VoutToGameMessage } from '@/lib/iframe/types';
+import type {
+    GameToVoutMessage,
+    HandshakeStatus,
+    VoutToGameMessage,
+} from '@/lib/iframe/types';
 
 // ---------------------------------------------------------------------------
 // Tipos
@@ -83,7 +87,10 @@ export type UseIframeHandshakeOptions = {
      *
      * Por ahora el handler se registra pero ningún juego de la suite lo emite aún.
      */
-    onGameState?: (state: 'playing' | 'paused' | 'ended', score?: number) => void;
+    onGameState?: (
+        state: 'playing' | 'paused' | 'ended',
+        score?: number,
+    ) => void;
 };
 
 export type UseIframeHandshakeReturn = {
@@ -113,8 +120,18 @@ export type UseIframeHandshakeReturn = {
 // Hook
 // ---------------------------------------------------------------------------
 
-export function useIframeHandshake(options: UseIframeHandshakeOptions): UseIframeHandshakeReturn {
-    const { iframeRef, allowedOrigins, accessToken, voutId, username, onReady, onGameState } = options;
+export function useIframeHandshake(
+    options: UseIframeHandshakeOptions,
+): UseIframeHandshakeReturn {
+    const {
+        iframeRef,
+        allowedOrigins,
+        accessToken,
+        voutId,
+        username,
+        onReady,
+        onGameState,
+    } = options;
 
     const [status, setStatus] = useState<HandshakeStatus>('waiting');
     const [connectedOrigin, setConnectedOrigin] = useState<string | null>(null);
@@ -127,7 +144,8 @@ export function useIframeHandshake(options: UseIframeHandshakeOptions): UseIfram
     // render para evitar enviar AUTH a un destino obsoleto. Es más eficiente
     // que hacerlo en useEffect (no provoca segundo render) y compatible con la
     // regla react-hooks/set-state-in-effect.
-    const [previousAllowedOrigins, setPreviousAllowedOrigins] = useState(allowedOrigins);
+    const [previousAllowedOrigins, setPreviousAllowedOrigins] =
+        useState(allowedOrigins);
     if (previousAllowedOrigins !== allowedOrigins) {
         setPreviousAllowedOrigins(allowedOrigins);
         setStatus('waiting');
@@ -218,9 +236,15 @@ export function useIframeHandshake(options: UseIframeHandshakeOptions): UseIfram
             }
         }
 
-        function handleReady(origin: string, suggestedPreset: string | undefined): void {
+        function handleReady(
+            origin: string,
+            suggestedPreset: string | undefined,
+        ): void {
             readyArrived = true;
-            if (loadTimer) { clearTimeout(loadTimer); loadTimer = null; }
+            if (loadTimer) {
+                clearTimeout(loadTimer);
+                loadTimer = null;
+            }
 
             const iframe = iframeRef.current;
             const targetWindow = iframe?.contentWindow;
@@ -268,18 +292,24 @@ export function useIframeHandshake(options: UseIframeHandshakeOptions): UseIfram
         }
     }, [connectedOrigin]);
 
-    const sendAction = useCallback((eventName: string) => {
-        const iframe = iframeRef.current;
-        const targetWindow = iframe?.contentWindow;
-        const origin = connectedOriginRef.current;
+    const sendAction = useCallback(
+        (eventName: string) => {
+            const iframe = iframeRef.current;
+            const targetWindow = iframe?.contentWindow;
+            const origin = connectedOriginRef.current;
 
-        if (!targetWindow || !origin) {
-            return;
-        }
+            if (!targetWindow || !origin) {
+                return;
+            }
 
-        const message: VoutToGameMessage = { type: 'VOUT_ACTION', event: eventName };
-        targetWindow.postMessage(message, origin);
-    }, [iframeRef]);
+            const message: VoutToGameMessage = {
+                type: 'VOUT_ACTION',
+                event: eventName,
+            };
+            targetWindow.postMessage(message, origin);
+        },
+        [iframeRef],
+    );
 
     // Sesión 3.4 §5.2 — Coalescing de cursor postMessage.
     //
@@ -295,28 +325,35 @@ export function useIframeHandshake(options: UseIframeHandshakeOptions): UseIfram
     const pendingCursorRef = useRef<{ x: number; y: number } | null>(null);
     const cursorRafRef = useRef(0);
 
-    const sendCursor = useCallback((x: number, y: number) => {
-        pendingCursorRef.current = { x, y };
+    const sendCursor = useCallback(
+        (x: number, y: number) => {
+            pendingCursorRef.current = { x, y };
 
-        // Si ya hay un rAF pendiente, no programar otro — el flush usará
-        // el valor más reciente de pendingCursorRef cuando se ejecute.
-        if (cursorRafRef.current) return;
+            // Si ya hay un rAF pendiente, no programar otro — el flush usará
+            // el valor más reciente de pendingCursorRef cuando se ejecute.
+            if (cursorRafRef.current) return;
 
-        cursorRafRef.current = requestAnimationFrame(() => {
-            cursorRafRef.current = 0;
-            const pending = pendingCursorRef.current;
-            if (!pending) return;
+            cursorRafRef.current = requestAnimationFrame(() => {
+                cursorRafRef.current = 0;
+                const pending = pendingCursorRef.current;
+                if (!pending) return;
 
-            const iframe = iframeRef.current;
-            const targetWindow = iframe?.contentWindow;
-            const origin = connectedOriginRef.current;
+                const iframe = iframeRef.current;
+                const targetWindow = iframe?.contentWindow;
+                const origin = connectedOriginRef.current;
 
-            if (!targetWindow || !origin) return;
+                if (!targetWindow || !origin) return;
 
-            const message: VoutToGameMessage = { type: 'VOUT_CURSOR', x: pending.x, y: pending.y };
-            targetWindow.postMessage(message, origin);
-        });
-    }, [iframeRef]);
+                const message: VoutToGameMessage = {
+                    type: 'VOUT_CURSOR',
+                    x: pending.x,
+                    y: pending.y,
+                };
+                targetWindow.postMessage(message, origin);
+            });
+        },
+        [iframeRef],
+    );
 
     // Cancelar rAF pendiente del cursor al desmontar.
     useEffect(() => {
