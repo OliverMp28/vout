@@ -1,5 +1,8 @@
 <?php
 
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
+
 /*
 |--------------------------------------------------------------------------
 | Test Case
@@ -11,8 +14,8 @@
 |
 */
 
-pest()->extend(Tests\TestCase::class)
-    ->use(Illuminate\Foundation\Testing\RefreshDatabase::class)
+pest()->extend(TestCase::class)
+    ->use(RefreshDatabase::class)
     ->in('Feature');
 
 /*
@@ -41,7 +44,13 @@ expect()->extend('toBeOne', function () {
 |
 */
 
-function something()
+/**
+ * 1x1 transparent PNG bytes — útil para tests que necesitan simular la descarga
+ * de una imagen sin generar archivos pesados ni depender de GD.
+ */
+function fakePngBytes(): string
 {
-    // ..
+    return base64_decode(
+        'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII='
+    );
 }

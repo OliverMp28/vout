@@ -4,12 +4,16 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Services\ExternalAvatarDownloader;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 use Laravel\Socialite\Facades\Socialite;
 
 class SocialiteController extends Controller
 {
+    public function __construct(private ExternalAvatarDownloader $avatarDownloader) {}
+
     /**
      * Redirige al usuario al proveedor de autenticación (Google).
      */
@@ -36,7 +40,16 @@ class SocialiteController extends Controller
         $user = User::where('google_id', $googleUser->getId())->first();
 
         if ($user) {
-            // Usuario encontrado con google_id, iniciamos sesión
+            // Si el avatar guardado es una URL externa (legado), lo reemplazamos por una
+            // copia local descargada ahora. Así evitamos que las apariciones aleatorias
+            // de 429/403 de lh3.googleusercontent.com rompan la UX.
+            if ($this->isExternalAvatar($user->avatar)) {
+                $local = $this->avatarDownloader->download($googleUser->getAvatar());
+                if ($local !== null) {
+                    $user->update(['avatar' => $local]);
+                }
+            }
+
             Auth::login($user);
 
             return redirect()->intended(route('dashboard', absolute: false));
@@ -56,11 +69,16 @@ class SocialiteController extends Controller
                 ]);
             }
 
-            // Vinculamos (o re-vinculamos si era el mismo) la cuenta de Google.
+            // Avatar: conservamos uno local existente; descargamos desde Google si no
+            // hay avatar o si el actual es una URL externa (legado).
+            $avatar = $user->avatar;
+            if ($avatar === null || $this->isExternalAvatar($avatar)) {
+                $avatar = $this->avatarDownloader->download($googleUser->getAvatar());
+            }
+
             $user->update([
                 'google_id' => $googleUser->getId(),
-                // Actualizamos el avatar solo si el usuario no tiene uno customizado
-                'avatar' => $user->avatar ?? $googleUser->getAvatar(),
+                'avatar' => $avatar,
             ]);
 
             Auth::login($user);
@@ -80,7 +98,7 @@ class SocialiteController extends Controller
             'username' => $username,
             'email' => $googleUser->getEmail(),
             'google_id' => $googleUser->getId(),
-            'avatar' => $googleUser->getAvatar(),
+            'avatar' => $this->avatarDownloader->download($googleUser->getAvatar()),
             // Generamos una contraseña aleatoria ya que no utilizará password para entrar de forma nativa a priori
             'password' => bcrypt(str()->random(24)),
             // terms_accepted_at queda null intencionalmente: el callback no recoge
@@ -110,10 +128,26 @@ class SocialiteController extends Controller
             return back()->with('error', 'No puedes desvincular Google porque no has establecido una contraseña para tu cuenta nativa.');
         }
 
+        // Si el avatar del usuario es una URL externa (heredada de Google sin descargar),
+        // al desvincular ya no queremos depender de ella.
+        if ($this->isExternalAvatar($user->avatar)) {
+            $user->avatar = null;
+        }
+
         $user->update([
             'google_id' => null,
+            'avatar' => $user->avatar,
         ]);
 
         return back()->with('status', 'google-unlinked');
+    }
+
+    /**
+     * Un avatar se considera externo si es una URL absoluta (http/https).
+     * Los avatares locales se guardan como rutas relativas (/storage/...).
+     */
+    private function isExternalAvatar(?string $avatar): bool
+    {
+        return $avatar !== null && str_starts_with($avatar, 'http');
     }
 }

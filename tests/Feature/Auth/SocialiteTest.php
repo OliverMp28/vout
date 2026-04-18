@@ -1,9 +1,34 @@
 <?php
 
 use App\Models\User;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
 use Laravel\Socialite\Facades\Socialite;
 use Laravel\Socialite\Two\GoogleProvider;
 use Laravel\Socialite\Two\User as SocialiteUser;
+
+function mockGoogleUser(array $overrides = []): SocialiteUser
+{
+    $defaults = [
+        'getId' => 'google-12345',
+        'getName' => 'Test User',
+        'getNickname' => 'testuser',
+        'getEmail' => 'test@google.com',
+        'getAvatar' => 'https://lh3.googleusercontent.com/a/avatar.jpg',
+    ];
+
+    $abstractUser = Mockery::mock(SocialiteUser::class);
+    foreach (array_merge($defaults, $overrides) as $method => $value) {
+        $abstractUser->shouldReceive($method)->andReturn($value);
+    }
+
+    $provider = Mockery::mock(GoogleProvider::class);
+    $provider->shouldReceive('user')->andReturn($abstractUser);
+
+    Socialite::shouldReceive('driver')->with('google')->andReturn($provider);
+
+    return $abstractUser;
+}
 
 it('redirects to google provider', function () {
     $response = $this->get('/auth/google/redirect');
@@ -12,35 +37,60 @@ it('redirects to google provider', function () {
     $this->assertStringContainsString('accounts.google.com', $response->headers->get('Location'));
 });
 
-it('creates a new user and redirects to consent interstitial', function () {
-    $abstractUser = Mockery::mock(SocialiteUser::class);
-    $abstractUser->shouldReceive('getId')->andReturn('google-12345');
-    $abstractUser->shouldReceive('getName')->andReturn('Test User');
-    $abstractUser->shouldReceive('getNickname')->andReturn('testuser');
-    $abstractUser->shouldReceive('getEmail')->andReturn('test@google.com');
-    $abstractUser->shouldReceive('getAvatar')->andReturn('https://google.com/avatar.jpg');
+it('creates a new user, downloads avatar locally, and redirects to consent interstitial', function () {
+    Storage::fake('public');
+    Http::fake([
+        'lh3.googleusercontent.com/*' => Http::response(
+            fakePngBytes(),
+            200,
+            ['Content-Type' => 'image/png']
+        ),
+    ]);
 
-    $provider = Mockery::mock(GoogleProvider::class);
-    $provider->shouldReceive('user')->andReturn($abstractUser);
+    mockGoogleUser(['getEmail' => 'test@google.com']);
 
-    Socialite::shouldReceive('driver')->with('google')->andReturn($provider);
+    $response = $this->get('/auth/google/callback');
+
+    $response->assertRedirect(route('auth.google.complete'));
+
+    $user = User::where('email', 'test@google.com')->firstOrFail();
+    expect($user->google_id)->toBe('google-12345')
+        ->and($user->avatar)->toStartWith('/storage/avatars/')
+        ->and($user->avatar)->toEndWith('.png')
+        ->and($user->terms_accepted_at)->toBeNull();
+
+    Storage::disk('public')->assertExists(str_replace('/storage/', '', $user->avatar));
+    $this->assertAuthenticated();
+});
+
+it('creates a new user with null avatar when google download fails', function () {
+    Storage::fake('public');
+    Http::fake([
+        'lh3.googleusercontent.com/*' => Http::response('', 429),
+    ]);
+
+    mockGoogleUser(['getEmail' => 'ratelimited@google.com']);
 
     $response = $this->get('/auth/google/callback');
 
     $response->assertRedirect(route('auth.google.complete'));
 
     $this->assertDatabaseHas('users', [
-        'email' => 'test@google.com',
-        'google_id' => 'google-12345',
-        'avatar' => 'https://google.com/avatar.jpg',
-        'terms_accepted_at' => null,
-        'privacy_version_accepted' => null,
+        'email' => 'ratelimited@google.com',
+        'avatar' => null,
     ]);
-
-    $this->assertAuthenticated();
 });
 
-it('links existing native account to google and skips interstitial', function () {
+it('links existing native account and downloads google avatar locally', function () {
+    Storage::fake('public');
+    Http::fake([
+        'lh3.googleusercontent.com/*' => Http::response(
+            fakePngBytes(),
+            200,
+            ['Content-Type' => 'image/png']
+        ),
+    ]);
+
     $user = User::factory()->create([
         'email' => 'existing@test.com',
         'google_id' => null,
@@ -49,27 +99,70 @@ it('links existing native account to google and skips interstitial', function ()
         'privacy_version_accepted' => '1.0.0',
     ]);
 
-    $abstractUser = Mockery::mock(SocialiteUser::class);
-    $abstractUser->shouldReceive('getId')->andReturn('google-67890');
-    $abstractUser->shouldReceive('getEmail')->andReturn('existing@test.com');
-    $abstractUser->shouldReceive('getAvatar')->andReturn('https://google.com/avatar2.jpg');
-
-    $provider = Mockery::mock(GoogleProvider::class);
-    $provider->shouldReceive('user')->andReturn($abstractUser);
-
-    Socialite::shouldReceive('driver')->with('google')->andReturn($provider);
+    mockGoogleUser([
+        'getId' => 'google-67890',
+        'getEmail' => 'existing@test.com',
+    ]);
 
     $response = $this->get('/auth/google/callback');
 
     $response->assertRedirect(route('dashboard', absolute: false));
 
-    $this->assertDatabaseHas('users', [
-        'id' => $user->id,
-        'google_id' => 'google-67890',
-        'avatar' => 'https://google.com/avatar2.jpg',
-    ]);
+    $user->refresh();
+    expect($user->google_id)->toBe('google-67890')
+        ->and($user->avatar)->toStartWith('/storage/avatars/');
 
     $this->assertAuthenticatedAs($user);
+});
+
+it('preserves user-uploaded local avatar when linking google', function () {
+    Storage::fake('public');
+    Http::fake();
+
+    $user = User::factory()->create([
+        'email' => 'existing@test.com',
+        'google_id' => null,
+        'avatar' => '/storage/avatars/user-uploaded.png',
+        'terms_accepted_at' => now(),
+        'privacy_version_accepted' => '1.0.0',
+    ]);
+
+    mockGoogleUser(['getEmail' => 'existing@test.com']);
+
+    $this->get('/auth/google/callback');
+
+    expect($user->fresh()->avatar)->toBe('/storage/avatars/user-uploaded.png');
+    Http::assertNothingSent();
+});
+
+it('migrates legacy external avatar to local copy on next google login', function () {
+    Storage::fake('public');
+    Http::fake([
+        'lh3.googleusercontent.com/*' => Http::response(
+            fakePngBytes(),
+            200,
+            ['Content-Type' => 'image/png']
+        ),
+    ]);
+
+    $user = User::factory()->create([
+        'email' => 'legacy@test.com',
+        'google_id' => 'google-legacy',
+        'avatar' => 'https://lh3.googleusercontent.com/a/old-url.jpg',
+        'terms_accepted_at' => now(),
+        'privacy_version_accepted' => '1.0.0',
+    ]);
+
+    mockGoogleUser([
+        'getId' => 'google-legacy',
+        'getEmail' => 'legacy@test.com',
+    ]);
+
+    $this->get('/auth/google/callback');
+
+    $fresh = $user->fresh();
+    expect($fresh->avatar)->toStartWith('/storage/avatars/')
+        ->and($fresh->avatar)->not->toStartWith('http');
 });
 
 it('shows interstitial for newly created google user', function () {

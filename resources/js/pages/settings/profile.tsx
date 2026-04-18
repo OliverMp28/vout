@@ -3,9 +3,11 @@ import { Form, Head, Link, usePage } from '@inertiajs/react';
 import ProfileController from '@/actions/App/Http/Controllers/Settings/ProfileController';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useInitials } from '@/hooks/use-initials';
 import { useTranslation } from '@/hooks/use-translation';
 import AppLayout from '@/layouts/app-layout';
 import SettingsLayout from '@/layouts/settings/layout';
@@ -22,6 +24,7 @@ export default function Profile({
 }) {
     const { auth } = usePage().props;
     const { t } = useTranslation();
+    const getInitials = useInitials();
 
     const breadcrumbs: BreadcrumbItem[] = [
         {
@@ -61,13 +64,16 @@ export default function Profile({
                                                 {t('profile.fields.avatar')}
                                             </Label>
                                             <div className="flex items-center gap-4">
-                                                {auth.user.avatar && (
-                                                    <img
-                                                        src={auth.user.avatar}
-                                                        alt="Avatar"
-                                                        className="h-16 w-16 rounded-full border-2 border-primary/20 object-cover"
+                                                <Avatar className="h-16 w-16 border-2 border-primary/20">
+                                                    <AvatarImage
+                                                        src={auth.user.avatar ?? undefined}
+                                                        alt={auth.user.name}
+                                                        className="object-cover"
                                                     />
-                                                )}
+                                                    <AvatarFallback className="bg-neutral-200 text-base font-medium text-black dark:bg-neutral-700 dark:text-white">
+                                                        {getInitials(auth.user.name)}
+                                                    </AvatarFallback>
+                                                </Avatar>
                                                 <div className="flex-1">
                                                     <Input
                                                         id="avatar"
