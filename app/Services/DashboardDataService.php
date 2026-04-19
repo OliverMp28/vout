@@ -183,6 +183,29 @@ class DashboardDataService
     }
 
     /**
+     * Conteo de favoritos y guardados para el acceso rápido del dashboard.
+     *
+     * Una sola query con agregados condicionales para no golpear la tabla
+     * pivote dos veces.
+     *
+     * @return array{favorites: int, saved: int}
+     */
+    public function libraryCounts(User $user): array
+    {
+        /** @var object{favorites: ?int, saved: ?int} $row */
+        $row = DB::table('game_user')
+            ->selectRaw('COALESCE(SUM(CASE WHEN is_favorite THEN 1 ELSE 0 END), 0) AS favorites')
+            ->selectRaw('COALESCE(SUM(CASE WHEN is_saved THEN 1 ELSE 0 END), 0) AS saved')
+            ->where('user_id', $user->id)
+            ->first() ?? (object) ['favorites' => 0, 'saved' => 0];
+
+        return [
+            'favorites' => (int) ($row->favorites ?? 0),
+            'saved' => (int) ($row->saved ?? 0),
+        ];
+    }
+
+    /**
      * Contexto del ecosistema (roles y atajos contextuales).
      *
      * @return array{isDeveloper: bool, isAdmin: bool, developerAppsCount: ?int}

@@ -36,6 +36,7 @@ class DashboardController extends Controller
                 ? new GameResource($continuePlaying)
                 : null,
             'stats' => $this->dashboard->quickStats($user),
+            'library' => $this->dashboard->libraryCounts($user),
             'recommendations' => GameResource::collection($recommendations),
             'recommendationReason' => $this->dashboard->recommendationReason($user),
             'ecosystem' => [

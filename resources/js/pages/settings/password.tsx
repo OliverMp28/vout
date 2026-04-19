@@ -8,6 +8,8 @@ import { CelebrateOnSuccess } from '@/components/mascot/celebrate-on-success';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useMascotContext } from '@/hooks/use-mascot-context';
+import { useTranslation } from '@/hooks/use-translation';
 import AppLayout from '@/layouts/app-layout';
 import SettingsLayout from '@/layouts/settings/layout';
 import { edit } from '@/routes/user-password';
@@ -22,8 +24,20 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 export default function Password() {
     const { auth } = usePage().props;
+    const { t } = useTranslation();
     const passwordInput = useRef<HTMLInputElement>(null);
     const currentPasswordInput = useRef<HTMLInputElement>(null);
+
+    // Un único mensaje: tip de seguridad. Es tap-only — el auto-show aquí
+    // resultaría insistente (el usuario ya sabe a qué viene a esta pantalla).
+    useMascotContext([
+        {
+            id: 'settings.password.tip',
+            priority: 10,
+            when: true,
+            text: t('mascot.context.settings.password.tip'),
+        },
+    ]);
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>

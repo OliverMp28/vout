@@ -24,6 +24,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useMascotContext } from '@/hooks/use-mascot-context';
 import { useTranslation } from '@/hooks/use-translation';
 import AppLayout from '@/layouts/app-layout';
 import SettingsLayout from '@/layouts/settings/layout';
@@ -53,6 +54,26 @@ export default function Privacy({ consent, has_password }: Props) {
             href: editPrivacy(),
         },
     ];
+
+    // Si hay que re-aceptar una nueva política, Vou lo avisa
+    // proactivamente (urgente). Sin eso, tip informativo sobre el
+    // derecho de exportación/borrado.
+    useMascotContext([
+        {
+            id: 'settings.privacy.reaccept',
+            priority: 30,
+            auto: true,
+            tone: 'info',
+            when: consent.needs_reacceptance,
+            text: t('mascot.context.settings.privacy.reaccept'),
+        },
+        {
+            id: 'settings.privacy.your_data',
+            priority: 10,
+            when: true,
+            text: t('mascot.context.settings.privacy.your_data'),
+        },
+    ]);
 
     const acceptedDate = consent.terms_accepted_at
         ? new Date(consent.terms_accepted_at).toLocaleDateString(

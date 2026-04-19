@@ -14,6 +14,7 @@ import { GameGrid } from '@/components/catalog/game-grid';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
+import { useMascotContext } from '@/hooks/use-mascot-context';
 import { useTranslation } from '@/hooks/use-translation';
 import PortalLayout from '@/layouts/portal-layout';
 import { cn } from '@/lib/utils';
@@ -37,6 +38,14 @@ export default function CatalogShow({
         userInteraction?.is_favorite ?? false,
     );
     const [isSaved, setIsSaved] = useState(userInteraction?.is_saved ?? false);
+
+    useMascotContext([
+        {
+            id: 'catalog.show',
+            when: !!game.embed_url,
+            text: t('mascot.context.catalog.show', { game: game.name }),
+        },
+    ]);
 
     const handleToggleFavorite = useCallback(() => {
         if (!isAuthenticated) return;

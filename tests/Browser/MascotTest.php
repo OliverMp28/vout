@@ -96,3 +96,135 @@ test('al guardar perfil, Vou muestra el tooltip de notificación en tono success
     // porque no depende del locale y auto-espera al cambio de estado.
     $page->assertVisible('.vou-mascot [data-tone="success"]');
 });
+
+// -----------------------------------------------------------------------
+// S7 — Mensajes contextuales por ruta.
+//
+// Vou deja de saludar "en abstracto" y habla del contexto real de la
+// página. Las páginas registran candidatos vía `useMascotContext()`;
+// al hacer tap, el provider elige el activo de mayor prioridad o hace
+// fallback a un saludo aleatorio si ninguno aplica.
+// -----------------------------------------------------------------------
+
+test('tap en Vou en /library/favorites vacío muestra el mensaje contextual de empty state (S7)', function () {
+    $user = User::factory()->create();
+    UserSetting::factory()->for($user)->create(['show_mascot' => true]);
+
+    $this->actingAs($user);
+
+    $page = visit('/library/favorites');
+
+    $page->assertNoJavaScriptErrors()
+        ->assertVisible('.vou-mascot')
+        ->click('.vou-button');
+
+    // Aceptamos ES y EN porque el locale depende del UserSetting factory.
+    $body = $page->content();
+    expect($body)->toMatch(
+        '/Aún no tienes favoritos|No favorites yet/u'
+    );
+});
+
+test('tap en Vou en /library/saved vacío muestra el mensaje contextual de empty state (S7)', function () {
+    $user = User::factory()->create();
+    UserSetting::factory()->for($user)->create(['show_mascot' => true]);
+
+    $this->actingAs($user);
+
+    $page = visit('/library/saved');
+
+    $page->assertNoJavaScriptErrors()
+        ->assertVisible('.vou-mascot')
+        ->click('.vou-button');
+
+    $body = $page->content();
+    expect($body)->toMatch(
+        '/No has guardado nada|Nothing saved yet/u'
+    );
+});
+
+test('tap en Vou en /dashboard inserta el nombre del usuario en el saludo horario (S7)', function () {
+    // Usuario con nombre fijo y muy identificable para evitar falsos
+    // positivos con fragmentos del layout (breadcrumbs, header, etc.).
+    $user = User::factory()->create(['name' => 'VouTestUserZX']);
+    // Descarta el onboarding para que sólo quede activo el saludo horario
+    // (priority 10) en el dashboard — el onboarding tendría priority 20 y
+    // ganaría al tap.
+    UserSetting::factory()->for($user)->create([
+        'show_mascot' => true,
+        'dashboard_welcome_dismissed_at' => now(),
+    ]);
+
+    $this->actingAs($user);
+
+    $page = visit('/dashboard');
+
+    $page->assertNoJavaScriptErrors()
+        ->assertVisible('.vou-mascot')
+        ->click('.vou-button');
+
+    // El saludo horario siempre está activo (prioridad 10); mete el nombre
+    // del usuario vía :name. Solo miramos el tooltip de la mascota para
+    // no confundirnos con el header. Los saludos genéricos (mascot.greetings.*)
+    // NO contienen el nombre — si lo vemos, es prueba de que el sistema
+    // contextual tomó prioridad sobre el fallback aleatorio.
+    $body = $page->content();
+    expect($body)->toMatch('/Buen[oa]s?\s\w+,\sVouTestUserZX|Good\s\w+,\sVouTestUserZX/u');
+});
+
+// -----------------------------------------------------------------------
+// S7+ — Auto-show proactivo.
+//
+// Algunos candidatos se declaran con `auto: true` para que Vou los muestre
+// proactivamente al entrar en la ruta, sin que el usuario tenga que hacer
+// tab+enter o click. El provider aplica throttle global y dedup por
+// id|texto para no spamear al usuario.
+// -----------------------------------------------------------------------
+
+test('en /library/favorites vacío, Vou auto-muestra el mensaje sin necesidad de tap (S7 auto)', function () {
+    $user = User::factory()->create();
+    UserSetting::factory()->for($user)->create([
+        'show_mascot' => true,
+        'locale' => 'es',
+    ]);
+
+    $this->actingAs($user);
+
+    $page = visit('/library/favorites');
+
+    // Auto-show tiene un retardo interno de ~1.2s desde el cambio de
+    // ruta. Esperamos un poco más para dar margen al efecto + fade-in.
+    $page->assertNoJavaScriptErrors()
+        ->assertVisible('.vou-mascot')
+        ->wait(2);
+
+    // Sin hacer click: el tooltip debe estar mostrando el mensaje ES del
+    // empty state.
+    $page->assertSee('Aún no tienes favoritos');
+});
+
+test('en /settings/password el tip no se auto-muestra (es tap-only) (S7 auto)', function () {
+    $user = User::factory()->create();
+    UserSetting::factory()->for($user)->create([
+        'show_mascot' => true,
+        'locale' => 'es',
+    ]);
+
+    $this->actingAs($user);
+
+    $page = visit('/settings/password');
+
+    // Damos margen suficiente para que, si hubiera auto-show mal marcado,
+    // se dispare dentro de este tiempo.
+    $page->assertNoJavaScriptErrors()
+        ->assertVisible('.vou-mascot')
+        ->wait(2);
+
+    // El candidato de /settings/password NO es `auto: true` — no debe
+    // verse sin interacción.
+    $page->assertDontSee('Elige algo largo y único');
+
+    // Tras el click sí aparece (comportamiento de tap estándar).
+    $page->click('.vou-button')
+        ->assertSee('Elige algo largo y único');
+});

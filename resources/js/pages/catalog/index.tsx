@@ -6,6 +6,7 @@ import { CategoryFilterPanel } from '@/components/catalog/category-filter-panel'
 import { GameEmptyState } from '@/components/catalog/game-empty-state';
 import { GameGrid } from '@/components/catalog/game-grid';
 import { useCatalogFilters } from '@/hooks/use-catalog-filters';
+import { useMascotContext } from '@/hooks/use-mascot-context';
 import { useTranslation } from '@/hooks/use-translation';
 import PortalLayout from '@/layouts/portal-layout';
 import { index as catalogIndex } from '@/routes/catalog';
@@ -49,6 +50,21 @@ export default function CatalogIndex({
     const handleBeforeLoadMore = useCallback(() => {
         setStoredGames(accumulatedGames);
     }, [accumulatedGames]);
+
+    useMascotContext([
+        {
+            id: 'catalog.index.filtered',
+            priority: 20,
+            when: hasActiveFilters,
+            text: t('mascot.context.catalog.index_filtered'),
+        },
+        {
+            id: 'catalog.index',
+            priority: 10,
+            when: !hasActiveFilters,
+            text: t('mascot.context.catalog.index'),
+        },
+    ]);
 
     return (
         <PortalLayout>

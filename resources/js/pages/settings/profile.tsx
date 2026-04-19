@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useInitials } from '@/hooks/use-initials';
+import { useMascotContext } from '@/hooks/use-mascot-context';
 import { useTranslation } from '@/hooks/use-translation';
 import AppLayout from '@/layouts/app-layout';
 import SettingsLayout from '@/layouts/settings/layout';
@@ -33,6 +34,39 @@ export default function Profile({
             href: edit(),
         },
     ];
+
+    // ── Mensajes contextuales para Vou (S7) ────────────────────────────
+    // Tres capas: verificación de email pendiente (urgente), invitación a
+    // vincular Google si aún no lo está, y el tip informativo del Vout ID
+    // como fallback. Los dos primeros se auto-muestran porque son
+    // accionables.
+    const emailUnverified =
+        mustVerifyEmail && auth.user.email_verified_at === null;
+    const googleLinked = auth.user.google_id !== null;
+
+    useMascotContext([
+        {
+            id: 'settings.profile.verify_email',
+            priority: 30,
+            auto: true,
+            tone: 'info',
+            when: emailUnverified,
+            text: t('mascot.context.settings.profile.verify_email'),
+        },
+        {
+            id: 'settings.profile.link_google',
+            priority: 20,
+            auto: true,
+            when: !googleLinked,
+            text: t('mascot.context.settings.profile.link_google'),
+        },
+        {
+            id: 'settings.profile.vout_id',
+            priority: 10,
+            when: true,
+            text: t('mascot.context.settings.profile.vout_id'),
+        },
+    ]);
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>

@@ -1,5 +1,13 @@
 import { Link, usePage } from '@inertiajs/react';
-import { LayoutGrid, Menu, Search, Shapes } from 'lucide-react';
+import {
+    Bookmark,
+    Heart,
+    LayoutGrid,
+    Library,
+    Menu,
+    Search,
+    Shapes,
+} from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { AppearanceSwitcher } from '@/components/appearance-switcher';
 import { Breadcrumbs } from '@/components/breadcrumbs';
@@ -13,8 +21,11 @@ import {
 } from '@/components/ui/dropdown-menu';
 import {
     NavigationMenu,
+    NavigationMenuContent,
     NavigationMenuItem,
+    NavigationMenuLink,
     NavigationMenuList,
+    NavigationMenuTrigger,
     navigationMenuTriggerStyle,
 } from '@/components/ui/navigation-menu';
 import {
@@ -38,6 +49,7 @@ import { useTranslation } from '@/hooks/use-translation';
 import { cn } from '@/lib/utils';
 import { dashboard } from '@/routes';
 import { index as catalogIndex } from '@/routes/catalog';
+import { favorites as libraryFavorites, saved as librarySaved } from '@/routes/library';
 import type { BreadcrumbItem, NavItem } from '@/types';
 
 type Props = {
@@ -63,6 +75,23 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
             icon: Shapes,
         },
     ];
+
+    const libraryNavItems: NavItem[] = [
+        {
+            title: t('library.favorites.title'),
+            href: libraryFavorites(),
+            icon: Heart,
+        },
+        {
+            title: t('library.saved.title'),
+            href: librarySaved(),
+            icon: Bookmark,
+        },
+    ];
+
+    const isLibraryActive = libraryNavItems.some((item) =>
+        isCurrentUrl(item.href),
+    );
 
     return (
         <header className="sticky top-0 z-50 w-full border-b border-border/60 bg-background/80 shadow-sm backdrop-blur-lg backdrop-saturate-150 supports-backdrop-filter:bg-background/65 dark:bg-background/80 dark:supports-backdrop-filter:bg-background/60">
@@ -117,6 +146,31 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                                         </Link>
                                     ))}
                                 </nav>
+
+                                <div className="space-y-2">
+                                    <p className="px-3 pt-2 text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+                                        {t('nav.library')}
+                                    </p>
+                                    <nav className="flex flex-col space-y-2">
+                                        {libraryNavItems.map((item) => (
+                                            <Link
+                                                key={item.title}
+                                                href={item.href}
+                                                className={cn(
+                                                    'flex items-center space-x-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
+                                                    isCurrentUrl(item.href)
+                                                        ? 'bg-primary/10 text-primary'
+                                                        : 'text-muted-foreground hover:bg-accent hover:text-foreground',
+                                                )}
+                                            >
+                                                {item.icon && (
+                                                    <item.icon className="h-5 w-5" />
+                                                )}
+                                                <span>{item.title}</span>
+                                            </Link>
+                                        ))}
+                                    </nav>
+                                </div>
                             </div>
                             <div className="border-t border-border/40 p-4">
                                 <p className="text-center text-xs text-muted-foreground">
@@ -165,6 +219,56 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                                     )}
                                 </NavigationMenuItem>
                             ))}
+
+                            <NavigationMenuItem className="relative flex h-full items-center">
+                                <NavigationMenuTrigger
+                                    onPointerMove={(e) => e.preventDefault()}
+                                    onPointerLeave={(e) => e.preventDefault()}
+                                    className={cn(
+                                        'h-10 cursor-pointer bg-transparent px-4 text-sm font-medium transition-colors hover:text-primary',
+                                        isLibraryActive &&
+                                            'bg-primary/5 text-primary',
+                                    )}
+                                >
+                                    <Library className="mr-2 h-4.5 w-4.5 transition-transform group-hover:scale-110" />
+                                    {t('nav.library')}
+                                </NavigationMenuTrigger>
+                                <NavigationMenuContent
+                                    onPointerEnter={(e) => e.preventDefault()}
+                                    onPointerLeave={(e) => e.preventDefault()}
+                                >
+                                    <ul className="grid w-60 gap-1 p-2">
+                                        {libraryNavItems.map((item) => (
+                                            <li key={item.title}>
+                                                <NavigationMenuLink asChild>
+                                                    <Link
+                                                        href={item.href}
+                                                        prefetch
+                                                        className={cn(
+                                                            'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
+                                                            isCurrentUrl(
+                                                                item.href,
+                                                            )
+                                                                ? 'bg-primary/10 text-primary'
+                                                                : 'text-foreground hover:bg-accent hover:text-foreground',
+                                                        )}
+                                                    >
+                                                        {item.icon && (
+                                                            <item.icon className="size-4" />
+                                                        )}
+                                                        <span>
+                                                            {item.title}
+                                                        </span>
+                                                    </Link>
+                                                </NavigationMenuLink>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </NavigationMenuContent>
+                                {isLibraryActive && (
+                                    <div className="absolute bottom-0 left-1/2 h-0.5 w-6 -translate-x-1/2 rounded-full bg-primary"></div>
+                                )}
+                            </NavigationMenuItem>
                         </NavigationMenuList>
                     </NavigationMenu>
                 </div>

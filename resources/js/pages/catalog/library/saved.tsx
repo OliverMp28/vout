@@ -1,6 +1,7 @@
 import { Head } from '@inertiajs/react';
 import { GameEmptyState } from '@/components/catalog/game-empty-state';
 import { GameGrid } from '@/components/catalog/game-grid';
+import { useMascotContext } from '@/hooks/use-mascot-context';
 import { useTranslation } from '@/hooks/use-translation';
 import PortalLayout from '@/layouts/portal-layout';
 import { index as catalogIndex } from '@/routes/catalog';
@@ -12,6 +13,23 @@ type Props = {
 
 export default function LibrarySaved({ games }: Props) {
     const { t } = useTranslation();
+
+    const count = games.data.length;
+    useMascotContext([
+        {
+            id: 'library.saved.empty',
+            priority: 20,
+            auto: true,
+            when: count === 0,
+            text: t('mascot.context.library.saved_empty'),
+        },
+        {
+            id: 'library.saved.count',
+            priority: 10,
+            when: count > 0,
+            text: t('mascot.context.library.saved_count', { count }),
+        },
+    ]);
 
     return (
         <PortalLayout>

@@ -6,6 +6,8 @@ import TwoFactorRecoveryCodes from '@/components/two-factor-recovery-codes';
 import TwoFactorSetupModal from '@/components/two-factor-setup-modal';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { useMascotContext } from '@/hooks/use-mascot-context';
+import { useTranslation } from '@/hooks/use-translation';
 import { useTwoFactorAuth } from '@/hooks/use-two-factor-auth';
 import AppLayout from '@/layouts/app-layout';
 import SettingsLayout from '@/layouts/settings/layout';
@@ -28,6 +30,7 @@ export default function TwoFactor({
     requiresConfirmation = false,
     twoFactorEnabled = false,
 }: Props) {
+    const { t } = useTranslation();
     const {
         qrCodeSvg,
         hasSetupData,
@@ -39,6 +42,24 @@ export default function TwoFactor({
         errors,
     } = useTwoFactorAuth();
     const [showSetupModal, setShowSetupModal] = useState<boolean>(false);
+
+    // Si 2FA está desactivado, Vou lo recomienda proactivamente; si está
+    // activo, recuerda guardar los códigos de recuperación (tap-only).
+    useMascotContext([
+        {
+            id: 'settings.twofactor.enable',
+            priority: 20,
+            auto: true,
+            when: !twoFactorEnabled,
+            text: t('mascot.context.settings.twofactor.enable'),
+        },
+        {
+            id: 'settings.twofactor.recovery',
+            priority: 10,
+            when: twoFactorEnabled,
+            text: t('mascot.context.settings.twofactor.recovery'),
+        },
+    ]);
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>

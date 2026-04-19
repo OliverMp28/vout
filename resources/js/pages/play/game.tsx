@@ -23,6 +23,7 @@ import type { CursorOverlayHandle } from '@/components/play/cursor-overlay';
 import { EngineOverlay } from '@/components/play/engine-overlay';
 import { NowPlayingHeader } from '@/components/play/now-playing-header';
 import { PresetSuggestionBanner } from '@/components/play/preset-suggestion-banner';
+import { useMascotContext } from '@/hooks/use-mascot-context';
 import { usePlayOrchestrator } from '@/hooks/use-play-orchestrator';
 import { useTranslation } from '@/hooks/use-translation';
 import AppLayout from '@/layouts/app-layout';
@@ -125,6 +126,26 @@ export default function PlayGame({
         }, 500);
         return () => clearInterval(interval);
     }, [showTelemetry, engine.status, engine.telemetry]);
+
+    // ── Mensajes contextuales para Vou (S7) ────────────────────────────────
+    // Mientras el motor de gestos está activo, sugerimos una celebración
+    // motivadora; si el motor está apagado y hay perfil configurado,
+    // invitamos a activarlo.
+    useMascotContext([
+        {
+            id: 'play.game.running',
+            priority: 20,
+            when: engine.status === 'running',
+            text: t('mascot.context.play.game'),
+        },
+        {
+            id: 'play.game.engine_off',
+            priority: 10,
+            auto: true,
+            when: engine.status !== 'running' && hasGestureConfig,
+            text: t('mascot.context.play.engine_off'),
+        },
+    ]);
 
     // ── Panel — el mismo contenido se usa en desktop y en el Sheet móvil ──
     const panelContent = (

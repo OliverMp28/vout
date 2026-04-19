@@ -2,10 +2,13 @@ import { Head } from '@inertiajs/react';
 import { ContinuePlayingCard } from '@/components/dashboard/continue-playing-card';
 import { DashboardHeader } from '@/components/dashboard/dashboard-header';
 import { EcosystemCard } from '@/components/dashboard/ecosystem-card';
+import { LibraryCard } from '@/components/dashboard/library-card';
+import type { DashboardLibrary } from '@/components/dashboard/library-card';
 import { OnboardingHero } from '@/components/dashboard/onboarding-hero';
 import { QuickStatsCard } from '@/components/dashboard/quick-stats-card';
 import type { DashboardStats } from '@/components/dashboard/quick-stats-card';
 import { RecommendationsStrip } from '@/components/dashboard/recommendations-strip';
+import { useMascotContext } from '@/hooks/use-mascot-context';
 import { useTranslation } from '@/hooks/use-translation';
 import AppLayout from '@/layouts/app-layout';
 import { dashboard } from '@/routes';
@@ -40,6 +43,7 @@ type DashboardProps = {
     };
     continuePlaying: { data: Game } | null;
     stats: DashboardStats;
+    library: DashboardLibrary;
     recommendations: { data: Game[] };
     recommendationReason: RecommendationReason | null;
     ecosystem: DashboardEcosystem;
@@ -57,6 +61,7 @@ export default function Dashboard({
     greeting,
     continuePlaying,
     stats,
+    library,
     recommendations,
     recommendationReason,
     ecosystem,
@@ -66,6 +71,54 @@ export default function Dashboard({
 
     const continueGame = continuePlaying?.data ?? null;
     const recommendedGames = recommendations.data;
+
+    // ── Mensajes contextuales para Vou (S7) ────────────────────────────
+    // Se evalúan en orden de prioridad cuando el usuario hace tap en la
+    // mascota. El primero con `when: true` gana; si ninguno aplica, Vou
+    // cae al saludo aleatorio estándar.
+    const pendingOnboardingSteps = onboarding.show
+        ? onboarding.steps.filter((s) => !s.done).length
+        : 0;
+    const hour = greeting.hourOfDay;
+
+    useMascotContext([
+        {
+            id: 'dashboard.resume',
+            priority: 30,
+            auto: true,
+            when: continueGame !== null,
+            text: t('mascot.context.dashboard.resume', {
+                game: continueGame?.name ?? '',
+            }),
+        },
+        {
+            id: 'dashboard.onboarding',
+            priority: 20,
+            auto: true,
+            when: pendingOnboardingSteps > 0,
+            text:
+                pendingOnboardingSteps === 1
+                    ? t('mascot.context.dashboard.onboarding_one')
+                    : t('mascot.context.dashboard.onboarding', {
+                          steps: pendingOnboardingSteps,
+                      }),
+        },
+        {
+            id: 'dashboard.greeting',
+            priority: 10,
+            when: true,
+            text: t(
+                hour < 6
+                    ? 'mascot.context.dashboard.evening'
+                    : hour < 12
+                      ? 'mascot.context.dashboard.morning'
+                      : hour < 20
+                        ? 'mascot.context.dashboard.afternoon'
+                        : 'mascot.context.dashboard.evening',
+                { name: greeting.name },
+            ),
+        },
+    ]);
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -90,6 +143,7 @@ export default function Dashboard({
 
                     <div className="flex flex-col gap-6">
                         <QuickStatsCard stats={stats} />
+                        <LibraryCard library={library} />
                         <EcosystemCard
                             voutId={ecosystem.voutId}
                             isDeveloper={ecosystem.isDeveloper}
