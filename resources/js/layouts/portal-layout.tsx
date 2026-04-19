@@ -3,6 +3,7 @@ import { AppHeader } from '@/components/app-header';
 import { AppShell } from '@/components/app-shell';
 import { CookieBanner } from '@/components/cookie-consent/cookie-banner';
 import { MascotProvider } from '@/components/mascot/mascot-provider';
+import { MascotRoot } from '@/components/mascot/mascot-root';
 import type { AppLayoutProps } from '@/types';
 
 export default function PortalLayout({
@@ -34,6 +35,7 @@ export default function PortalLayout({
 
                 <AppFooter />
                 <CookieBanner />
+                <MascotRoot />
             </AppShell>
         </MascotProvider>
     );

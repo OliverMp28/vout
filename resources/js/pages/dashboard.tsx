@@ -6,7 +6,6 @@ import { OnboardingHero } from '@/components/dashboard/onboarding-hero';
 import { QuickStatsCard } from '@/components/dashboard/quick-stats-card';
 import type { DashboardStats } from '@/components/dashboard/quick-stats-card';
 import { RecommendationsStrip } from '@/components/dashboard/recommendations-strip';
-import { Vou } from '@/components/mascot/vou';
 import { useTranslation } from '@/hooks/use-translation';
 import AppLayout from '@/layouts/app-layout';
 import { dashboard } from '@/routes';
@@ -100,8 +99,6 @@ export default function Dashboard({
                     </div>
                 </div>
             </div>
-
-            <Vou />
         </AppLayout>
     );
 }

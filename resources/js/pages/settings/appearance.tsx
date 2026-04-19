@@ -5,6 +5,7 @@ import type { FormEventHandler } from 'react';
 
 import AppearanceTabs from '@/components/appearance-tabs';
 import Heading from '@/components/heading';
+import { VouPreview } from '@/components/mascot/vou-preview';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
@@ -108,17 +109,10 @@ export default function Appearance({ activeGestureConfig }: AppearanceProps) {
                                 />
                             </div>
 
-                            {/* Mascot Placeholder Box */}
+                            {/* Mascot Preview */}
                             {data.show_mascot && (
                                 <div className="animate-in duration-500 ease-out fade-in slide-in-from-top-4">
-                                    <div className="flex h-32 w-full items-center justify-center rounded-xl border-2 border-dashed border-primary/20 bg-primary/5 md:h-48">
-                                        <div className="space-y-2 text-center">
-                                            <Smile className="mx-auto h-8 w-8 animate-bounce text-primary/40" />
-                                            <p className="text-sm font-medium text-primary/60">
-                                                Mascot Preview Area
-                                            </p>
-                                        </div>
-                                    </div>
+                                    <VouPreview />
                                 </div>
                             )}
 

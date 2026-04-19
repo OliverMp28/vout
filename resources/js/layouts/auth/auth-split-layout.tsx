@@ -66,7 +66,7 @@ export default function AuthSplitLayout({
                 {/* Aros concéntricos con retícula — evoca el enfoque facial */}
                 <svg
                     aria-hidden
-                    className="absolute -top-24 -right-28 h-xl w-xl"
+                    className="h-xl absolute -top-24 -right-28 w-xl"
                     viewBox="0 0 400 400"
                     fill="none"
                 >

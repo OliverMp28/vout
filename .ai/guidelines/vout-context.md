@@ -37,6 +37,7 @@ Como proyecto central, Vout se encarga de:
 - **Catálogo y Categorías:** Un sistema robusto para organizar juegos por género, popularidad o desarrollador, tambien un juego puede pertenecer a **múltiples categorías** simultáneamente (relación many-to-many vía tabla pivote `category_game`).
 - **Aplicaciones Externas (SSO):** La tabla `registered_apps` almacena las aplicaciones externas autorizadas, incluyendo sus orígenes permitidos para validaciones CORS.
 - **Hospedaje de Juegos (iFrames):** Vout actúa como el "anfitrión" que envía órdenes de movimiento al juego embebido.
+- **Mascota Vou (acompañante interactivo):** Personaje SVG con máquina de estados (idle, hovering, tapped, celebrating, sleeping) visible en todo el portal cuando el usuario la tiene activada. Expone una API (`useMascot()`) para que cualquier feature dispare reacciones — p. ej. `celebrate()` al completar un logro. **Antes de integrar la mascota en una feature nueva o modificar su comportamiento, consulta [`docs/mascot-api.md`](../../docs/mascot-api.md)**: documenta estados, API pública, patrones recomendados, antipatrones y puntos de extensión futuros.
 
 ## 5. El "Apretón de Manos" Técnico y la Identidad OAuth2
 
