@@ -48,6 +48,30 @@ export type MascotContextMessage = {
     readonly tone: MascotTone;
 };
 
+/**
+ * Paso del modo `guide` (S8).
+ *
+ * Igual que con los candidatos contextuales, el `text` ya viene traducido
+ * e interpolado por la página. `key` identifica al paso (se usa para el
+ * seguimiento de progreso) y `done` indica si el paso ya está completado.
+ *
+ * El provider no conoce i18n — recibe el texto listo para mostrar.
+ */
+export type GuideStep = {
+    readonly key: string;
+    readonly text: string;
+    readonly done: boolean;
+};
+
+/**
+ * Estado de guía activa. `currentIndex` apunta al paso que se está
+ * mostrando en el tooltip anclado (normalmente el primer `!done`).
+ */
+export type MascotGuidance = {
+    readonly steps: readonly GuideStep[];
+    readonly currentIndex: number;
+};
+
 export type MascotEvent =
     | { type: 'ENTER_COMPLETE' }
     | { type: 'HOVER_START' }
@@ -60,11 +84,14 @@ export type MascotEvent =
     | { type: 'WAKE' }
     | { type: 'FORCE_SET'; state: MascotState }
     | { type: 'NOTIFY'; message: MascotMessage }
-    | { type: 'CLEAR_MESSAGE' };
+    | { type: 'CLEAR_MESSAGE' }
+    | { type: 'GUIDE_SET'; guidance: MascotGuidance }
+    | { type: 'GUIDE_CLEAR' };
 
 export type MascotApi = {
     readonly state: MascotState;
     readonly message: MascotMessage | null;
+    readonly guidance: MascotGuidance | null;
     readonly celebrate: () => void;
     readonly sleep: () => void;
     readonly wake: () => void;
@@ -75,4 +102,12 @@ export type MascotApi = {
         durationMs?: number,
     ) => void;
     readonly clearMessage: () => void;
+    /**
+     * Entra/actualiza el modo guide. Pasa `null` como primer argumento para
+     * salir de la guía. `currentIndex` se clampa al rango [0, steps-1].
+     */
+    readonly guide: (
+        steps: readonly GuideStep[] | null,
+        currentIndex?: number,
+    ) => void;
 };

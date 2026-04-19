@@ -228,3 +228,84 @@ test('en /settings/password el tip no se auto-muestra (es tap-only) (S7 auto)', 
     $page->click('.vou-button')
         ->assertSee('Elige algo largo y único');
 });
+
+// -----------------------------------------------------------------------
+// S8 — Onboarding guiado por Vou.
+//
+// Cuando el dashboard expone `onboarding.show=true` con pasos pendientes,
+// Vou entra en modo `guide`: tooltip anclado apuntando al primer paso
+// pendiente y badge de progreso "n/total". El tooltip se queda visible
+// sin necesidad de tap, en contraposición al auto-show temporal de S7.
+// -----------------------------------------------------------------------
+
+test('en /dashboard con onboarding pendiente, Vou entra en modo guide con tooltip anclado (S8)', function () {
+    // Usuario recién creado: no ha jugado, no ha descartado el hero, no
+    // tiene avatar ni bio ni gesture config → tres pasos pendientes.
+    $user = User::factory()->create([
+        'name' => 'GuideUser',
+        'avatar' => null,
+        'bio' => null,
+    ]);
+    UserSetting::factory()->for($user)->create([
+        'show_mascot' => true,
+        'locale' => 'es',
+        'dashboard_welcome_dismissed_at' => null,
+    ]);
+
+    $this->actingAs($user);
+
+    $page = visit('/dashboard');
+
+    // La sincronización onboarding → guide() corre en un useEffect tras
+    // montar el dashboard. Margen para que el tooltip anclado aparezca.
+    $page->assertNoJavaScriptErrors()
+        ->assertVisible('.vou-mascot')
+        ->wait(2);
+
+    // Tooltip visible sin tap, con la variante "guide" y el badge de
+    // progreso 1/3 (explore es el primer paso pendiente).
+    $page->assertVisible('.vou-mascot [data-variant="guide"]')
+        ->assertVisible('[data-test="mascot-guide-progress"]')
+        ->assertSee('1/3')
+        ->assertSee('Empecemos');
+});
+
+test('en /dashboard con onboarding descartado, Vou NO entra en modo guide (S8)', function () {
+    $user = User::factory()->create();
+    UserSetting::factory()->for($user)->create([
+        'show_mascot' => true,
+        'locale' => 'es',
+        // Hero descartado → onboarding.show=false → guide no se activa.
+        'dashboard_welcome_dismissed_at' => now(),
+    ]);
+
+    $this->actingAs($user);
+
+    $page = visit('/dashboard');
+
+    $page->assertNoJavaScriptErrors()
+        ->assertVisible('.vou-mascot')
+        ->wait(2);
+
+    // Sin modo guide: el tooltip nunca debe exponer variante guide ni badge.
+    $page->assertMissing('.vou-mascot [data-variant="guide"]')
+        ->assertMissing('[data-test="mascot-guide-progress"]');
+});
+
+test('OnboardingHero resalta el paso actual al que apunta Vou (S8)', function () {
+    $user = User::factory()->create(['avatar' => null, 'bio' => null]);
+    UserSetting::factory()->for($user)->create([
+        'show_mascot' => true,
+        'locale' => 'es',
+        'dashboard_welcome_dismissed_at' => null,
+    ]);
+
+    $this->actingAs($user);
+
+    $page = visit('/dashboard');
+
+    // El primer paso pendiente ("explore") debe llevar `data-current`.
+    // Coincide con el paso que Vou narra en su tooltip.
+    $page->assertNoJavaScriptErrors()
+        ->assertVisible('[data-current="true"]');
+});

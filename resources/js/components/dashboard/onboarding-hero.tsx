@@ -105,6 +105,13 @@ export function OnboardingHero({ steps }: Props) {
                         key={step.key}
                         step={step}
                         index={index + 1}
+                        // S8: Vou apunta al primer paso pendiente — resaltamos
+                        // esa misma tarjeta para que el tooltip y el checklist
+                        // coincidan visualmente.
+                        current={
+                            !step.done &&
+                            steps.findIndex((s) => !s.done) === index
+                        }
                     />
                 ))}
             </ol>
@@ -115,9 +122,14 @@ export function OnboardingHero({ steps }: Props) {
 type OnboardingStepCardProps = {
     step: OnboardingStep;
     index: number;
+    current?: boolean;
 };
 
-function OnboardingStepCard({ step, index }: OnboardingStepCardProps) {
+function OnboardingStepCard({
+    step,
+    index,
+    current = false,
+}: OnboardingStepCardProps) {
     const { t } = useTranslation();
     const { icon: Icon, href } = STEP_META[step.key];
 
@@ -130,11 +142,15 @@ function OnboardingStepCard({ step, index }: OnboardingStepCardProps) {
 
     return (
         <li
+            data-current={current || undefined}
             className={cn(
                 'group relative flex flex-col gap-3 rounded-xl border bg-card p-4 transition-all duration-200',
-                step.done
-                    ? 'border-primary/30'
-                    : 'hover:border-primary/40 hover:shadow-md',
+                step.done && 'border-primary/30',
+                !step.done &&
+                    !current &&
+                    'hover:border-primary/40 hover:shadow-md',
+                current &&
+                    'border-primary/50 shadow-md ring-2 ring-primary/20 ring-offset-2 ring-offset-card',
             )}
         >
             <div className="flex items-start justify-between gap-2">

@@ -1104,5 +1104,9 @@
     "mascot.context.settings.twofactor.recovery": "Store your recovery codes somewhere safe.",
     "mascot.context.settings.privacy.reaccept": "We've updated the policy — take a quick look.",
     "mascot.context.settings.privacy.your_data": "Your data is yours: you can export or delete it any time.",
+    "mascot.guide.step.explore": "Let's start: take a peek at the catalog.",
+    "mascot.guide.step.gestures": "Now enable gestures in Settings.",
+    "mascot.guide.step.profile": "Last step: complete your profile.",
+    "mascot.guide.complete": "All set! Welcome to Vout.",
     "settings.saved": "Saved"
 }

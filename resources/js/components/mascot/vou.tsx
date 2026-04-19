@@ -40,7 +40,7 @@ const emptySubscribe = () => () => {};
  * que convertiría el `position: fixed` en fixed respecto a ese ancestro.
  */
 export function Vou() {
-    const { state, message } = useMascot();
+    const { state, message, guidance } = useMascot();
     const dispatch = useMascotDispatch();
     const { t } = useTranslation();
     const page = usePage();
@@ -106,6 +106,13 @@ export function Vou() {
 
     const handleClick = useCallback((): void => {
         dispatch({ type: 'TAP' });
+        // En modo guide el tooltip está anclado y es persistente — el tap
+        // no abre un greeting ni avanza el paso (eso lo hace el dashboard
+        // cuando `onboarding.steps` cambia). Devuelve feedback visual vía
+        // la transición `tapped` estándar.
+        if (guidance !== null) {
+            return;
+        }
         // Prioridad 1: mensaje contextual declarado por la página actual.
         // Si no hay ninguno activo, fallback a un saludo aleatorio (S3).
         const contextMsg = pickContextMessage();
@@ -120,7 +127,7 @@ export function Vou() {
                 greetings[Math.floor(Math.random() * greetings.length)];
             showGreeting(msg, 'info', TOOLTIP_TAP_AUTOCLOSE_MS);
         }
-    }, [dispatch, greetings, showGreeting]);
+    }, [dispatch, guidance, greetings, showGreeting]);
 
     // ── Auto-show contextual ───────────────────────────────────────────
     // Al cambiar de ruta, tras un delay corto, intentamos mostrar de
@@ -138,7 +145,9 @@ export function Vou() {
     // La ruta actual se toma de `page.url`, que cambia en cada
     // navegación SPA — eso re-dispara el efecto naturalmente.
     useEffect(() => {
-        if (state === 'entering' || message !== null) {
+        // Si hay guía activa, el tooltip anclado ya ocupa el espacio — no
+        // tiene sentido competir con un auto-show que se desvanece solo.
+        if (state === 'entering' || message !== null || guidance !== null) {
             return;
         }
         const timer = window.setTimeout(() => {
@@ -163,7 +172,7 @@ export function Vou() {
             );
         }, AUTO_SHOW_DELAY_MS);
         return () => window.clearTimeout(timer);
-    }, [page.url, state, message, showGreeting]);
+    }, [page.url, state, message, guidance, showGreeting]);
 
     if (!mounted) {
         return null;
@@ -174,12 +183,35 @@ export function Vou() {
             ? t('mascot.sleeping_aria')
             : t('mascot.aria_label');
 
-    // Una notificación activa (S6) tiene prioridad sobre el tooltip del tap.
-    // Si no hay notificación, mostramos el último saludo/mensaje contextual
-    // manteniendo su tono (S7 puede declarar tonos distintos a `info`).
-    const tooltipMessage = message?.text ?? greeting;
-    const tooltipOpen = message !== null || greetingOpen;
-    const tooltipTone: MascotTone = message?.tone ?? greetingTone;
+    // Orden de prioridad del tooltip:
+    //   1. Guide (S8): anclado, siempre visible mientras el modo esté activo.
+    //   2. Notify (S6): flash de éxito/error — tiene una ventana temporal
+    //      breve y merece prioridad sobre un saludo.
+    //   3. Greeting (S3/S7): saludo aleatorio o mensaje contextual (tap/auto).
+    const guideStep =
+        guidance !== null
+            ? (guidance.steps[guidance.currentIndex] ?? null)
+            : null;
+    const guideProgress = guidance
+        ? { current: guidance.currentIndex + 1, total: guidance.steps.length }
+        : null;
+
+    let tooltipMessage: string;
+    let tooltipOpen: boolean;
+    let tooltipTone: MascotTone;
+    if (guideStep !== null) {
+        tooltipMessage = guideStep.text;
+        tooltipOpen = true;
+        tooltipTone = 'info';
+    } else if (message !== null) {
+        tooltipMessage = message.text;
+        tooltipOpen = true;
+        tooltipTone = message.tone;
+    } else {
+        tooltipMessage = greeting;
+        tooltipOpen = greetingOpen;
+        tooltipTone = greetingTone;
+    }
 
     return createPortal(
         <div
@@ -190,6 +222,7 @@ export function Vou() {
                 message={tooltipMessage}
                 open={tooltipOpen}
                 tone={tooltipTone}
+                progress={guideProgress}
             />
             <button
                 type="button"

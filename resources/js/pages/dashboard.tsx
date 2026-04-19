@@ -9,6 +9,7 @@ import { QuickStatsCard } from '@/components/dashboard/quick-stats-card';
 import type { DashboardStats } from '@/components/dashboard/quick-stats-card';
 import { RecommendationsStrip } from '@/components/dashboard/recommendations-strip';
 import { useMascotContext } from '@/hooks/use-mascot-context';
+import { useOnboardingGuide } from '@/hooks/use-onboarding-guide';
 import { useTranslation } from '@/hooks/use-translation';
 import AppLayout from '@/layouts/app-layout';
 import { dashboard } from '@/routes';
@@ -56,6 +57,19 @@ const breadcrumbs: BreadcrumbItem[] = [
         href: dashboard(),
     },
 ];
+
+/**
+ * Sidecar sin render que sincroniza el estado de onboarding con el modo
+ * `guide` de Vou (S8). Vive dentro del `AppLayout` del dashboard a
+ * propósito: `useOnboardingGuide` depende de `useMascot()`, que sólo está
+ * disponible debajo del `MascotProvider` (montado por `PortalLayout`). El
+ * componente padre `Dashboard` está por encima del provider en el árbol,
+ * así que no puede consumir el hook directamente.
+ */
+function OnboardingGuideSync({ onboarding }: { onboarding: OnboardingState }) {
+    useOnboardingGuide(onboarding);
+    return null;
+}
 
 export default function Dashboard({
     greeting,
@@ -123,6 +137,8 @@ export default function Dashboard({
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={t('dashboard.title')} />
+
+            <OnboardingGuideSync onboarding={onboarding} />
 
             <div className="flex flex-col gap-8 p-6 md:p-8 lg:p-10">
                 {onboarding.show && <OnboardingHero steps={onboarding.steps} />}

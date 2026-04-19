@@ -11,8 +11,10 @@ import type { Dispatch, ReactNode } from 'react';
 import { useIdleTimer } from '@/hooks/use-idle-timer';
 import { useTranslation } from '@/hooks/use-translation';
 import type {
+    GuideStep,
     MascotApi,
     MascotEvent,
+    MascotGuidance,
     MascotMessage,
     MascotState,
     MascotTone,
@@ -28,9 +30,14 @@ const ERROR_NOTIFY_DURATION_MS = 5_000;
 type ReducerState = {
     readonly state: MascotState;
     readonly message: MascotMessage | null;
+    readonly guidance: MascotGuidance | null;
 };
 
-const initialState: ReducerState = { state: 'entering', message: null };
+const initialState: ReducerState = {
+    state: 'entering',
+    message: null,
+    guidance: null,
+};
 
 function reducer(current: ReducerState, event: MascotEvent): ReducerState {
     switch (event.type) {
@@ -78,9 +85,43 @@ function reducer(current: ReducerState, event: MascotEvent): ReducerState {
             return current.message === null
                 ? current
                 : { ...current, message: null };
+        case 'GUIDE_SET': {
+            const prev = current.guidance;
+            if (
+                prev !== null &&
+                prev.currentIndex === event.guidance.currentIndex &&
+                guideStepsEqual(prev.steps, event.guidance.steps)
+            ) {
+                return current;
+            }
+            return { ...current, guidance: event.guidance };
+        }
+        case 'GUIDE_CLEAR':
+            return current.guidance === null
+                ? current
+                : { ...current, guidance: null };
         default:
             return current;
     }
+}
+
+function guideStepsEqual(
+    a: readonly GuideStep[],
+    b: readonly GuideStep[],
+): boolean {
+    if (a.length !== b.length) {
+        return false;
+    }
+    for (let i = 0; i < a.length; i += 1) {
+        if (
+            a[i].key !== b[i].key ||
+            a[i].text !== b[i].text ||
+            a[i].done !== b[i].done
+        ) {
+            return false;
+        }
+    }
+    return true;
 }
 
 export const MascotContext = createContext<MascotApi | null>(null);
@@ -88,7 +129,10 @@ export const MascotDispatchContext =
     createContext<Dispatch<MascotEvent> | null>(null);
 
 export function MascotProvider({ children }: { children: ReactNode }) {
-    const [{ state, message }, dispatch] = useReducer(reducer, initialState);
+    const [{ state, message, guidance }, dispatch] = useReducer(
+        reducer,
+        initialState,
+    );
 
     useEffect(() => {
         if (state !== 'entering') {
@@ -184,20 +228,54 @@ export function MascotProvider({ children }: { children: ReactNode }) {
         dispatch({ type: 'CLEAR_MESSAGE' });
     }, []);
 
+    const guide = useCallback(
+        (
+            steps: readonly GuideStep[] | null,
+            currentIndex: number = 0,
+        ): void => {
+            if (steps === null || steps.length === 0) {
+                dispatch({ type: 'GUIDE_CLEAR' });
+                return;
+            }
+            const clamped = Math.min(
+                Math.max(0, currentIndex),
+                steps.length - 1,
+            );
+            dispatch({
+                type: 'GUIDE_SET',
+                guidance: { steps, currentIndex: clamped },
+            });
+        },
+        [],
+    );
+
     useFlashWatcher(notify, celebrate);
 
     const api = useMemo<MascotApi>(
         () => ({
             state,
             message,
+            guidance,
             celebrate,
             sleep,
             wake,
             setState,
             notify,
             clearMessage,
+            guide,
         }),
-        [state, message, celebrate, sleep, wake, setState, notify, clearMessage],
+        [
+            state,
+            message,
+            guidance,
+            celebrate,
+            sleep,
+            wake,
+            setState,
+            notify,
+            clearMessage,
+            guide,
+        ],
     );
 
     useEffect(() => {

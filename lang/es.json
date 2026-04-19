@@ -1067,5 +1067,9 @@
     "mascot.context.settings.twofactor.recovery": "Guarda los códigos de recuperación en un sitio seguro.",
     "mascot.context.settings.privacy.reaccept": "Actualizamos la política — échale un vistazo.",
     "mascot.context.settings.privacy.your_data": "Tus datos son tuyos: puedes exportarlos o borrarlos cuando quieras.",
+    "mascot.guide.step.explore": "Empecemos: echa un ojo al catálogo.",
+    "mascot.guide.step.gestures": "Ahora activa los gestos en Ajustes.",
+    "mascot.guide.step.profile": "Último paso: completa tu perfil.",
+    "mascot.guide.complete": "¡Listo! Bienvenido a Vout.",
     "settings.saved": "Guardado"
 }
