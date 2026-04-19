@@ -1070,5 +1070,10 @@
     "admin.audit.entry.changes": "Changes",
     "admin.audit.pagination": "Audit log pagination",
     "admin.audit.pagination.previous": "Previous",
-    "admin.audit.pagination.next": "Next"
+    "admin.audit.pagination.next": "Next",
+    "mascot.aria_label": "Vou, Vout's companion",
+    "mascot.sleeping_aria": "Vou is resting",
+    "mascot.greetings.0": "Hi!",
+    "mascot.greetings.1": "Ready to play?",
+    "mascot.greetings.2": "I'm here if you need me."
 }

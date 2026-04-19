@@ -1033,5 +1033,10 @@
     "admin.audit.entry.changes": "Cambios",
     "admin.audit.pagination": "Paginación del registro de auditoría",
     "admin.audit.pagination.previous": "Anterior",
-    "admin.audit.pagination.next": "Siguiente"
+    "admin.audit.pagination.next": "Siguiente",
+    "mascot.aria_label": "Vou, el compañero de Vout",
+    "mascot.sleeping_aria": "Vou está descansando",
+    "mascot.greetings.0": "¡Hola!",
+    "mascot.greetings.1": "¿Listo para jugar?",
+    "mascot.greetings.2": "Estoy aquí si me necesitas."
 }
