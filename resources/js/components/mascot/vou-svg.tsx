@@ -4,8 +4,8 @@ export function VouSvg() {
             viewBox="0 0 100 100"
             xmlns="http://www.w3.org/2000/svg"
             className="vou-svg block h-full w-full overflow-visible"
-            role="img"
-            aria-label="Vou"
+            aria-hidden="true"
+            focusable="false"
         >
             {/* Sparkles — solo visibles en celebrating */}
             <g className="vou-sparkles" aria-hidden>
@@ -85,7 +85,10 @@ export function VouSvg() {
                     strokeWidth="2"
                 />
 
-                {/* Main lens — blinks. Reflejo tipo luna para evitar look "ojeroso". */}
+                {/* Main lens — blinks. Reflejo tipo luna para evitar look "ojeroso".
+                    La lente exterior se escala verticalmente para simular el cierre del ojo,
+                    mientras que la pupila+reflejo se ocultan sincronizadamente para evitar
+                    el look "tres líneas apiladas" que parecía un glitch. */}
                 <g className="vou-lens">
                     <circle
                         cx="59"
@@ -95,13 +98,20 @@ export function VouSvg() {
                         stroke="var(--vou-stroke)"
                         strokeWidth="2.5"
                     />
-                    <circle cx="58" cy="44" r="7" fill="var(--vou-stroke)" />
-                    <circle
-                        cx="61.5"
-                        cy="41.5"
-                        r="6.3"
-                        fill="var(--vou-body)"
-                    />
+                    <g className="vou-pupil">
+                        <circle
+                            cx="58"
+                            cy="44"
+                            r="7"
+                            fill="var(--vou-stroke)"
+                        />
+                        <circle
+                            cx="61.5"
+                            cy="41.5"
+                            r="6.3"
+                            fill="var(--vou-body)"
+                        />
+                    </g>
                 </g>
 
                 {/* Cuellito / plataforma — ancla visual para las patitas */}
@@ -134,12 +144,16 @@ export function VouSvg() {
                     />
                 </g>
 
-                {/* Smile — hidden in idle, revealed on hover (S3) */}
+                {/* Smile — hidden in idle, revealed on hover (S3).
+                    Posicionada debajo del contorno inferior de la lente (y=58)
+                    para que se lea como boca y no como un ojo entornado. Curva
+                    más pronunciada (depth=3 sobre width=14) para distinguirla
+                    del arco circular del ojo. */}
                 <path
                     className="vou-smile"
-                    d="M 52 54 Q 59 59 66 54"
+                    d="M 52 60 Q 59 63 66 60"
                     stroke="var(--vou-stroke)"
-                    strokeWidth="1.8"
+                    strokeWidth="2"
                     strokeLinecap="round"
                     fill="none"
                     opacity="0"

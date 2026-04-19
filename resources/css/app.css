@@ -348,11 +348,29 @@
     100% {
         transform: scaleY(1);
     }
-    95% {
+    95%,
+    96% {
         transform: scaleY(0.08);
     }
-    98% {
+    99% {
         transform: scaleY(1);
+    }
+}
+
+/* Pupila + reflejo: se ocultan durante el parpadeo para no apilar
+   tres slivers horizontales (look de glitch). Misma cadencia que la lente. */
+@keyframes vou-pupil-hide {
+    0%,
+    93%,
+    100% {
+        opacity: 1;
+    }
+    95%,
+    96% {
+        opacity: 0;
+    }
+    98% {
+        opacity: 1;
     }
 }
 
@@ -364,6 +382,10 @@
 .vou-lens {
     transform-origin: 59px 45px;
     animation: vou-blink 5.3s ease-in-out infinite;
+}
+
+.vou-pupil {
+    animation: vou-pupil-hide 5.3s ease-in-out infinite;
 }
 
 /*
@@ -425,19 +447,46 @@
     animation: vou-tap 200ms ease-in-out;
 }
 
+/*
+ * Celebración: tres rebotes encadenados con squash-and-stretch y
+ * tilt alterno. El squash horizontal al aterrizar (scale 1.08, 0.94)
+ * y el stretch vertical al despegar (scale 0.96, 1.08) aplican el
+ * principio clásico de animación que transmite "impulso" en lugar
+ * de un movimiento rígido. El tilt ±5deg añade expresividad sin
+ * llegar a volteretas.
+ */
 @keyframes vou-jump {
-    0%,
-    100% {
-        transform: translateY(0) scale(1);
+    0% {
+        transform: translateY(0) scale(1, 1) rotate(0deg);
     }
-    30%,
-    70% {
-        transform: translateY(-10px) scale(1.05);
+    10% {
+        transform: translateY(1px) scale(1.08, 0.94) rotate(0deg);
+    }
+    22% {
+        transform: translateY(-16px) scale(0.96, 1.08) rotate(-5deg);
+    }
+    34% {
+        transform: translateY(0) scale(1.06, 0.96) rotate(0deg);
+    }
+    48% {
+        transform: translateY(-20px) scale(0.95, 1.1) rotate(5deg);
+    }
+    60% {
+        transform: translateY(0) scale(1.06, 0.96) rotate(0deg);
+    }
+    74% {
+        transform: translateY(-10px) scale(0.98, 1.05) rotate(-3deg);
+    }
+    88% {
+        transform: translateY(1px) scale(1.04, 0.97) rotate(0deg);
+    }
+    100% {
+        transform: translateY(0) scale(1, 1) rotate(0deg);
     }
 }
 
 .vou-mascot[data-state='celebrating'] .vou-body-group {
-    animation: vou-jump 600ms cubic-bezier(0.34, 1.56, 0.64, 1);
+    animation: vou-jump 1000ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .vou-sparkles > * {
@@ -446,29 +495,45 @@
     transform-origin: center;
 }
 
+/*
+ * Chispas: destello con dos picos de opacidad (twinkle) y rotación
+ * lenta. Scale pico a 2.4× para que se lean como estrellas brillando
+ * en lugar de puntos agrandándose.
+ */
 @keyframes vou-sparkle {
-    0%,
+    0% {
+        opacity: 0;
+        transform: scale(0.2) rotate(0deg);
+    }
+    20% {
+        opacity: 1;
+        transform: scale(2.4) rotate(90deg);
+    }
+    45% {
+        opacity: 0.65;
+        transform: scale(1.6) rotate(180deg);
+    }
+    70% {
+        opacity: 1;
+        transform: scale(2) rotate(270deg);
+    }
     100% {
         opacity: 0;
-        transform: scale(0.2);
-    }
-    50% {
-        opacity: 1;
-        transform: scale(1.5);
+        transform: scale(0.3) rotate(360deg);
     }
 }
 
 .vou-mascot[data-state='celebrating'] .vou-sparkles > * {
-    animation: vou-sparkle 600ms ease-out;
+    animation: vou-sparkle 950ms ease-out;
 }
 .vou-mascot[data-state='celebrating'] .vou-sparkles > *:nth-child(2) {
-    animation-delay: 80ms;
+    animation-delay: 120ms;
 }
 .vou-mascot[data-state='celebrating'] .vou-sparkles > *:nth-child(3) {
-    animation-delay: 160ms;
+    animation-delay: 240ms;
 }
 .vou-mascot[data-state='celebrating'] .vou-sparkles > *:nth-child(4) {
-    animation-delay: 240ms;
+    animation-delay: 360ms;
 }
 
 .vou-zzz {
@@ -494,6 +559,11 @@
     transform: scaleY(0.08);
 }
 
+.vou-mascot[data-state='sleeping'] .vou-pupil {
+    animation: none;
+    opacity: 0;
+}
+
 .vou-mascot[data-state='sleeping'] .vou-body-group {
     animation: vou-breath 5s ease-in-out infinite;
 }
@@ -515,6 +585,7 @@
     .iframe-shimmer,
     .vou-body-group,
     .vou-lens,
+    .vou-pupil,
     .vou-mascot,
     .vou-mascot[data-state='entering'],
     .vou-mascot[data-state='tapped'] .vou-body-group,

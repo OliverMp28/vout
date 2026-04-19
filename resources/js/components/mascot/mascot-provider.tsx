@@ -19,7 +19,7 @@ import type {
 } from '@/types/mascot';
 
 const ENTER_DURATION_MS = 600;
-const CELEBRATE_DURATION_MS = 600;
+const CELEBRATE_DURATION_MS = 1_000;
 const TAP_DURATION_MS = 200;
 const SLEEP_TIMEOUT_MS = 120_000;
 const DEFAULT_NOTIFY_DURATION_MS = 3_500;
