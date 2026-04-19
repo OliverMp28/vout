@@ -6,6 +6,14 @@ export type MascotState =
     | 'celebrating'
     | 'sleeping';
 
+export type MascotTone = 'success' | 'error' | 'info';
+
+export type MascotMessage = {
+    readonly text: string;
+    readonly tone: MascotTone;
+    readonly expiresAt: number;
+};
+
 export type MascotEvent =
     | { type: 'ENTER_COMPLETE' }
     | { type: 'HOVER_START' }
@@ -16,12 +24,21 @@ export type MascotEvent =
     | { type: 'CELEBRATE_COMPLETE' }
     | { type: 'SLEEP' }
     | { type: 'WAKE' }
-    | { type: 'FORCE_SET'; state: MascotState };
+    | { type: 'FORCE_SET'; state: MascotState }
+    | { type: 'NOTIFY'; message: MascotMessage }
+    | { type: 'CLEAR_MESSAGE' };
 
 export type MascotApi = {
     readonly state: MascotState;
+    readonly message: MascotMessage | null;
     readonly celebrate: () => void;
     readonly sleep: () => void;
     readonly wake: () => void;
     readonly setState: (state: MascotState) => void;
+    readonly notify: (
+        text: string,
+        tone?: MascotTone,
+        durationMs?: number,
+    ) => void;
+    readonly clearMessage: () => void;
 };

@@ -11,6 +11,10 @@ declare module '@inertiajs/core' {
             admin: {
                 pendingGamesCount: number;
             } | null;
+            flash: {
+                status: string | null;
+                error: string | null;
+            };
             [key: string]: unknown;
         };
     }

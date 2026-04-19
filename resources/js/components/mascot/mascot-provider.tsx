@@ -1,55 +1,83 @@
+import { usePage } from '@inertiajs/react';
 import {
     createContext,
     useCallback,
     useEffect,
     useMemo,
     useReducer,
+    useRef,
 } from 'react';
 import type { Dispatch, ReactNode } from 'react';
 import { useIdleTimer } from '@/hooks/use-idle-timer';
-import type { MascotApi, MascotEvent, MascotState } from '@/types/mascot';
+import { useTranslation } from '@/hooks/use-translation';
+import type {
+    MascotApi,
+    MascotEvent,
+    MascotMessage,
+    MascotState,
+    MascotTone,
+} from '@/types/mascot';
 
 const ENTER_DURATION_MS = 600;
 const CELEBRATE_DURATION_MS = 600;
 const TAP_DURATION_MS = 200;
 const SLEEP_TIMEOUT_MS = 120_000;
+const DEFAULT_NOTIFY_DURATION_MS = 3_500;
+const ERROR_NOTIFY_DURATION_MS = 5_000;
 
 type ReducerState = {
     readonly state: MascotState;
+    readonly message: MascotMessage | null;
 };
 
-const initialState: ReducerState = { state: 'entering' };
+const initialState: ReducerState = { state: 'entering', message: null };
 
 function reducer(current: ReducerState, event: MascotEvent): ReducerState {
     switch (event.type) {
         case 'ENTER_COMPLETE':
-            return current.state === 'entering' ? { state: 'idle' } : current;
+            return current.state === 'entering'
+                ? { ...current, state: 'idle' }
+                : current;
         case 'HOVER_START':
             return current.state === 'idle' || current.state === 'sleeping'
-                ? { state: 'hovering' }
+                ? { ...current, state: 'hovering' }
                 : current;
         case 'HOVER_END':
-            return current.state === 'hovering' ? { state: 'idle' } : current;
+            return current.state === 'hovering'
+                ? { ...current, state: 'idle' }
+                : current;
         case 'TAP':
             return current.state === 'idle' ||
                 current.state === 'hovering' ||
                 current.state === 'sleeping'
-                ? { state: 'tapped' }
+                ? { ...current, state: 'tapped' }
                 : current;
         case 'TAP_COMPLETE':
-            return current.state === 'tapped' ? { state: 'idle' } : current;
+            return current.state === 'tapped'
+                ? { ...current, state: 'idle' }
+                : current;
         case 'CELEBRATE':
-            return { state: 'celebrating' };
+            return { ...current, state: 'celebrating' };
         case 'CELEBRATE_COMPLETE':
             return current.state === 'celebrating'
-                ? { state: 'idle' }
+                ? { ...current, state: 'idle' }
                 : current;
         case 'SLEEP':
-            return current.state === 'idle' ? { state: 'sleeping' } : current;
+            return current.state === 'idle'
+                ? { ...current, state: 'sleeping' }
+                : current;
         case 'WAKE':
-            return current.state === 'sleeping' ? { state: 'idle' } : current;
+            return current.state === 'sleeping'
+                ? { ...current, state: 'idle' }
+                : current;
         case 'FORCE_SET':
-            return { state: event.state };
+            return { ...current, state: event.state };
+        case 'NOTIFY':
+            return { ...current, message: event.message };
+        case 'CLEAR_MESSAGE':
+            return current.message === null
+                ? current
+                : { ...current, message: null };
         default:
             return current;
     }
@@ -60,7 +88,7 @@ export const MascotDispatchContext =
     createContext<Dispatch<MascotEvent> | null>(null);
 
 export function MascotProvider({ children }: { children: ReactNode }) {
-    const [{ state }, dispatch] = useReducer(reducer, initialState);
+    const [{ state, message }, dispatch] = useReducer(reducer, initialState);
 
     useEffect(() => {
         if (state !== 'entering') {
@@ -92,6 +120,21 @@ export function MascotProvider({ children }: { children: ReactNode }) {
         return () => window.clearTimeout(timeout);
     }, [state]);
 
+    useEffect(() => {
+        if (message === null) {
+            return;
+        }
+        const remaining = message.expiresAt - Date.now();
+        if (remaining <= 0) {
+            dispatch({ type: 'CLEAR_MESSAGE' });
+            return;
+        }
+        const timeout = window.setTimeout(() => {
+            dispatch({ type: 'CLEAR_MESSAGE' });
+        }, remaining);
+        return () => window.clearTimeout(timeout);
+    }, [message]);
+
     const handleIdle = useCallback((): void => {
         dispatch({ type: 'SLEEP' });
     }, []);
@@ -118,15 +161,43 @@ export function MascotProvider({ children }: { children: ReactNode }) {
         dispatch({ type: 'FORCE_SET', state: next });
     }, []);
 
+    const notify = useCallback(
+        (text: string, tone: MascotTone = 'info', durationMs?: number): void => {
+            const fallback =
+                tone === 'error'
+                    ? ERROR_NOTIFY_DURATION_MS
+                    : DEFAULT_NOTIFY_DURATION_MS;
+            const duration = durationMs ?? fallback;
+            dispatch({
+                type: 'NOTIFY',
+                message: {
+                    text,
+                    tone,
+                    expiresAt: Date.now() + duration,
+                },
+            });
+        },
+        [],
+    );
+
+    const clearMessage = useCallback((): void => {
+        dispatch({ type: 'CLEAR_MESSAGE' });
+    }, []);
+
+    useFlashWatcher(notify, celebrate);
+
     const api = useMemo<MascotApi>(
         () => ({
             state,
+            message,
             celebrate,
             sleep,
             wake,
             setState,
+            notify,
+            clearMessage,
         }),
-        [state, celebrate, sleep, wake, setState],
+        [state, message, celebrate, sleep, wake, setState, notify, clearMessage],
     );
 
     useEffect(() => {
@@ -146,4 +217,43 @@ export function MascotProvider({ children }: { children: ReactNode }) {
             </MascotDispatchContext.Provider>
         </MascotContext.Provider>
     );
+}
+
+type FlashProps = {
+    status: string | null;
+    error: string | null;
+};
+
+function useFlashWatcher(
+    notify: (text: string, tone?: MascotTone, durationMs?: number) => void,
+    celebrate: () => void,
+): void {
+    const page = usePage<{ flash?: FlashProps }>();
+    const flash = page.props.flash ?? { status: null, error: null };
+    const { t } = useTranslation();
+    const lastSeen = useRef<{ status: string | null; error: string | null }>({
+        status: null,
+        error: null,
+    });
+
+    useEffect(() => {
+        if (flash.status && flash.status !== lastSeen.current.status) {
+            lastSeen.current.status = flash.status;
+            const translated = t(flash.status);
+            const text = translated === flash.status ? flash.status : translated;
+            notify(text, 'success');
+            celebrate();
+        } else if (!flash.status) {
+            lastSeen.current.status = null;
+        }
+
+        if (flash.error && flash.error !== lastSeen.current.error) {
+            lastSeen.current.error = flash.error;
+            const translated = t(flash.error);
+            const text = translated === flash.error ? flash.error : translated;
+            notify(text, 'error');
+        } else if (!flash.error) {
+            lastSeen.current.error = null;
+        }
+    }, [flash.status, flash.error, notify, celebrate, t]);
 }

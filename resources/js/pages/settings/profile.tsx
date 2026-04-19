@@ -3,6 +3,7 @@ import { Form, Head, Link, usePage } from '@inertiajs/react';
 import ProfileController from '@/actions/App/Http/Controllers/Settings/ProfileController';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
+import { CelebrateOnSuccess } from '@/components/mascot/celebrate-on-success';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -58,6 +59,9 @@ export default function Profile({
                         >
                             {({ processing, recentlySuccessful, errors }) => (
                                 <>
+                                    <CelebrateOnSuccess
+                                        recentlySuccessful={recentlySuccessful}
+                                    />
                                     <div className="flex flex-col gap-6 sm:flex-row">
                                         <div className="grid flex-1 gap-2">
                                             <Label htmlFor="avatar">

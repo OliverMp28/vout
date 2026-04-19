@@ -58,6 +58,10 @@ class HandleInertiaRequests extends Middleware
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
             'admin' => $this->adminContext($request),
+            'flash' => [
+                'status' => $request->session()->get('status'),
+                'error' => $request->session()->get('error'),
+            ],
             'locale' => app()->getLocale(),
             'translations' => file_exists(base_path('lang/'.app()->getLocale().'.json'))
                 ? json_decode(file_get_contents(base_path('lang/'.app()->getLocale().'.json')), true)

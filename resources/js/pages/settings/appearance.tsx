@@ -5,6 +5,7 @@ import type { FormEventHandler } from 'react';
 
 import AppearanceTabs from '@/components/appearance-tabs';
 import Heading from '@/components/heading';
+import { CelebrateOnSuccess } from '@/components/mascot/celebrate-on-success';
 import { VouPreview } from '@/components/mascot/vou-preview';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -53,6 +54,7 @@ export default function Appearance({ activeGestureConfig }: AppearanceProps) {
             <h1 className="sr-only">{t('profile.settings.appearance')}</h1>
 
             <SettingsLayout>
+                <CelebrateOnSuccess recentlySuccessful={recentlySuccessful} />
                 <div className="space-y-8">
                     {/* Theme Preference */}
                     <div className="rounded-xl border border-border/60 bg-card p-6 shadow-sm md:p-8">

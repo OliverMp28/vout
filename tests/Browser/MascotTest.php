@@ -57,3 +57,42 @@ test('Vou está excluido de /settings/appearance aunque show_mascot=true', funct
     $page->assertNoJavaScriptErrors()
         ->assertMissing('.vou-mascot');
 });
+
+test('Vou SÍ aparece en /settings/profile para que el celebrate al guardar sea visible (S6)', function () {
+    $user = User::factory()->create();
+    UserSetting::factory()->for($user)->create(['show_mascot' => true]);
+
+    $this->actingAs($user);
+
+    $page = visit('/settings/profile');
+
+    // A diferencia de /settings/appearance (que tiene VouPreview estático),
+    // el resto de tabs de settings montan la mascota para que el
+    // feedback de `CelebrateOnSuccess` (notify + celebrate) sea visible.
+    $page->assertNoJavaScriptErrors()
+        ->assertVisible('.vou-mascot');
+});
+
+test('al guardar perfil, Vou muestra el tooltip de notificación en tono success (S6)', function () {
+    $user = User::factory()->create([
+        'name' => 'Original Name',
+    ]);
+    UserSetting::factory()->for($user)->create(['show_mascot' => true]);
+
+    $this->actingAs($user);
+
+    $page = visit('/settings/profile');
+
+    $page->assertNoJavaScriptErrors()
+        ->assertVisible('.vou-mascot')
+        ->fill('input[name="name"]', 'Nuevo Nombre Vou')
+        ->click('[data-test="update-profile-button"]');
+
+    // Tras el patch exitoso, `recentlySuccessful` pasa a true y
+    // `CelebrateOnSuccess` dispara `notify(t('settings.saved'), 'success')`.
+    // El tooltip expone `data-tone="success"` cuando está en ese modo, y
+    // se vuelve visible (opacity 100) mientras haya mensaje activo. Un
+    // `assertVisible` con ese selector es más robusto que grep de texto
+    // porque no depende del locale y auto-espera al cambio de estado.
+    $page->assertVisible('.vou-mascot [data-tone="success"]');
+});

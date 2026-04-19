@@ -4,6 +4,7 @@ import { useRef } from 'react';
 import PasswordController from '@/actions/App/Http/Controllers/Settings/PasswordController';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
+import { CelebrateOnSuccess } from '@/components/mascot/celebrate-on-success';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -62,6 +63,9 @@ export default function Password() {
                     >
                         {({ errors, processing, recentlySuccessful }) => (
                             <>
+                                <CelebrateOnSuccess
+                                    recentlySuccessful={recentlySuccessful}
+                                />
                                 <input
                                     type="text"
                                     name="username"

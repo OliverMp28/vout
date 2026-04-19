@@ -8,6 +8,7 @@ import {
 import { createPortal } from 'react-dom';
 import { useMascot, useMascotDispatch } from '@/hooks/use-mascot';
 import { useTranslation } from '@/hooks/use-translation';
+import type { MascotTone } from '@/types/mascot';
 import { MascotTooltip } from './mascot-tooltip';
 import { VouSvg } from './vou-svg';
 
@@ -21,7 +22,7 @@ const emptySubscribe = () => () => {};
  * que convertiría el `position: fixed` en fixed respecto a ese ancestro.
  */
 export function Vou() {
-    const { state } = useMascot();
+    const { state, message } = useMascot();
     const dispatch = useMascotDispatch();
     const { t } = useTranslation();
 
@@ -33,18 +34,18 @@ export function Vou() {
         () => false,
     );
 
-    const [tooltipOpen, setTooltipOpen] = useState(false);
-    const [tooltipMessage, setTooltipMessage] = useState('');
+    const [greetingOpen, setGreetingOpen] = useState(false);
+    const [greeting, setGreeting] = useState('');
 
     useEffect(() => {
-        if (!tooltipOpen) {
+        if (!greetingOpen) {
             return;
         }
         const timeout = window.setTimeout(() => {
-            setTooltipOpen(false);
+            setGreetingOpen(false);
         }, TOOLTIP_AUTOCLOSE_MS);
         return () => window.clearTimeout(timeout);
-    }, [tooltipOpen]);
+    }, [greetingOpen]);
 
     const greetings = useMemo(
         () => [
@@ -66,8 +67,8 @@ export function Vou() {
     const handleClick = useCallback((): void => {
         dispatch({ type: 'TAP' });
         const msg = greetings[Math.floor(Math.random() * greetings.length)];
-        setTooltipMessage(msg);
-        setTooltipOpen(true);
+        setGreeting(msg);
+        setGreetingOpen(true);
     }, [dispatch, greetings]);
 
     if (!mounted) {
@@ -79,12 +80,21 @@ export function Vou() {
             ? t('mascot.sleeping_aria')
             : t('mascot.aria_label');
 
+    // Una notificación activa tiene prioridad sobre el saludo aleatorio.
+    const tooltipMessage = message?.text ?? greeting;
+    const tooltipOpen = message !== null || greetingOpen;
+    const tooltipTone: MascotTone = message?.tone ?? 'info';
+
     return createPortal(
         <div
             data-state={state}
             className="vou-mascot fixed right-6 bottom-6 z-40 hidden h-20 w-20 sm:block"
         >
-            <MascotTooltip message={tooltipMessage} open={tooltipOpen} />
+            <MascotTooltip
+                message={tooltipMessage}
+                open={tooltipOpen}
+                tone={tooltipTone}
+            />
             <button
                 type="button"
                 onMouseEnter={handleHoverStart}
