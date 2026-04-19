@@ -37,15 +37,7 @@ yarn-error.log
 /public/test-game/
 /tests/Browser/Screenshots
 /docs/flujo-comunicacion-ecosistema.md
-/docs/plan-3.1.md
-/docs/plan-3.2.md
-/docs/plan-3.3.md
-/docs/plan-3.4.md
-/docs/plan-3.5.md
-/docs/plan-4.1.md
-/docs/plan-4.2.md
-/docs/plan-2.5.md
-/docs/plan-mascota.md
+/docs/planes/
 /docs/mascota v0.png
 
 # AI Instruction files
@@ -53,4 +45,3 @@ yarn-error.log
 /CLAUDE.md
 /GEMINI.md
 /docs/roadmap.md
-/docs/plan-legal.md
