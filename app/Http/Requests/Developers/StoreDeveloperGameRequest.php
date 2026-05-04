@@ -5,6 +5,7 @@ namespace App\Http\Requests\Developers;
 use App\Models\Category;
 use App\Models\Developer;
 use App\Models\RegisteredApp;
+use App\Rules\PortableUrl;
 use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -56,14 +57,14 @@ class StoreDeveloperGameRequest extends FormRequest
             'embed_url' => [
                 'required',
                 'string',
-                'url:https',
+                new PortableUrl,
                 'max:500',
                 $this->embedInsideAllowedOrigins(),
             ],
 
-            'cover_image' => ['nullable', 'string', 'url:https', 'max:500'],
+            'cover_image' => ['nullable', 'string', new PortableUrl, 'max:500'],
             'release_date' => ['nullable', 'date', 'before_or_equal:today'],
-            'repo_url' => ['nullable', 'string', 'url:https', 'max:500'],
+            'repo_url' => ['nullable', 'string', new PortableUrl, 'max:500'],
 
             'category_ids' => ['required', 'array', 'min:1', 'max:5'],
             'category_ids.*' => [
@@ -78,17 +79,6 @@ class StoreDeveloperGameRequest extends FormRequest
                 'distinct',
                 Rule::exists(Developer::class, 'id'),
             ],
-        ];
-    }
-
-    /**
-     * @return array<string, string>
-     */
-    public function messages(): array
-    {
-        return [
-            'embed_url.url' => __('validation.custom.embed_url_https'),
-            'cover_image.url' => __('validation.custom.cover_image_https'),
         ];
     }
 

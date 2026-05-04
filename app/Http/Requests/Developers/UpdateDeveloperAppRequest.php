@@ -3,6 +3,8 @@
 namespace App\Http\Requests\Developers;
 
 use App\Models\RegisteredApp;
+use App\Rules\PortableOrigin;
+use App\Rules\PortableUrl;
 use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -30,14 +32,14 @@ class UpdateDeveloperAppRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'app_url' => ['sometimes', 'required', 'string', 'url:http,https', 'max:255'],
+            'app_url' => ['sometimes', 'required', 'string', new PortableUrl, 'max:255'],
 
             'allowed_origins' => ['sometimes', 'required', 'array', 'min:1', 'max:10'],
             'allowed_origins.*' => [
                 'required',
                 'string',
                 'distinct',
-                'regex:#^https?://[^/\s]+$#',
+                new PortableOrigin,
                 'max:255',
             ],
 
@@ -45,21 +47,11 @@ class UpdateDeveloperAppRequest extends FormRequest
             'redirect_uris.*' => [
                 'required',
                 'string',
-                'url:http,https',
+                new PortableUrl,
                 'distinct',
                 'max:255',
                 $this->redirectBelongsToAllowedOrigin(),
             ],
-        ];
-    }
-
-    /**
-     * @return array<string, string>
-     */
-    public function messages(): array
-    {
-        return [
-            'allowed_origins.*.regex' => __('validation.custom.origin'),
         ];
     }
 

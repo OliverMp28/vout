@@ -277,6 +277,30 @@ export function GameForm({
                                   )}
                         </p>
                         <InputError message={errors.embed_url} />
+
+                        <Alert>
+                            <AlertCircle className="size-4" aria-hidden />
+                            <AlertTitle>
+                                {t(
+                                    'developers.games.form.embed_url.iframe_warning.title',
+                                )}
+                            </AlertTitle>
+                            <AlertDescription>
+                                <p>
+                                    {t(
+                                        'developers.games.form.embed_url.iframe_warning.body',
+                                    )}
+                                </p>
+                                <Link
+                                    href="/developers/docs/integration-guide"
+                                    className="text-sm font-medium text-primary underline-offset-4 hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                                >
+                                    {t(
+                                        'developers.games.form.embed_url.iframe_warning.cta',
+                                    )}
+                                </Link>
+                            </AlertDescription>
+                        </Alert>
                     </div>
                 </Section>
 

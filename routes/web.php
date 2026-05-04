@@ -6,11 +6,59 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\LegalController;
 use App\Http\Controllers\LocaleController;
+use App\Http\Controllers\OAuth\JwksController;
+use App\Http\Controllers\OAuth\OidcDiscoveryController;
 use App\Http\Controllers\PlayController;
 use App\Http\Controllers\VisionLabController;
+use App\Http\Middleware\HandleAppearance;
+use App\Http\Middleware\HandleInertiaRequests;
+use App\Http\Middleware\SetLocale;
+use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
+use Illuminate\Cookie\Middleware\EncryptCookies;
+use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
+use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Support\Facades\Route;
+use Illuminate\View\Middleware\ShareErrorsFromSession;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
+
+// ── OAuth2 / OIDC Discovery (públicos, sin estado) ─────────────────────
+// Endpoints que necesitan los Resource Servers para auto-configurarse y
+// validar firmas de JWT localmente sin consultar la BD de Vout.
+//
+//   /.well-known/openid-configuration → metadatos del IdP (RFC 8414/OIDC).
+//   /oauth/jwks                       → claves públicas (RFC 7517).
+//
+// Se les retira la pila de sesión/cookies completa porque:
+//   1. son JSON públicos sin estado de usuario,
+//   2. el `Cache-Control: public, max-age=3600` permite cacheo en CDN
+//      y proxies — si dejásemos `Set-Cookie: vout-session=...` en la
+//      respuesta, un CDN mal configurado podría servir la misma sesión
+//      a todos los visitantes (session fixation),
+//   3. también se quita el stack de Inertia/Appearance/SetLocale por
+//      pura eficiencia: nada de eso aplica a un consumidor de JWKS.
+//
+// Las dependencias entre middlewares de sesión exigen que se quiten
+// todas a la vez (ShareErrorsFromSession asume que StartSession ya
+// corrió, etc.) — quitar solo una rompe el pipeline.
+$oauthPublicMiddlewareSkip = [
+    EncryptCookies::class,
+    AddQueuedCookiesToResponse::class,
+    StartSession::class,
+    ShareErrorsFromSession::class,
+    PreventRequestForgery::class,
+    HandleAppearance::class,
+    HandleInertiaRequests::class,
+    SetLocale::class,
+];
+
+Route::get('.well-known/openid-configuration', OidcDiscoveryController::class)
+    ->name('oauth.discovery')
+    ->withoutMiddleware($oauthPublicMiddlewareSkip);
+
+Route::get('oauth/jwks', JwksController::class)
+    ->name('oauth.jwks')
+    ->withoutMiddleware($oauthPublicMiddlewareSkip);
 
 // Fase 5 — Páginas legales públicas.
 // El `where` bloquea path traversal: sólo [a-z0-9-]+ llega al controlador.

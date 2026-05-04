@@ -40,7 +40,10 @@ type DynamicUrlListProps = {
      */
     requireAtLeastOne?: boolean;
     /**
-     * `type="url"` por defecto. Pasa `type="text"` para orígenes sin path.
+     * `type="text"` por defecto: la validación de URL la hace el backend
+     * (`PortableUrl`/`PortableOrigin`), que acepta `http://localhost:PUERTO`
+     * en dev. El nativo `type="url"` rechaza esos hosts en algunos navegadores
+     * antes de que el servidor pueda decidir.
      */
     inputType?: 'url' | 'text';
     /**
@@ -70,7 +73,7 @@ export function DynamicUrlList({
     fieldName,
     max = 10,
     requireAtLeastOne = true,
-    inputType = 'url',
+    inputType = 'text',
     autoComplete = 'off',
     disabled = false,
 }: DynamicUrlListProps) {

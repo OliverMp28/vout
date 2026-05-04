@@ -180,24 +180,79 @@ Los scopes relacionados con juegos sirven exclusivamente para sincronizar **meta
 
 ## Validación Stateless del Token (Avanzado)
 
-Los Access Tokens de Vout son **JWT firmados con RS256**. Esto significa que tu servidor puede validar los tokens **sin consultar la base de datos de Vout**, usando la clave pública.
+Los Access Tokens de Vout son **JWT firmados con RS256**. Esto significa que tu servidor puede validar los tokens **sin consultar la base de datos de Vout**, usando la clave pública. Útil para microservicios, APIs de alto QPS o juegos con backend que no quiera depender del round-trip a `/api/v1/user/me` en cada petición.
 
-### Endpoint de Claves Públicas (JWKS)
+### Discovery automático
+
+Vout publica un documento OIDC Discovery — la mayoría de librerías JWT modernas se autoconfiguran con solo apuntar al issuer:
+
 ```
-GET https://vout.example.com/oauth/token/keys
+GET https://vout.example.com/.well-known/openid-configuration
 ```
 
-Devuelve las claves públicas en formato JWKS. Tu librería JWT puede usarlas para verificar las firmas.
+Respuesta (resumida):
+
+```json
+{
+  "issuer": "https://vout.example.com",
+  "authorization_endpoint": "https://vout.example.com/oauth/authorize",
+  "token_endpoint": "https://vout.example.com/oauth/token",
+  "jwks_uri": "https://vout.example.com/oauth/jwks",
+  "userinfo_endpoint": "https://vout.example.com/api/v1/user/me",
+  "scopes_supported": ["user:read", "user:email", "games:read", "games:write", "game:play"],
+  "response_types_supported": ["code"],
+  "grant_types_supported": ["authorization_code", "refresh_token", "client_credentials", "urn:ietf:params:oauth:grant-type:device_code"],
+  "token_endpoint_auth_methods_supported": ["client_secret_basic", "client_secret_post", "none"],
+  "code_challenge_methods_supported": ["S256"],
+  "id_token_signing_alg_values_supported": ["RS256"]
+}
+```
+
+> **Aviso honesto:** Vout es **OAuth 2.0 con Access Tokens firmados (RS256)**, no un IdP OIDC completo. No emite ID Tokens ni implementa el flujo de `nonce` de OIDC. Exponemos esta URL porque las librerías cliente la usan para descubrir endpoints — todo lo que devolvemos (jwks, scopes, endpoints) es real y respetado.
+
+### Endpoint JWKS
+
+```
+GET https://vout.example.com/oauth/jwks
+```
+
+Respuesta (RFC 7517):
+
+```json
+{
+  "keys": [{
+    "kty": "RSA",
+    "use": "sig",
+    "alg": "RS256",
+    "kid": "Vw5D5w1BbAXKmaCCqc6m2MpffbXnTqaX7ye5BaNjB5U",
+    "n": "sfnwC5_4zVwIJHajk3Dlsnlbl_jSOspy7Bf1vBnkeGl...",
+    "e": "AQAB"
+  }]
+}
+```
+
+El `kid` es el JWK Thumbprint (RFC 7638), derivado matemáticamente del propio JWK — cualquier validador puede recomputarlo y verificarlo. Cuando Vout rote claves, el JWKS expondrá la antigua y la nueva durante la transición; tu librería elegirá la correcta usando el `kid` del header del JWT.
+
+**Cabeceras de cache:** `Cache-Control: public, max-age=3600`. Tu librería normalmente cachea el JWKS automáticamente — no necesitas re-descargarlo en cada petición.
 
 ### Datos dentro del Token (Claims)
 
 | Claim | Descripción |
 | :--- | :--- |
-| `sub` | ID interno del usuario (no usar externamente) |
-| `aud` | Tu `client_id` |
-| `iss` | URL del IdP Vout |
+| `iss` | URL del IdP Vout (debes validar que coincide con tu instancia) |
+| `sub` | ID interno del usuario en Vout (no usar para identificarlo entre apps — usa `vout_id` desde `/api/v1/user/me`) |
+| `aud` | Tu `client_id` (debes validar que coincide con el tuyo) |
 | `exp` | Timestamp de expiración |
+| `iat` | Timestamp de emisión |
+| `nbf` | "Not before" — antes de este timestamp el token no es válido |
+| `jti` | ID único del token (útil para revocación local, blacklists, etc.) |
 | `scopes` | Array de scopes autorizados |
+
+El header del JWT incluye `kid` apuntando a la clave del JWKS:
+
+```json
+{ "typ": "JWT", "alg": "RS256", "kid": "Vw5D5w1BbAXKmaCCqc6m2MpffbXnTqaX7ye5BaNjB5U" }
+```
 
 ### Ejemplo de validación con `lcobucci/jwt` (PHP)
 
@@ -205,24 +260,59 @@ Devuelve las claves públicas en formato JWKS. Tu librería JWT puede usarlas pa
 use Lcobucci\JWT\Configuration;
 use Lcobucci\JWT\Signer\Rsa\Sha256;
 use Lcobucci\JWT\Signer\Key\InMemory;
+use Lcobucci\JWT\Validation\Constraint;
 
-$config = Configuration::forSymmetricSigner(
+// Obtén la PEM de la clave pública desde el JWKS (cacheada por tu app).
+// Cualquier librería JWK→PEM sirve: web-token/jwt-library, paragonie/jwt, etc.
+$pem = jwksToPem(httpGet('https://vout.example.com/oauth/jwks'));
+
+$config = Configuration::forAsymmetricSigner(
     new Sha256(),
-    InMemory::file('/ruta/a/clave-publica-vout.pem')
+    InMemory::plainText(''),                  // privateKey vacío: solo validamos
+    InMemory::plainText($pem),                // publicKey desde JWKS
 );
 
 $token = $config->parser()->parse($accessToken);
 
-// Validar firma, emisor, audiencia y expiración
 $constraints = [
-    new \Lcobucci\JWT\Validation\Constraint\SignedWith($config->signer(), $config->signingKey()),
-    new \Lcobucci\JWT\Validation\Constraint\IssuedBy('https://vout.example.com'),
-    new \Lcobucci\JWT\Validation\Constraint\PermittedFor('TU_CLIENT_ID'),
-    new \Lcobucci\JWT\Validation\Constraint\StrictValidAt(new \DateTimeImmutable()),
+    new Constraint\SignedWith($config->signer(), $config->verificationKey()),
+    new Constraint\IssuedBy('https://vout.example.com'),
+    new Constraint\PermittedFor('TU_CLIENT_ID'),
+    new Constraint\StrictValidAt(new \Lcobucci\Clock\SystemClock(new \DateTimeZone('UTC'))),
 ];
+
+$config->validator()->assert($token, ...$constraints);
 ```
 
-> **Recomendación:** Si tu app tiene backend, es más sencillo usar el endpoint `/api/v1/user/me` que validar el JWT directamente. La validación stateless es útil para optimizar rendimiento cuando tienes muchas peticiones.
+### Ejemplo en Node.js (`jose` / `node-openid-client`)
+
+```js
+import { createRemoteJWKSet, jwtVerify } from 'jose';
+
+const JWKS = createRemoteJWKSet(new URL('https://vout.example.com/oauth/jwks'));
+
+const { payload } = await jwtVerify(accessToken, JWKS, {
+    issuer: 'https://vout.example.com',
+    audience: process.env.VOUT_CLIENT_ID,
+});
+```
+
+`jose` cachea el JWKS automáticamente y refresca cuando aparece un `kid` desconocido — útil para rotación de claves transparente.
+
+### ¿Validación stateless o llamar a `/api/v1/user/me`?
+
+Las dos son válidas, sirven escenarios distintos:
+
+| | Validación local (JWKS) | Llamada a `/api/v1/user/me` |
+| :--- | :--- | :--- |
+| **Latencia** | Microsegundos (sin red) | Round-trip HTTP |
+| **Detecta revocación** | No (hasta que expire el token, máx 60 min) | **Sí, instantánea** |
+| **Detecta cambios de perfil** | No | Sí, en cada llamada |
+| **Datos disponibles** | Solo claims del JWT | Perfil completo + `vout_id` |
+| **Escalabilidad** | Excelente (sin acoplamiento a Vout) | Limitada por Vout |
+| **Recomendado para** | APIs de alto QPS, microservicios | Apps con backend ligero, dashboards |
+
+**Patrón recomendado:** valida la firma localmente (rápido) y consulta `/api/v1/user/me` solo en operaciones críticas que requieran datos frescos o detección inmediata de revocación.
 
 ---
 
@@ -260,6 +350,106 @@ CREATE TABLE players (
     created_at TIMESTAMP
 );
 ```
+
+---
+
+## Embebiendo tu juego en Vout (X-Frame-Options / CSP)
+
+Tu juego se carga dentro de un `<iframe>` del portal Vout. Por defecto, **muchos servidores y frameworks bloquean los iframes** mediante cabeceras de seguridad — y este bloqueo lo aplica el navegador, no Vout. Si te ocurre, en la consola del navegador verás algo así:
+
+```
+Refused to display 'https://tu-juego.com/' in a frame because it set
+'X-Frame-Options' to 'sameorigin'.
+```
+
+O bien:
+
+```
+Refused to frame 'https://tu-juego.com/' because an ancestor violates
+the following Content Security Policy directive: "frame-ancestors 'self'".
+```
+
+**Esto ocurre en producción y en desarrollo por igual.** No es un fallo de Vout: tu servidor está diciéndole al navegador que no permite ser embebido.
+
+### Cómo arreglarlo
+
+El estándar moderno y recomendado es `Content-Security-Policy: frame-ancestors`, que sí permite whitelistear orígenes concretos (`X-Frame-Options` solo soporta SAMEORIGIN o DENY, sin granularidad — y queda obsoleta cuando ambas cabeceras están presentes).
+
+En el servidor de tu juego, **elimina** `X-Frame-Options` y **añade**:
+
+```
+Content-Security-Policy: frame-ancestors 'self' https://vout.app https://www.vout.app
+```
+
+`frame-ancestors` lista los **orígenes del portal que embebe tu juego**, no los tuyos. Cambia `https://vout.app` por el dominio real de la instancia de Vout en la que registraste tu app (te lo confirmamos al darte de alta). Tu juego puede correr en `localhost`, en staging o en producción — eso no afecta a esta cabecera. Lo único que importa es de **dónde** se carga el iframe que va a contenerte: ese origen es el que tienes que autorizar.
+
+### Recetas por stack
+
+**Laravel** — añade un middleware o usa `spatie/laravel-csp`. El más rápido:
+
+```php
+// app/Http/Middleware/FrameAncestors.php
+public function handle(Request $request, Closure $next): Response
+{
+    $response = $next($request);
+    $response->headers->remove('X-Frame-Options');
+    $response->headers->set(
+        'Content-Security-Policy',
+        "frame-ancestors 'self' https://vout.app",
+    );
+    return $response;
+}
+```
+
+**Express / Node con Helmet** — Helmet activa `frameguard` por defecto. Apágalo y configura CSP:
+
+```js
+app.use(helmet({ frameguard: false }));
+app.use(helmet.contentSecurityPolicy({
+    directives: {
+        frameAncestors: ["'self'", 'https://vout.app'],
+    },
+}));
+```
+
+**Next.js** — en `next.config.js`:
+
+```js
+async headers() {
+    return [{
+        source: '/:path*',
+        headers: [{
+            key: 'Content-Security-Policy',
+            value: "frame-ancestors 'self' https://vout.app",
+        }],
+    }];
+}
+```
+
+**nginx** — en el bloque `server` del juego:
+
+```
+add_header Content-Security-Policy "frame-ancestors 'self' https://vout.app" always;
+# Quita cualquier línea previa que ponga X-Frame-Options.
+```
+
+**Apache** — en `.htaccess` o vhost:
+
+```
+Header always unset X-Frame-Options
+Header always set Content-Security-Policy "frame-ancestors 'self' https://vout.app"
+```
+
+### Verifica antes de publicar
+
+```bash
+curl -I https://tu-juego.com/ | grep -iE "x-frame|content-security"
+```
+
+- Si ves `X-Frame-Options: SAMEORIGIN` o `DENY` → tu juego no embebe en Vout.
+- Si ves `Content-Security-Policy: frame-ancestors 'self' https://vout.app` → todo listo.
+
+Sin esta cabecera correctamente configurada, el iframe del portal mostrará un cuadro en blanco, y tus jugadores no podrán abrir tu juego desde Vout. Comprueba ambas cosas (desarrollo y producción) antes de subir el juego.
 
 ---
 

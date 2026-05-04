@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Developers;
 
 use App\Models\RegisteredApp;
+use App\Rules\PortableUrl;
 use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -34,7 +35,7 @@ class IssueDeveloperAppCredentialsRequest extends FormRequest
             'redirect_uris.*' => [
                 'required',
                 'string',
-                'url:http,https',
+                new PortableUrl,
                 'distinct',
                 'max:255',
                 $this->redirectBelongsToAllowedOrigin(),

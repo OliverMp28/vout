@@ -10,6 +10,7 @@ use App\Models\Developer;
 use App\Models\Game;
 use App\Notifications\GameApprovedNotification;
 use App\Notifications\GameRejectedNotification;
+use App\Rules\PortableUrl;
 use App\Support\Audit;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -168,10 +169,10 @@ class AdminGameController extends Controller
         $data = $request->validate([
             'name' => ['sometimes', 'string', 'min:2', 'max:255'],
             'description' => ['sometimes', 'string', 'min:20', 'max:5000'],
-            'embed_url' => ['sometimes', 'url:https'],
-            'cover_image' => ['nullable', 'url:https', 'max:500'],
+            'embed_url' => ['sometimes', new PortableUrl],
+            'cover_image' => ['nullable', new PortableUrl, 'max:500'],
             'release_date' => ['nullable', 'date'],
-            'repo_url' => ['nullable', 'url', 'max:500'],
+            'repo_url' => ['nullable', new PortableUrl, 'max:500'],
             'category_ids' => ['sometimes', 'array', 'min:1', 'max:5'],
             'category_ids.*' => ['integer', 'exists:categories,id'],
             'developer_ids' => ['sometimes', 'array', 'max:10'],

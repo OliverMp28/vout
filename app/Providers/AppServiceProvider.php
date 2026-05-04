@@ -3,14 +3,20 @@
 namespace App\Providers;
 
 use App\Models\Passport\Client;
+use App\Models\RegisteredApp;
 use App\Models\User;
+use App\Passport\AccessToken as VoutAccessToken;
 use Carbon\CarbonImmutable;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
+use Inertia\Inertia;
+use Inertia\Response;
 use Laravel\Passport\Passport;
+use Laravel\Passport\Scope;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -70,6 +76,68 @@ class AppServiceProvider extends ServiceProvider
         // ── Modelo de Client extendido para Seamless SSO ──────────────
         // Las apps First-Party (is_first_party=true) saltan el prompt de autorización.
         Passport::useClientModel(Client::class);
+
+        // ── AccessToken con `kid` + `iss` para validación stateless ───
+        // Sustituye el AccessToken bridge de Passport por el de Vout, que
+        // añade `kid` (header) apuntando al JWK publicado en /oauth/jwks
+        // e `iss` (claim) con la URL del IdP. Habilita la validación de
+        // firma local en cualquier Resource Server que use librerías JWT
+        // estándar (lcobucci/jwt, jose-jwt, node-openid-client, etc.).
+        Passport::useAccessTokenEntity(VoutAccessToken::class);
+
+        // ── Pantalla de autorización OAuth (consent screen) ───────────
+        // Solo se renderiza para apps third-party. Las first-party
+        // (`is_first_party=true` en `registered_apps`) saltan la pantalla
+        // gracias a `Client::skipsAuthorization()`. Sin este binding,
+        // Passport 13 lanza BindingResolutionException al primer GET de
+        // un client externo (ver Daino / 2026-04-29).
+        Passport::authorizationView(static function (array $parameters): Response {
+            /** @var Client $client */
+            $client = $parameters['client'];
+            /** @var User $user */
+            $user = $parameters['user'];
+            /** @var Scope[] $scopes */
+            $scopes = $parameters['scopes'];
+            /** @var Request $request */
+            $request = $parameters['request'];
+
+            // Buscamos el `RegisteredApp` para enriquecer la pantalla
+            // (URL del sitio del dev, marca first-party, etc.). Si no
+            // existe, caemos al nombre del client OAuth — pasa cuando
+            // el client se creó por CLI sin pasar por el portal.
+            $app = RegisteredApp::query()
+                ->where('oauth_client_id', $client->id)
+                ->first();
+
+            return Inertia::render('oauth/authorize', [
+                'client' => [
+                    'id' => $client->id,
+                    'name' => $app?->name ?? $client->name,
+                    'app_url' => $app?->app_url,
+                    'is_first_party' => (bool) ($app?->is_first_party ?? false),
+                ],
+                'oauthUser' => [
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'avatar' => $user->avatar,
+                    'vout_id' => $user->vout_id,
+                ],
+                'scopes' => array_map(static fn (Scope $scope): array => [
+                    'id' => $scope->id,
+                    'description' => $scope->description,
+                ], $scopes),
+                'authToken' => $parameters['authToken'],
+                'redirectUri' => (string) $request->query('redirect_uri', ''),
+
+                // CSRF para que los <form> nativos del consent screen lo
+                // metan como hidden input. Usamos forms HTML reales (no
+                // XHR de Inertia) porque OAuth callbacks son navegaciones
+                // por contrato (RFC 6749 §1.7) — un XHR siguiendo el 302
+                // cross-origin lo bloquea CORS. Sin esto, "Autorizar"
+                // nunca llegaría al callback de un client third-party.
+                'csrfToken' => $request->session()->token(),
+            ]);
+        });
     }
 
     /**

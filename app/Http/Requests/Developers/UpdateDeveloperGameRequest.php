@@ -6,6 +6,7 @@ use App\Models\Category;
 use App\Models\Developer;
 use App\Models\Game;
 use App\Models\RegisteredApp;
+use App\Rules\PortableUrl;
 use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -58,14 +59,14 @@ class UpdateDeveloperGameRequest extends FormRequest
                 'sometimes',
                 'required',
                 'string',
-                'url:https',
+                new PortableUrl,
                 'max:500',
                 $this->embedInsideAllowedOrigins(),
             ],
 
-            'cover_image' => ['sometimes', 'nullable', 'string', 'url:https', 'max:500'],
+            'cover_image' => ['sometimes', 'nullable', 'string', new PortableUrl, 'max:500'],
             'release_date' => ['sometimes', 'nullable', 'date', 'before_or_equal:today'],
-            'repo_url' => ['sometimes', 'nullable', 'string', 'url:https', 'max:500'],
+            'repo_url' => ['sometimes', 'nullable', 'string', new PortableUrl, 'max:500'],
 
             'category_ids' => ['sometimes', 'required', 'array', 'min:1', 'max:5'],
             'category_ids.*' => [
@@ -80,17 +81,6 @@ class UpdateDeveloperGameRequest extends FormRequest
                 'distinct',
                 Rule::exists(Developer::class, 'id'),
             ],
-        ];
-    }
-
-    /**
-     * @return array<string, string>
-     */
-    public function messages(): array
-    {
-        return [
-            'embed_url.url' => __('validation.custom.embed_url_https'),
-            'cover_image.url' => __('validation.custom.cover_image_https'),
         ];
     }
 

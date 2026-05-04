@@ -80,4 +80,24 @@ return [
         // Edad mínima para registrarse (consentimiento digital art. 7 LOPDGDD).
         'minimum_age' => 14,
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Flexibilidad de esquemas en URLs registradas por developers
+    |--------------------------------------------------------------------------
+    |
+    | Cuando es `true`, las reglas `App\Rules\PortableUrl` y
+    | `App\Rules\PortableOrigin` aceptan `http://` además de `https://` para
+    | `embed_url`, `allowed_origins`, `redirect_uris`, etc. Pensado para que
+    | un dev pueda probar en Vout un juego/app que aún corre sobre
+    | `http://localhost:PUERTO` u otro servidor de desarrollo sin TLS.
+    |
+    | `null` (default) → auto-detect: activado si `app()->environment('local')`.
+    | Forzar a `true`/`false` permite simularlo en tests o en CI.
+    |
+    | En producción siempre debe quedar como `false` o `null` (con
+    | `APP_ENV=production`, que resuelve a `false`).
+    |
+    */
+    'allow_insecure_urls' => env('VOUT_ALLOW_INSECURE_URLS'),
 ];

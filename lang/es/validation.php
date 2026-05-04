@@ -168,10 +168,10 @@ return [
     'uuid' => 'El campo :attribute debe ser un UUID válido.',
 
     'custom' => [
-        'origin' => 'Debe ser un origen válido (scheme + host). Ej: https://mi-app.com',
+        'origin' => 'Debe ser un origen válido (scheme + host). Ej: https://mi-app.com o http://localhost:3000',
         'redirect_uri_not_in_origins' => 'El redirect URI debe pertenecer a uno de los orígenes permitidos.',
-        'embed_url_https' => 'La URL del juego debe usar HTTPS.',
-        'cover_image_https' => 'La URL de la portada debe usar HTTPS.',
+        'url_https_required' => 'En producción esta URL debe usar HTTPS. Solo se acepta HTTP plano en desarrollo local.',
+        'origin_https_required' => 'En producción el origen debe usar HTTPS. Solo se acepta HTTP plano en desarrollo local.',
         'registered_app_not_owned' => 'La app seleccionada no existe o no te pertenece.',
         'registered_app_inactive' => 'Esta app está pausada o suspendida. Reactívala o elige otra.',
         'embed_url_not_in_allowed_origins' => 'La URL del juego debe pertenecer a un origen permitido de la app seleccionada.',

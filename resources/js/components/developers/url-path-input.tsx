@@ -45,8 +45,8 @@ export function UrlPathInput({
     origins,
     value,
     onChange,
-    placeholder = 'https://mi-juego.com/play',
-    pathPlaceholder = '/play',
+    placeholder = 'https://mi-juego.com',
+    pathPlaceholder = '/ (opcional)',
     disabled = false,
     invalid = false,
 }: UrlPathInputProps) {
@@ -54,7 +54,7 @@ export function UrlPathInput({
         return (
             <Input
                 id={id}
-                type="url"
+                type="text"
                 inputMode="url"
                 value={value}
                 onChange={(event) => onChange(event.target.value)}

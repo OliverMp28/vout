@@ -70,7 +70,14 @@ class RegisteredAppFactory extends Factory
     /**
      * Estado: la app crea también un Passport Client real y lo enlaza
      * via `oauth_client_id`. Útil para tests del flujo de regeneración
-     * de secreto y de revocación.
+     * de secreto y de revocación, y para tests de OAuth authorize que
+     * necesitan que `redirect_uris` se parsee correctamente.
+     *
+     * Nota crítica: los campos `redirect_uris` y `grant_types` van como
+     * arrays, NO json_encoded — el modelo Passport\Client tiene cast
+     * `array` que ya se encarga del encoding en el `save()`. Pasarlos
+     * pre-encodeados produce double-JSON y revienta el accessor en
+     * `Passport\Client::redirectUris()`.
      */
     public function withClient(): static
     {
@@ -81,8 +88,8 @@ class RegisteredAppFactory extends Factory
                 'owner_id' => $app->user_id,
                 'name' => $app->name,
                 'secret' => Str::random(40),
-                'redirect_uris' => json_encode([$app->app_url]),
-                'grant_types' => json_encode(['authorization_code', 'refresh_token']),
+                'redirect_uris' => [$app->app_url],
+                'grant_types' => ['authorization_code', 'refresh_token'],
                 'revoked' => false,
             ]);
 
