@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auth\SocialiteController;
 use App\Http\Controllers\Settings\AppearanceController;
+use App\Http\Controllers\Settings\ConnectedAppsController;
 use App\Http\Controllers\Settings\GestureConfigController;
 use App\Http\Controllers\Settings\PasswordController;
 use App\Http\Controllers\Settings\PrivacyController;
@@ -45,4 +46,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('gesture-configs', [GestureConfigController::class, 'store'])->name('gesture-configs.store');
     Route::put('gesture-configs/{gestureConfig}', [GestureConfigController::class, 'update'])->name('gesture-configs.update');
     Route::delete('gesture-configs/{gestureConfig}', [GestureConfigController::class, 'destroy'])->name('gesture-configs.destroy');
+
+    // Apps conectadas (OAuth grants persistentes — Fase oauth_user_grants).
+    Route::get('settings/connected-apps', [ConnectedAppsController::class, 'index'])->name('connected-apps.index');
+    Route::delete('settings/connected-apps/{grant}', [ConnectedAppsController::class, 'destroy'])->name('connected-apps.destroy');
 });

@@ -37,4 +37,21 @@ return [
         'action' => 'Edit and resubmit',
     ],
 
+    'oauth_grant_created' => [
+        'subject' => '":app" now has access to your Vout account',
+        'greeting' => 'Hello :name,',
+        'line1' => 'You authorized ":app" to access your Vout account.',
+        'line2' => 'We will remember this authorization for future sign-ins, so you will not have to approve it again every time you return.',
+        'line3' => 'If this was not you, you can revoke access from your account settings.',
+        'action' => 'Manage connected apps',
+    ],
+
+    'oauth_grant_revoked' => [
+        'subject' => 'You revoked access for ":app"',
+        'greeting' => 'Hello :name,',
+        'line1' => 'You revoked ":app" access to your Vout account.',
+        'line2' => 'Its active tokens have been invalidated; it will need to ask for permission again the next time you sign in.',
+        'action' => 'View connected apps',
+    ],
+
 ];

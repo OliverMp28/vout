@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Listeners\RecordOAuthGrant;
 use App\Models\Passport\Client;
 use App\Models\RegisteredApp;
 use App\Models\User;
@@ -10,11 +11,13 @@ use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
 use Inertia\Inertia;
 use Inertia\Response;
+use Laravel\Passport\Events\AccessTokenCreated;
 use Laravel\Passport\Passport;
 use Laravel\Passport\Scope;
 
@@ -36,6 +39,20 @@ class AppServiceProvider extends ServiceProvider
         $this->configureDefaults();
         $this->configurePassport();
         $this->configureGates();
+        $this->configureEventListeners();
+    }
+
+    /**
+     * Vout IdP: registro de listeners propios sobre eventos de Passport.
+     *
+     * `RecordOAuthGrant` materializa el consentimiento del usuario en la
+     * tabla `oauth_user_grants` cada vez que Passport emite un access
+     * token (auth code, refresh, etc.). Síncrono — necesario para que la
+     * pantalla de consent vea el grant en el siguiente authorize.
+     */
+    protected function configureEventListeners(): void
+    {
+        Event::listen(AccessTokenCreated::class, RecordOAuthGrant::class);
     }
 
     /**

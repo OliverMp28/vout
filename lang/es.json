@@ -1111,5 +1111,19 @@
     "oauth.authorize.deny": "Cancelar",
     "oauth.authorize.approve_aria": "Autorizar el acceso de la aplicación",
     "oauth.authorize.deny_aria": "Cancelar y rechazar el acceso",
-    "oauth.authorize.app_url_hint": ":app — :host"
+    "oauth.authorize.app_url_hint": ":app — :host",
+    "nav.connected_apps": "Apps conectadas",
+    "connected_apps.title": "Apps conectadas",
+    "connected_apps.description": "Aplicaciones de terceros que pueden acceder a tu cuenta de Vout. Puedes revocar el acceso en cualquier momento; deberán pedirte permiso de nuevo si vuelves a iniciar sesión en ellas.",
+    "connected_apps.empty_title": "Aún no has conectado ninguna app",
+    "connected_apps.empty_body": "Cuando autorices a una aplicación externa con tu cuenta de Vout, aparecerá aquí.",
+    "connected_apps.granted_at": "Autorizada el :date",
+    "connected_apps.scopes_label": "Permisos otorgados",
+    "connected_apps.revoke_button": "Revocar acceso",
+    "connected_apps.revoke_confirm_title": "¿Revocar el acceso a :app?",
+    "connected_apps.revoke_confirm_description": "Sus tokens activos serán invalidados. Si vuelves a iniciar sesión en esta app, te pedirá permiso de nuevo.",
+    "connected_apps.revoke_confirm_cancel": "Cancelar",
+    "connected_apps.revoke_confirm_action": "Revocar acceso",
+    "connected_apps.revoked_flash": "Has revocado el acceso de :app.",
+    "connected_apps.visit_app": "Visitar sitio de la app"
 }

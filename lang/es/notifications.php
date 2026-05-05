@@ -37,4 +37,21 @@ return [
         'action' => 'Editar y reenviar',
     ],
 
+    'oauth_grant_created' => [
+        'subject' => '":app" ahora tiene acceso a tu cuenta Vout',
+        'greeting' => 'Hola :name,',
+        'line1' => 'Has autorizado a ":app" a acceder a tu cuenta de Vout.',
+        'line2' => 'Recordaremos esta autorización en futuros inicios de sesión, así no tendrás que volver a aceptar cada vez que vuelvas.',
+        'line3' => 'Si no fuiste tú, puedes revocar el acceso desde tus ajustes de cuenta.',
+        'action' => 'Gestionar apps conectadas',
+    ],
+
+    'oauth_grant_revoked' => [
+        'subject' => 'Has revocado el acceso de ":app"',
+        'greeting' => 'Hola :name,',
+        'line1' => 'Has revocado el acceso de ":app" a tu cuenta de Vout.',
+        'line2' => 'Sus tokens activos han sido invalidados; tendrá que pedirte permiso de nuevo si vuelves a iniciar sesión en ella.',
+        'action' => 'Ver apps conectadas',
+    ],
+
 ];

@@ -7,6 +7,7 @@ import { useCurrentUrl } from '@/hooks/use-current-url';
 import { useTranslation } from '@/hooks/use-translation';
 import { cn, toUrl } from '@/lib/utils';
 import { edit as editAppearance } from '@/routes/appearance';
+import { index as connectedAppsIndex } from '@/routes/connected-apps';
 import { edit as editPrivacy } from '@/routes/privacy';
 import { edit } from '@/routes/profile';
 import { show } from '@/routes/two-factor';
@@ -42,6 +43,11 @@ const getSidebarNavItems = (
         {
             title: t('nav.appearance'),
             href: editAppearance(),
+            icon: null,
+        },
+        {
+            title: t('nav.connected_apps'),
+            href: connectedAppsIndex(),
             icon: null,
         },
         {

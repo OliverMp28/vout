@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\OAuthUserGrant;
 use App\Models\RegisteredApp;
 use App\Models\User;
 use Laravel\Passport\ClientRepository;
@@ -179,6 +180,190 @@ it('si el user no está autenticado, Passport redirige a /login (regresión)', f
     ]));
 
     $response->assertRedirect('/login');
+});
+
+// ─── Persistencia de consent (Fase oauth_user_grants) ─────────────────
+
+it('un grant activo cubriendo los scopes salta la pantalla y emite code directo', function (): void {
+    $user = User::factory()->create();
+    $app = makeOAuthCallable($user, ['is_first_party' => false]);
+
+    OAuthUserGrant::factory()
+        ->forUser($user)
+        ->withScopes(['user:read'])
+        ->create(['client_id' => $app->oauth_client_id]);
+
+    $response = $this->actingAs($user)->get('/oauth/authorize?'.http_build_query([
+        'client_id' => $app->oauth_client_id,
+        'redirect_uri' => 'https://daino.test/auth/callback',
+        'response_type' => 'code',
+        'scope' => 'user:read',
+        'state' => 'state-grant',
+        'code_challenge' => str_repeat('a', 43),
+        'code_challenge_method' => 'S256',
+    ]));
+
+    $response->assertStatus(302);
+    $location = $response->headers->get('Location');
+    expect($location)->toStartWith('https://daino.test/auth/callback');
+    expect($location)->toContain('code=');
+    expect($location)->toContain('state=state-grant');
+});
+
+it('un grant que NO cubre el scope nuevo solicitado vuelve a mostrar consent (incremental)', function (): void {
+    $user = User::factory()->create();
+    $app = makeOAuthCallable($user, ['is_first_party' => false]);
+
+    OAuthUserGrant::factory()
+        ->forUser($user)
+        ->withScopes(['user:read'])
+        ->create(['client_id' => $app->oauth_client_id]);
+
+    $response = $this->actingAs($user)->get('/oauth/authorize?'.http_build_query([
+        'client_id' => $app->oauth_client_id,
+        'redirect_uri' => 'https://daino.test/auth/callback',
+        'response_type' => 'code',
+        'scope' => 'user:read user:email',
+        'state' => 'state-incr',
+        'code_challenge' => str_repeat('b', 43),
+        'code_challenge_method' => 'S256',
+    ]));
+
+    $response->assertOk();
+    $response->assertInertia(fn ($page) => $page
+        ->component('oauth/authorize')
+        ->has('scopes', 2)
+    );
+});
+
+it('prompt=consent fuerza re-prompt aunque exista grant activo cubriendo los scopes', function (): void {
+    $user = User::factory()->create();
+    $app = makeOAuthCallable($user, ['is_first_party' => false]);
+
+    OAuthUserGrant::factory()
+        ->forUser($user)
+        ->withScopes(['user:read'])
+        ->create(['client_id' => $app->oauth_client_id]);
+
+    $response = $this->actingAs($user)->get('/oauth/authorize?'.http_build_query([
+        'client_id' => $app->oauth_client_id,
+        'redirect_uri' => 'https://daino.test/auth/callback',
+        'response_type' => 'code',
+        'scope' => 'user:read',
+        'state' => 'state-force',
+        'code_challenge' => str_repeat('c', 43),
+        'code_challenge_method' => 'S256',
+        'prompt' => 'consent',
+    ]));
+
+    $response->assertOk();
+    $response->assertInertia(fn ($page) => $page->component('oauth/authorize'));
+});
+
+it('prompt=none con grant activo emite code directo', function (): void {
+    $user = User::factory()->create();
+    $app = makeOAuthCallable($user, ['is_first_party' => false]);
+
+    OAuthUserGrant::factory()
+        ->forUser($user)
+        ->withScopes(['user:read'])
+        ->create(['client_id' => $app->oauth_client_id]);
+
+    $response = $this->actingAs($user)->get('/oauth/authorize?'.http_build_query([
+        'client_id' => $app->oauth_client_id,
+        'redirect_uri' => 'https://daino.test/auth/callback',
+        'response_type' => 'code',
+        'scope' => 'user:read',
+        'state' => 'state-none-ok',
+        'code_challenge' => str_repeat('d', 43),
+        'code_challenge_method' => 'S256',
+        'prompt' => 'none',
+    ]));
+
+    $response->assertStatus(302);
+    expect($response->headers->get('Location'))
+        ->toStartWith('https://daino.test/auth/callback')
+        ->and($response->headers->get('Location'))->toContain('code=');
+});
+
+it('prompt=none sin grant devuelve error consent_required al callback', function (): void {
+    $user = User::factory()->create();
+    $app = makeOAuthCallable($user, ['is_first_party' => false]);
+
+    $response = $this->actingAs($user)->get('/oauth/authorize?'.http_build_query([
+        'client_id' => $app->oauth_client_id,
+        'redirect_uri' => 'https://daino.test/auth/callback',
+        'response_type' => 'code',
+        'scope' => 'user:read',
+        'state' => 'state-none-fail',
+        'code_challenge' => str_repeat('e', 43),
+        'code_challenge_method' => 'S256',
+        'prompt' => 'none',
+    ]));
+
+    $response->assertStatus(302);
+    $location = $response->headers->get('Location');
+    expect($location)->toStartWith('https://daino.test/auth/callback');
+    expect($location)->toContain('error=consent_required');
+});
+
+it('un grant revocado vuelve a mostrar la pantalla de consent', function (): void {
+    $user = User::factory()->create();
+    $app = makeOAuthCallable($user, ['is_first_party' => false]);
+
+    OAuthUserGrant::factory()
+        ->forUser($user)
+        ->withScopes(['user:read'])
+        ->revoked()
+        ->create(['client_id' => $app->oauth_client_id]);
+
+    $response = $this->actingAs($user)->get('/oauth/authorize?'.http_build_query([
+        'client_id' => $app->oauth_client_id,
+        'redirect_uri' => 'https://daino.test/auth/callback',
+        'response_type' => 'code',
+        'scope' => 'user:read',
+        'state' => 'state-revoked',
+        'code_challenge' => str_repeat('f', 43),
+        'code_challenge_method' => 'S256',
+    ]));
+
+    $response->assertOk();
+    $response->assertInertia(fn ($page) => $page->component('oauth/authorize'));
+});
+
+it('un client sin RegisteredApp asociado NO skipea aunque haya un grant huérfano (defensive)', function (): void {
+    $user = User::factory()->create();
+    $owner = User::factory()->create();
+
+    // Client OAuth real pero sin RegisteredApp vinculada (caso CLI / PAT).
+    $client = app(ClientRepository::class)->createAuthorizationCodeGrantClient(
+        name: 'Orphan Client',
+        redirectUris: ['https://orphan.test/auth/callback'],
+        confidential: true,
+        user: $owner,
+    );
+
+    OAuthUserGrant::factory()
+        ->forUser($user)
+        ->withScopes(['user:read'])
+        ->create(['client_id' => $client->id]);
+
+    $response = $this->actingAs($user)->get('/oauth/authorize?'.http_build_query([
+        'client_id' => $client->id,
+        'redirect_uri' => 'https://orphan.test/auth/callback',
+        'response_type' => 'code',
+        'scope' => 'user:read',
+        'state' => 'state-orphan',
+        'code_challenge' => str_repeat('g', 43),
+        'code_challenge_method' => 'S256',
+    ]));
+
+    // Sin RegisteredApp, `skipsAuthorization` devuelve false. Pero
+    // `hasGrantedScopes` de Passport upstream NO consulta nuestra tabla
+    // — solo `oauth_access_tokens` activos. Como no hay tokens, no hay
+    // skip y la pantalla aparece. Esto valida que NO confiamos en el
+    // grant huérfano para shortcut.
+    $response->assertOk();
 });
 
 it('la pantalla incluye descripciones humanas de los scopes (i18n vout.scopes)', function (): void {
