@@ -101,6 +101,8 @@ GET https://vout.example.com/oauth/authorize?
 - Si es una app **first-party**, el usuario se redirige automáticamente sin ver ningún prompt.
 - Si es una app **third-party**, el usuario verá: *"La app X solicita acceso a tu perfil"*, con los scopes listados.
 
+> **Vout recuerda el consentimiento.** Tras la primera autorización exitosa, los siguientes `/oauth/authorize` del mismo usuario para tu app saltan la pantalla y emiten el `code` directo (paridad UX con Google/GitHub). El usuario puede revocar el acceso desde `/settings/connected-apps` cuando quiera; en ese momento se invalidan los tokens activos y la próxima autorización mostrará la pantalla otra vez. Si la app pide un scope **nuevo** que el grant no cubre, Vout vuelve a preguntar (incremental consent).
+
 ### Paso 4: Intercambia el código por un token
 
 Vout redirige al usuario de vuelta a tu `redirect_uri` con un `code` temporal:
@@ -175,6 +177,43 @@ Los scopes relacionados con juegos sirven exclusivamente para sincronizar **meta
 **Scope por defecto:** Si no especificas ningún scope, se asigna `user:read`.
 
 **Buena práctica:** Solicita solo los scopes que necesitas. Los usuarios confían más en apps que piden menos permisos.
+
+---
+
+## Persistencia del consentimiento y parámetro `prompt`
+
+Vout sigue la semántica de OIDC Core §3.1.2.1 para el parámetro `prompt` en `/oauth/authorize`. Por defecto, **una vez que el usuario autoriza tu app, Vout recuerda esa decisión** y futuras peticiones saltan la pantalla — incluso si la sesión web del usuario en Vout caducó. El consentimiento sobrevive a la vida del access token (60 min) y solo se borra si el usuario revoca el acceso desde `/settings/connected-apps`.
+
+### Comportamiento por defecto (sin `prompt`)
+
+| Estado del usuario | Resultado |
+|---|---|
+| Sin sesión en Vout | Vout muestra `/login`. Tras autenticar, se aplica la regla siguiente. |
+| Con sesión + grant activo cubriendo los scopes pedidos | Salto directo: 302 al `redirect_uri` con `?code=...&state=...`. |
+| Con sesión + grant pero piden un scope nuevo | Pantalla de consent (incremental consent). Al aprobar, el grant se actualiza con la unión de scopes. |
+| Con sesión sin grant | Pantalla de consent normal. |
+
+### Forzar comportamientos específicos
+
+```
+GET /oauth/authorize?...&prompt=consent
+```
+
+| Valor | Cuándo usarlo | Comportamiento |
+|---|---|---|
+| `prompt=consent` | Operaciones sensibles, "ejecutar como otro usuario", cambiar de cuenta. | Vout **siempre** muestra la pantalla aunque exista grant activo. |
+| `prompt=login` | Después de un cambio de identidad o si quieres forzar verificación de credenciales. | Vout cierra la sesión actual y obliga a iniciar sesión de nuevo antes de continuar el flow. |
+| `prompt=none` | SSO silencioso (típico de iframes embebidos o re-auth en background). | Si hay sesión + grant: 302 con código. Si falta cualquiera de los dos: redirige al `redirect_uri` con `?error=login_required` o `?error=consent_required` — **nunca muestra UI**. |
+
+### Revocación desde el lado del usuario
+
+Cualquier usuario puede entrar en `/settings/connected-apps` (en su cuenta de Vout) y revocar el acceso a tu app. Eso:
+
+- Marca el grant como revocado (no desaparece del histórico, queda con `revoked_at`).
+- Marca todos los `oauth_access_tokens` y `oauth_refresh_tokens` del par (user, client) como `revoked=1`. Tu próximo refresh fallará con `invalid_grant`.
+- Los JWTs ya emitidos siguen siendo criptográficamente válidos hasta su `exp` natural (≤ 60 min), porque la validación stateless no consulta la BD. Si necesitas revocación instantánea, llama a `/api/v1/user/me` periódicamente o vuelve a stateless con TTL más corto.
+
+Cuando el usuario revoque y vuelva a entrar en tu app, Vout mostrará la pantalla de consent otra vez como si fuera la primera vez.
 
 ---
 
