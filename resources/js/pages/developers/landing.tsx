@@ -123,11 +123,11 @@ function HeroSection({
             {/* Resplandores radiales para crear profundidad */}
             <div
                 aria-hidden
-                className="pointer-events-none absolute -top-40 -right-24 size-[32rem] rounded-full bg-violet-500/25 blur-3xl"
+                className="pointer-events-none absolute -top-40 -right-24 size-128 rounded-full bg-violet-500/25 blur-3xl"
             />
             <div
                 aria-hidden
-                className="pointer-events-none absolute -bottom-40 -left-32 size-[28rem] rounded-full bg-fuchsia-500/15 blur-3xl"
+                className="pointer-events-none absolute -bottom-40 -left-32 size-112 rounded-full bg-fuchsia-500/15 blur-3xl"
             />
 
             {/* Grid sutil de líneas — vibe "schematic" de producto técnico */}
