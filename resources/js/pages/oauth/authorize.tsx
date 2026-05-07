@@ -1,6 +1,7 @@
 import { Head } from '@inertiajs/react';
 import { CheckCircle2, ShieldCheck } from 'lucide-react';
-import { useState, type FormEvent } from 'react';
+import { useState } from 'react';
+import type { FormEvent } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
@@ -200,11 +201,7 @@ export default function Authorize({
                         className="contents"
                         aria-label={t('oauth.authorize.approve_aria')}
                     >
-                        <input
-                            type="hidden"
-                            name="_token"
-                            value={csrfToken}
-                        />
+                        <input type="hidden" name="_token" value={csrfToken} />
                         <input
                             type="hidden"
                             name="auth_token"
@@ -231,11 +228,7 @@ export default function Authorize({
                     >
                         {/* Method spoofing: Laravel enruta a DELETE /oauth/authorize */}
                         <input type="hidden" name="_method" value="DELETE" />
-                        <input
-                            type="hidden"
-                            name="_token"
-                            value={csrfToken}
-                        />
+                        <input type="hidden" name="_token" value={csrfToken} />
                         <input
                             type="hidden"
                             name="auth_token"
