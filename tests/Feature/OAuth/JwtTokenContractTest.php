@@ -1,7 +1,10 @@
 <?php
 
+use App\Models\Passport\Client;
 use App\Models\User;
+use App\Passport\AccessToken;
 use App\Support\Jwks;
+use Illuminate\Support\Str;
 use Lcobucci\JWT\Encoding\JoseEncoder;
 use Lcobucci\JWT\Signer\Key\InMemory;
 use Lcobucci\JWT\Signer\Rsa\Sha256;
@@ -9,6 +12,7 @@ use Lcobucci\JWT\Token\Parser;
 use Lcobucci\JWT\Validation\Constraint\IssuedBy;
 use Lcobucci\JWT\Validation\Constraint\SignedWith;
 use Lcobucci\JWT\Validation\Validator;
+use League\OAuth2\Server\CryptKey;
 
 beforeEach(function (): void {
     // RefreshDatabase vacía oauth_clients en cada test, hay que recrear
@@ -44,6 +48,57 @@ it('el JWT emitido por Vout contiene kid en header e iss en payload', function (
 
     expect($payload['iss'])->toBe(rtrim((string) config('app.url'), '/'));
     expect($payload)->toHaveKeys(['aud', 'sub', 'jti', 'iat', 'nbf', 'exp', 'scopes']);
+});
+
+it('el JWT emitido por Vout incluye vout_id (UUID) como claim', function (): void {
+    $user = User::factory()->create();
+    $jwt = $user->createToken('test', ['user:read'])->accessToken;
+
+    [, $payloadB64] = explode('.', $jwt);
+    $payload = json_decode(base64_decode(strtr($payloadB64, '-_', '+/')), true);
+
+    // sub sigue siendo el id interno (entero) por compatibilidad RFC 7519.
+    // vout_id es el UUID canónico user-facing — el mismo que devuelve /me.
+    // Permite mapear JWT → user local sin round-trip a /api/v1/user/me.
+    expect($payload['sub'])->toBe((string) $user->id);
+    expect($payload['vout_id'])->toBe($user->vout_id);
+    expect($payload['vout_id'])->toMatch('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/');
+});
+
+it('los tokens client_credentials NO llevan vout_id (no hay user asociado)', function (): void {
+    // Simulamos lo que hace `client_credentials` internamente: un token
+    // sin userIdentifier. No usamos el flow HTTP completo porque eso
+    // requiere setup de un Client con grant_types=['client_credentials'],
+    // y el contrato del claim se prueba aquí a nivel de la entidad.
+    $client = Client::create([
+        'id' => (string) Str::uuid(),
+        'owner_type' => User::class,
+        'owner_id' => User::factory()->create()->id,
+        'name' => 'CC Client',
+        'secret' => Str::random(40),
+        'redirect_uris' => [],
+        'grant_types' => ['client_credentials'],
+        'revoked' => false,
+    ]);
+
+    $clientEntity = new Laravel\Passport\Bridge\Client(
+        $client->id,
+        $client->name,
+        [],
+        false,
+        null,
+        [],
+    );
+
+    $token = new AccessToken(null, [], $clientEntity);
+    $token->setIdentifier('test-id');
+    $token->setExpiryDateTime(new DateTimeImmutable('+1 hour'));
+    $token->setPrivateKey(new CryptKey(storage_path('oauth-private.key'), null, false));
+
+    [, $payloadB64] = explode('.', $token->toString());
+    $payload = json_decode(base64_decode(strtr($payloadB64, '-_', '+/')), true);
+
+    expect($payload)->not->toHaveKey('vout_id');
 });
 
 it('un consumidor stateless puede validar firma + iss usando solo el JWKS público', function (): void {

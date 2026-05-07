@@ -276,22 +276,41 @@ El `kid` es el JWK Thumbprint (RFC 7638), derivado matemáticamente del propio J
 
 ### Datos dentro del Token (Claims)
 
+Cuando decodificas el JWT (sin verificar firma todavía), el payload tiene esta forma:
+
+```json
+{
+  "iss": "https://vout.example.com",
+  "aud": "9d0e4f3a-1234-5678-90ab-cdef12345678",
+  "jti": "a1b2c3d4e5f6...",
+  "iat": 1778151275,
+  "nbf": 1778151275,
+  "exp": 1778154875,
+  "sub": "2",
+  "vout_id": "4f1ade51-449a-4871-8e62-d908ad737c24",
+  "scopes": ["user:read"]
+}
+```
+
 | Claim | Descripción |
 | :--- | :--- |
 | `iss` | URL del IdP Vout (debes validar que coincide con tu instancia) |
-| `sub` | ID interno del usuario en Vout (no usar para identificarlo entre apps — usa `vout_id` desde `/api/v1/user/me`) |
 | `aud` | Tu `client_id` (debes validar que coincide con el tuyo) |
+| `sub` | ID interno del usuario en Vout (entero, opaco). RFC 7519 lo permite, pero **para enlazar al usuario en tu BD usa `vout_id`** — `sub` puede cambiar de tipo en futuras versiones |
+| `vout_id` | **UUID canónico del usuario.** Es el mismo valor que devuelve `/api/v1/user/me`. Úsalo como clave para mapear el token a tu tabla `users` local sin un round-trip extra. **No aparece en tokens `client_credentials`** (no hay user) |
+| `scopes` | Array de scopes autorizados |
 | `exp` | Timestamp de expiración |
 | `iat` | Timestamp de emisión |
 | `nbf` | "Not before" — antes de este timestamp el token no es válido |
 | `jti` | ID único del token (útil para revocación local, blacklists, etc.) |
-| `scopes` | Array de scopes autorizados |
 
 El header del JWT incluye `kid` apuntando a la clave del JWKS:
 
 ```json
 { "typ": "JWT", "alg": "RS256", "kid": "Vw5D5w1BbAXKmaCCqc6m2MpffbXnTqaX7ye5BaNjB5U" }
 ```
+
+> **Por qué hay dos identificadores:** Vout sigue dos contratos a la vez. `sub` cumple RFC 7519 (cualquier librería JWT estándar lo lee sin saber nada de Vout). `vout_id` es el identificador externo y estable que documenta toda esta guía y que devuelve `/api/v1/user/me`. Tener ambos en el mismo token significa que **no necesitas llamar a `/me` solo para conocer al usuario** — basta con decodificar el JWT.
 
 ### Ejemplo de validación con `lcobucci/jwt` (PHP)
 
@@ -338,6 +357,60 @@ const { payload } = await jwtVerify(accessToken, JWKS, {
 
 `jose` cachea el JWKS automáticamente y refresca cuando aparece un `kid` desconocido — útil para rotación de claves transparente.
 
+### Mapeando el JWT a tu base de datos
+
+Una vez validado el token, lee `vout_id` del payload y úsalo como FK contra tu tabla `users` local. Independientemente del stack, el patrón es siempre el mismo:
+
+> **regla de oro:** guarda `vout_id` (UUID) en tu tabla, **no** `sub`. `sub` es un detalle interno de Vout; `vout_id` es el contrato público estable.
+
+**PHP (`lcobucci/jwt`)**
+
+```php
+$voutId = $token->claims()->get('vout_id');
+$user = $db->query('SELECT * FROM users WHERE vout_id = ?', [$voutId])->fetch();
+```
+
+**Node.js (`jose`)**
+
+```js
+const { payload } = await jwtVerify(accessToken, JWKS, { issuer, audience });
+const user = await db.users.findUnique({ where: { vout_id: payload.vout_id } });
+```
+
+**Python (`PyJWT` + `cryptography`)**
+
+```python
+import jwt, requests
+jwks_client = jwt.PyJWKClient('https://vout.example.com/oauth/jwks')
+signing_key = jwks_client.get_signing_key_from_jwt(access_token)
+payload = jwt.decode(
+    access_token,
+    signing_key.key,
+    algorithms=['RS256'],
+    audience=client_id,
+    issuer='https://vout.example.com',
+)
+user = User.query.filter_by(vout_id=payload['vout_id']).first()
+```
+
+**Go (`github.com/lestrrat-go/jwx/v2`)**
+
+```go
+keySet, _ := jwk.Fetch(ctx, "https://vout.example.com/oauth/jwks")
+token, _ := jwt.Parse(
+    []byte(accessToken),
+    jwt.WithKeySet(keySet),
+    jwt.WithIssuer("https://vout.example.com"),
+    jwt.WithAudience(clientID),
+)
+voutID, _ := token.Get("vout_id")
+// SELECT * FROM users WHERE vout_id = $1 ...
+```
+
+**Laravel (Resource Server con Socialite o cliente HTTP propio)**
+
+Tras el callback OAuth, decodifica el JWT (con la lib que prefieras) y guarda `vout_id` en tu tabla `users`. En cada request autenticada después, lee `vout_id` del JWT y haz `User::where('vout_id', $voutId)->first()`.
+
 ### ¿Validación stateless o llamar a `/api/v1/user/me`?
 
 Las dos son válidas, sirven escenarios distintos:
@@ -377,6 +450,13 @@ Los Refresh Tokens son válidos durante **30 días** (configurable).
 ## Identificador Externo: `vout_id`
 
 Cada usuario de Vout tiene un **UUID único** llamado `vout_id`. Este es el **único identificador** que debes almacenar en tu base de datos para vincular al usuario.
+
+Puedes obtenerlo desde dos sitios — ambos devuelven exactamente el mismo valor:
+
+1. **Dentro del JWT**, como claim `vout_id` (sin red, instantáneo). Disponible desde la versión actual de Vout.
+2. **Desde `GET /api/v1/user/me`**, en el campo `vout_id` (incluye también nombre, avatar, email).
+
+Para el simple lookup `JWT → user local`, leer el claim del JWT es lo más eficiente. Reserva `/me` para cuando necesites datos frescos del perfil (avatar actualizado, email, etc.).
 
 **Nunca** uses el ID autoincremental — por seguridad, Vout no lo expone externamente.
 
