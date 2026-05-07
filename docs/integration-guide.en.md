@@ -45,17 +45,21 @@ Vout implements the **OAuth 2.0** standard with the **PKCE** extension (Proof Ke
 
 ### What does this mean for you?
 
-You can use **any OAuth2 library** in your preferred language to integrate:
+You don't need a Vout-specific library. If your stack speaks OAuth2 and standard JWT, it works with Vout, whether you use PHP, Node.js, Python, Go, or any other language.
 
-| Language / Framework | Suggested library |
-| :--- | :--- |
-| PHP (Laravel) | `laravel/socialite` with a [custom provider](https://socialiteproviders.com/) |
-| PHP (generic) | `league/oauth2-client` |
-| JavaScript / Node.js | `openid-client`, `next-auth`, or `passport` (npm) |
-| Python | `authlib`, `requests-oauthlib` |
-| Any other | Any compatible OAuth2/OIDC client |
+A Vout integration has two phases, and each one uses a different type of library:
 
-You don't need a Vout-specific library. **If your tool speaks OAuth2, it works with Vout.**
+| Phase | What it does | When it happens | Which library to use |
+| :--- | :--- | :--- | :--- |
+| 1. Login | Redirects the user to Vout, receives the `code` on the callback, and exchanges it for an Access Token. | Once per user session. | An OAuth2 client: `laravel/socialite` or `league/oauth2-client` (PHP), `openid-client` (Node.js), `authlib` (Python), `golang.org/x/oauth2` (Go)... |
+| 2. Each API request | Verifies the Access Token is still valid before serving the response. | On every authenticated call. | Two options, described below. |
+
+For Phase 2 you have two ways to verify the token:
+
+- Option A, local validation (fast). You verify the JWT's RS256 signature on your server with Vout's public key (published at `/oauth/jwks`). Since there's no network call, the check takes microseconds. You need a JWT validator: `lcobucci/jwt` (PHP), `jose` (Node.js), `PyJWT` (Python), `jwx` (Go). The "Stateless Token Validation" section below covers it in detail.
+- Option B, forward the token to Vout (simple). You call `GET /api/v1/user/me` passing the token. If Vout responds 200, the token is valid and you also receive the user's data; a 401 means it's invalid. You don't need any JWT library, just an HTTP client (curl, Guzzle, axios, requests).
+
+> Which one to pick? If your app is simple, start with Option B: less code, and revocations are detected instantly. When the per-request round-trip starts to hurt under load, move to Option A. There's a comparison table further down with all the details.
 
 ---
 
@@ -219,7 +223,9 @@ When the user revokes and signs in to your app again, Vout will display the cons
 
 ## Stateless Token Validation (Advanced)
 
-Vout's Access Tokens are **JWTs signed with RS256**. This means your server can validate tokens **without querying Vout's database**, using the public key. Useful for microservices, high-QPS APIs, or backend-heavy games that don't want a round-trip to `/api/v1/user/me` on every request.
+This section expands Option A of Phase 2: verifying the JWT locally with Vout's public key. It's optional. If your app is simple, Option B (forwarding the token to `/api/v1/user/me`) does the job just as well and is easier to implement.
+
+Vout's Access Tokens are JWTs signed with RS256, so any standard JWT library can verify the signature with the public key published at `/oauth/jwks`. It's a good fit for microservices, high-traffic APIs, or backend-heavy games whose backend doesn't want a round-trip to `/me` on every request.
 
 ### Automatic discovery
 
@@ -276,7 +282,7 @@ The `kid` is the JWK Thumbprint (RFC 7638), derived mathematically from the JWK 
 
 ### Data Inside the Token (Claims)
 
-When you decode the JWT (without verifying the signature yet), the payload looks like this:
+If you decode the JWT without verifying the signature yet, the payload looks like this:
 
 ```json
 {
@@ -294,15 +300,15 @@ When you decode the JWT (without verifying the signature yet), the payload looks
 
 | Claim | Description |
 | :--- | :--- |
-| `iss` | Vout IdP URL (you must validate it matches your instance) |
-| `aud` | Your `client_id` (you must validate it matches yours) |
-| `sub` | Internal user ID in Vout (integer, opaque). RFC 7519 allows it, but **to link the user in your DB use `vout_id`** — `sub` may change type in future versions |
-| `vout_id` | **User's canonical UUID.** Same value returned by `/api/v1/user/me`. Use it as the key to map the token to your local `users` table without an extra round-trip. **Not present in `client_credentials` tokens** (no associated user) |
-| `scopes` | Array of authorized scopes |
-| `exp` | Expiration timestamp |
-| `iat` | Issued-at timestamp |
-| `nbf` | "Not before" — token isn't valid before this timestamp |
-| `jti` | Unique token ID (useful for local revocation, blacklists, etc.) |
+| `iss` | Vout IdP URL. You must validate it matches your instance. |
+| `aud` | Your `client_id`. You must validate it matches yours. |
+| `sub` | Internal user ID in Vout (integer, opaque). RFC 7519 allows it, but **to link the user in your DB use `vout_id`**: the format of `sub` may change in future versions. |
+| `vout_id` | **User's canonical UUID.** Same value returned by `/api/v1/user/me`. Use it as the key to map the token to your local `users` table and you save a round-trip. Not present in `client_credentials` tokens (no associated user). |
+| `scopes` | Array of authorized scopes. |
+| `exp` | Expiration timestamp. |
+| `iat` | Issued-at timestamp. |
+| `nbf` | "Not before". The token isn't valid before this timestamp. |
+| `jti` | Unique token ID. Useful for local revocation, blacklists, etc. |
 
 The JWT header includes `kid` pointing to the JWKS key:
 
@@ -310,7 +316,7 @@ The JWT header includes `kid` pointing to the JWKS key:
 { "typ": "JWT", "alg": "RS256", "kid": "Vw5D5w1BbAXKmaCCqc6m2MpffbXnTqaX7ye5BaNjB5U" }
 ```
 
-> **Why two identifiers:** Vout honors two contracts at once. `sub` complies with RFC 7519 (any standard JWT library reads it without knowing anything about Vout). `vout_id` is the external, stable identifier this entire guide documents and that `/api/v1/user/me` returns. Having both in the same token means **you don't need to call `/me` just to know who the user is** — decoding the JWT is enough.
+> Why two identifiers. `sub` complies with RFC 7519: any standard JWT library reads it without knowing anything about Vout. `vout_id` is the external identifier this guide documents and that `/api/v1/user/me` returns. Having both in the same token means that to map `JWT → local user` you don't need to touch `/me`; decoding the JWT is enough.
 
 ### Validation example with `lcobucci/jwt` (PHP)
 
@@ -359,25 +365,25 @@ const { payload } = await jwtVerify(accessToken, JWKS, {
 
 ### Mapping the JWT to your database
 
-Once the token is validated, read `vout_id` from the payload and use it as the FK against your local `users` table. Regardless of stack, the pattern is always the same:
+Once the token is validated, read `vout_id` from the payload and use it as the FK against your local `users` table. The pattern is the same in any stack:
 
-> **golden rule:** store `vout_id` (UUID) in your table, **not** `sub`. `sub` is an internal Vout detail; `vout_id` is the stable public contract.
+> Store `vout_id` (UUID) in your table, not `sub`. `sub` is an internal Vout detail; `vout_id` is the stable public contract this guide documents.
 
-**PHP (`lcobucci/jwt`)**
+PHP (`lcobucci/jwt`):
 
 ```php
 $voutId = $token->claims()->get('vout_id');
 $user = $db->query('SELECT * FROM users WHERE vout_id = ?', [$voutId])->fetch();
 ```
 
-**Node.js (`jose`)**
+Node.js (`jose`):
 
 ```js
 const { payload } = await jwtVerify(accessToken, JWKS, { issuer, audience });
 const user = await db.users.findUnique({ where: { vout_id: payload.vout_id } });
 ```
 
-**Python (`PyJWT` + `cryptography`)**
+Python (`PyJWT` + `cryptography`):
 
 ```python
 import jwt, requests
@@ -393,7 +399,7 @@ payload = jwt.decode(
 user = User.query.filter_by(vout_id=payload['vout_id']).first()
 ```
 
-**Go (`github.com/lestrrat-go/jwx/v2`)**
+Go (`github.com/lestrrat-go/jwx/v2`):
 
 ```go
 keySet, _ := jwk.Fetch(ctx, "https://vout.example.com/oauth/jwks")
@@ -407,9 +413,7 @@ voutID, _ := token.Get("vout_id")
 // SELECT * FROM users WHERE vout_id = $1 ...
 ```
 
-**Laravel (Resource Server with Socialite or your own HTTP client)**
-
-After the OAuth callback, decode the JWT (with the lib you prefer) and store `vout_id` in your `users` table. On every authenticated request afterwards, read `vout_id` from the JWT and run `User::where('vout_id', $voutId)->first()`.
+> Note for Laravel: the PHP snippets above apply equally in Laravel. The Phase 1 OAuth library (`laravel/socialite`) and the Phase 2 JWT library (`lcobucci/jwt`) are different and complementary. Socialite doesn't validate JWTs, and lcobucci doesn't run the OAuth flow.
 
 ### Stateless validation vs. calling `/api/v1/user/me`?
 
@@ -449,16 +453,16 @@ Refresh Tokens are valid for **30 days** (configurable).
 
 ## External Identifier: `vout_id`
 
-Each Vout user has a **unique UUID** called `vout_id`. This is the **only identifier** you should store in your database to link the user.
+Each Vout user has a **unique UUID** called `vout_id`. It's the identifier you should store in your database to link the user.
 
-You can obtain it from two places — both return exactly the same value:
+You can obtain it from two places, and both return exactly the same value:
 
-1. **Inside the JWT**, as the `vout_id` claim (no network, instant). Available since the current version of Vout.
-2. **From `GET /api/v1/user/me`**, in the `vout_id` field (also includes name, avatar, email).
+1. Inside the JWT, as the `vout_id` claim. No network in the middle, so it's instant. Available since the current version of Vout.
+2. From `GET /api/v1/user/me`, in the `vout_id` field. It also includes name, avatar, and email.
 
-For the simple `JWT → local user` lookup, reading the claim from the JWT is the most efficient. Reserve `/me` for when you need fresh profile data (updated avatar, email, etc.).
+For the `JWT → local user` lookup, read the claim from the JWT and you save the call. Reserve `/me` for when you need fresh profile data (updated avatar, email, etc.).
 
-**Never** use the auto-incremental ID — for security reasons, Vout does not expose it externally.
+Don't use the auto-incremental ID: for security reasons, Vout does not expose it externally.
 
 ```sql
 -- In your database (example for your players table):
