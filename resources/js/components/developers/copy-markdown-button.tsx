@@ -24,19 +24,16 @@ type CopyMarkdownButtonProps = {
 export function CopyMarkdownButton({ content }: CopyMarkdownButtonProps) {
     const { t } = useTranslation();
     const [copied, setCopied] = useState(false);
-    const [supported, setSupported] = useState(true);
-
-    useEffect(() => {
-        // `navigator.clipboard` solo existe en contextos seguros (HTTPS o
-        // localhost). En el resto, ocultamos el botón porque no podemos
-        // garantizar el copy.
-        if (
-            typeof navigator === 'undefined' ||
-            !navigator.clipboard?.writeText
-        ) {
-            setSupported(false);
-        }
-    }, []);
+    // Cálculo derivado, no efecto: la disponibilidad de Clipboard API no
+    // cambia durante la vida del componente. El guard `typeof navigator`
+    // mantiene la inicialización segura si el componente llegara a
+    // renderizarse en SSR — Clipboard solo existe en contextos seguros
+    // (HTTPS o localhost) en cliente.
+    const [supported] = useState(
+        () =>
+            typeof navigator !== 'undefined' &&
+            typeof navigator.clipboard?.writeText === 'function',
+    );
 
     useEffect(() => {
         if (!copied) {
