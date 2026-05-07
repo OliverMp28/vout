@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import ReactMarkdown from 'react-markdown';
 import type { Components } from 'react-markdown';
 import rehypeHighlight from 'rehype-highlight';
@@ -10,6 +11,47 @@ type MarkdownViewProps = {
     content: string;
     className?: string;
 };
+
+/**
+ * Convierte el contenido textual de un heading en un slug estable usado
+ * como `id` del elemento. Mismo algoritmo que `slugify` en `docs-toc.tsx`
+ * para que los anchors de la TOC encajen con los ids de los headers.
+ *
+ * Reglas:
+ *   - lowercase + trim
+ *   - quita acentos (NFD + diacríticos fuera)
+ *   - sustituye cualquier no-alfanumérico por guion
+ *   - colapsa guiones consecutivos
+ */
+export function slugify(value: string): string {
+    return value
+        .toString()
+        .normalize('NFD')
+        .replace(/[̀-ͯ]/g, '')
+        .toLowerCase()
+        .trim()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+}
+
+/**
+ * Recoge el texto plano de los hijos JSX de un heading, ignorando markup
+ * (negritas, código inline, enlaces). Necesario para slugificar headings
+ * que contienen `<code>` u otros elementos.
+ */
+function flattenText(node: ReactNode): string {
+    if (typeof node === 'string' || typeof node === 'number') {
+        return String(node);
+    }
+    if (Array.isArray(node)) {
+        return node.map(flattenText).join('');
+    }
+    if (node && typeof node === 'object' && 'props' in node) {
+        const props = (node as { props?: { children?: ReactNode } }).props;
+        return flattenText(props?.children);
+    }
+    return '';
+}
 
 /**
  * Renderizador de markdown para las guías del Developer Portal.
@@ -41,41 +83,53 @@ export function MarkdownView({ content, className }: MarkdownViewProps) {
 }
 
 const markdownComponents: Components = {
-    h1: ({ className, ...props }) => (
+    h1: ({ className, children, ...props }) => (
         <h1
+            id={slugify(flattenText(children))}
             className={cn(
                 'mt-8 scroll-mt-24 text-3xl font-semibold tracking-tight first:mt-0',
                 className,
             )}
             {...props}
-        />
+        >
+            {children}
+        </h1>
     ),
-    h2: ({ className, ...props }) => (
+    h2: ({ className, children, ...props }) => (
         <h2
+            id={slugify(flattenText(children))}
             className={cn(
                 'mt-10 scroll-mt-24 border-b border-border/60 pb-2 text-2xl font-semibold tracking-tight',
                 className,
             )}
             {...props}
-        />
+        >
+            {children}
+        </h2>
     ),
-    h3: ({ className, ...props }) => (
+    h3: ({ className, children, ...props }) => (
         <h3
+            id={slugify(flattenText(children))}
             className={cn(
                 'mt-8 scroll-mt-24 text-xl font-semibold tracking-tight',
                 className,
             )}
             {...props}
-        />
+        >
+            {children}
+        </h3>
     ),
-    h4: ({ className, ...props }) => (
+    h4: ({ className, children, ...props }) => (
         <h4
+            id={slugify(flattenText(children))}
             className={cn(
                 'mt-6 scroll-mt-24 text-lg font-medium tracking-tight',
                 className,
             )}
             {...props}
-        />
+        >
+            {children}
+        </h4>
     ),
     p: ({ className, ...props }) => (
         <p className={cn('mt-4 leading-7', className)} {...props} />

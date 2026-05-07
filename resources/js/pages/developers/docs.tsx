@@ -1,6 +1,8 @@
 import { Head, Link } from '@inertiajs/react';
 import { ArrowLeft, Globe } from 'lucide-react';
 import type { ReactNode } from 'react';
+import { CopyMarkdownButton } from '@/components/developers/copy-markdown-button';
+import { DocsTableOfContents } from '@/components/developers/docs-toc';
 import { MarkdownView } from '@/components/developers/markdown-view';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from '@/hooks/use-translation';
@@ -14,6 +16,10 @@ import type { DevelopersDocsProps } from '@/types';
  * La guía se entrega como string por el controlador (`DevelopersLandingController::docs`),
  * ya validado contra whitelist. El locale activo se resuelve server-side — este
  * componente solo lo muestra como indicador accesible.
+ *
+ * Layout: 2 columnas en desktop (contenido + TOC sticky). En móvil/tablet la
+ * TOC se oculta porque ocuparía demasiado vertical-space y la pantalla pequeña
+ * favorece scroll lineal.
  */
 export default function DevelopersDocs({
     title_key,
@@ -28,50 +34,65 @@ export default function DevelopersDocs({
         <>
             <Head title={title} />
 
-            <article className="space-y-8">
-                <header className="space-y-6 border-b border-border/60 pb-8">
-                    <Button
-                        asChild
-                        variant="ghost"
-                        size="sm"
-                        className="-ml-2 h-8 w-fit gap-1.5 text-muted-foreground hover:text-foreground"
-                    >
-                        <Link href={landing().url} prefetch>
-                            <ArrowLeft className="size-4" aria-hidden />
-                            {t('developers.docs.back')}
-                        </Link>
-                    </Button>
+            <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_220px] lg:gap-10 xl:gap-14">
+                <article className="min-w-0 space-y-8">
+                    <header className="space-y-6 border-b border-border/60 pb-8">
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                            <Button
+                                asChild
+                                variant="ghost"
+                                size="sm"
+                                className="-ml-2 h-8 gap-1.5 text-muted-foreground hover:text-foreground"
+                            >
+                                <Link href={landing().url} prefetch>
+                                    <ArrowLeft className="size-4" aria-hidden />
+                                    {t('developers.docs.back')}
+                                </Link>
+                            </Button>
 
-                    <div className="space-y-4">
-                        <h1 className="text-3xl font-bold tracking-tight text-balance md:text-4xl">
-                            {title}
-                        </h1>
+                            <CopyMarkdownButton content={markdown} />
+                        </div>
 
-                        {available_locales.length > 1 && (
-                            <LocaleIndicator
-                                locale={locale}
-                                available={available_locales}
-                                label={t('developers.docs.locale_label')}
-                                labels={{
-                                    es: t('developers.docs.locale.es'),
-                                    en: t('developers.docs.locale.en'),
-                                }}
-                            />
-                        )}
+                        <div className="space-y-4">
+                            <h1 className="text-3xl font-bold tracking-tight text-balance md:text-4xl">
+                                {title}
+                            </h1>
+
+                            {available_locales.length > 1 && (
+                                <LocaleIndicator
+                                    locale={locale}
+                                    available={available_locales}
+                                    label={t('developers.docs.locale_label')}
+                                    labels={{
+                                        es: t('developers.docs.locale.es'),
+                                        en: t('developers.docs.locale.en'),
+                                    }}
+                                />
+                            )}
+                        </div>
+                    </header>
+
+                    <MarkdownView content={markdown} />
+
+                    <footer className="border-t border-border/60 pt-8">
+                        <Button asChild variant="ghost" className="gap-1.5">
+                            <Link href={landing().url} prefetch>
+                                <ArrowLeft className="size-4" aria-hidden />
+                                {t('developers.docs.back')}
+                            </Link>
+                        </Button>
+                    </footer>
+                </article>
+
+                <aside
+                    aria-label={t('developers.docs.toc.label')}
+                    className="hidden lg:block"
+                >
+                    <div className="sticky top-24 max-h-[calc(100vh-7rem)] overflow-y-auto pr-2">
+                        <DocsTableOfContents content={markdown} />
                     </div>
-                </header>
-
-                <MarkdownView content={markdown} />
-
-                <footer className="border-t border-border/60 pt-8">
-                    <Button asChild variant="ghost" className="gap-1.5">
-                        <Link href={landing().url} prefetch>
-                            <ArrowLeft className="size-4" aria-hidden />
-                            {t('developers.docs.back')}
-                        </Link>
-                    </Button>
-                </footer>
-            </article>
+                </aside>
+            </div>
         </>
     );
 }
