@@ -27,7 +27,7 @@ use Illuminate\Database\Seeder;
  * 5. Si el usuario activa el motor de visión, los gestos llegan como:
  *    - KEYDOWN/KEYUP para acciones de teclado. El juego de prueba comparte
  *      origen con el portal y los recibe como eventos reales; a un juego
- *      externo le llegan como mensajes VOUT_KEY / VOUT_CLICK.
+ *      externo le llegan como mensajes VOUT_KEY / VOUT_POINTER.
  *    - VOUT_ACTION / VOUT_ACTION_END para el inicio y el fin de game_events.
  *    - VOUT_CURSOR (x, y) para el modo cursor.
  * 6. Alt-Tab fuera de la ventana → no deben quedar teclas bloqueadas.

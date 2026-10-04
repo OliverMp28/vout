@@ -131,7 +131,10 @@ type UseGestureEngineOptions = {
      * (comportamiento original — válido cuando el <video> no cambia).
      */
     videoRef?: React.RefObject<HTMLVideoElement | null>;
-    /** Callback cuando se detecta un gesto. */
+    /**
+     * Callback con cada evento de gesto: su inicio (`start`), mientras se
+     * sostiene (`hold`) y su final (`end`).
+     */
     onGesture?: (event: GestureEvent) => void;
     /** Callback con la orientación de la cabeza cada frame. */
     onHeadPose?: (pose: HeadPose) => void;
@@ -269,7 +272,11 @@ export function useGestureEngine(
                         }
                     }
                     for (const gesture of msg.gestures) {
-                        setLastGesture(gesture);
+                        // El final de un gesto no es "el último gesto
+                        // detectado": solo lo reciben los callbacks.
+                        if (gesture.phase !== 'end') {
+                            setLastGesture(gesture);
+                        }
                         onGestureRef.current?.(gesture);
                     }
                     if (msg.headPose) {

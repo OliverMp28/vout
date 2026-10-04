@@ -208,7 +208,9 @@ export function usePlayOrchestrator({
     const dispatcherOnGesture = dispatcher.onGesture;
     const handleGesture = useCallback(
         (event: GestureEvent) => {
-            setLastGesture(event.gesture);
+            if (event.phase !== 'end') {
+                setLastGesture(event.gesture);
+            }
             dispatcherOnGesture(event);
         },
         [dispatcherOnGesture],

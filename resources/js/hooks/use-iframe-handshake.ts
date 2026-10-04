@@ -141,6 +141,19 @@ export type UseIframeHandshakeReturn = {
 };
 
 // ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * El usuario pidió el modo de depuración del juego con `?voutdebug=1` en la
+ * URL del portal. Se comunica al juego dentro de VOUT_AUTH: su `embed_url`
+ * se carga siempre limpia, sin parámetros heredados de la URL del portal.
+ */
+function isDebugRequested(): boolean {
+    return new URLSearchParams(window.location.search).get('voutdebug') === '1';
+}
+
+// ---------------------------------------------------------------------------
 // Hook
 // ---------------------------------------------------------------------------
 
@@ -233,6 +246,7 @@ export function useIframeHandshake(
                 expiresAt: currentSession.expiresAt,
                 voutId: voutIdRef.current,
                 username: usernameRef.current,
+                ...(isDebugRequested() ? { debug: true as const } : {}),
             };
 
             try {

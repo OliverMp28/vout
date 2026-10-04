@@ -12,9 +12,10 @@
  *     });
  *   </script>
  *
- * Con `simulateInput` (activo por defecto) las teclas y clics que el jugador
- * hace con la cara llegan a tu página como eventos de teclado y ratón
- * normales: tu código de controles de siempre funciona sin cambios.
+ * Con `simulateInput` (activo por defecto) las teclas y el ratón que el
+ * jugador maneja con la cara llegan a tu página como eventos de teclado y
+ * ratón normales: tu código de controles de siempre funciona sin cambios.
+ * Un gesto mantenido es una tecla o un botón mantenidos.
  *
  * Fuera del portal (`window.parent === window`) no hace nada y
  * `vout.embedded` vale `false`, así que puedes llamarlo siempre.
@@ -27,7 +28,7 @@
 (function (global) {
     'use strict';
 
-    var VERSION = '1.0.0';
+    var VERSION = '1.1.0';
 
     /** Cada cuánto se repite READY hasta que el portal responde. */
     var READY_INTERVAL_MS = 500;
@@ -60,6 +61,17 @@
         ArrowRight: 39,
         ArrowDown: 40,
     };
+
+    /** Elementos a los que el navegador lleva el foco con Tab. */
+    var TABBABLE_SELECTOR = [
+        'a[href]',
+        'button:not([disabled])',
+        'input:not([disabled]):not([type="hidden"])',
+        'select:not([disabled])',
+        'textarea:not([disabled])',
+        'summary',
+        '[tabindex]:not([tabindex="-1"])',
+    ].join(',');
 
     function legacyKeyCode(code) {
         if (LEGACY_KEY_CODES[code] !== undefined) {
@@ -100,6 +112,90 @@
         }
     }
 
+    // ── Lo que el navegador hace por su cuenta con una tecla real ────────
+    // Un evento de teclado creado por código llega a los listeners del
+    // juego, pero el navegador no ejecuta su acción por defecto: Enter no
+    // pulsa el botón con el foco, Tab no lo mueve y Escape no cierra un
+    // <dialog>. Sin esto, un menú hecho en HTML no se podría recorrer con
+    // gestos. Solo se hace si el juego no canceló el evento, igual que
+    // haría el navegador.
+
+    function isNativeControl(element, key) {
+        if (!element || !element.tagName) {
+            return false;
+        }
+
+        var tag = element.tagName;
+        var type = (element.getAttribute('type') || '').toLowerCase();
+
+        if (element.disabled) {
+            return false;
+        }
+        if (tag === 'BUTTON' || tag === 'SUMMARY') {
+            return true;
+        }
+        if (tag === 'A') {
+            return key === 'Enter' && element.hasAttribute('href');
+        }
+        if (tag === 'INPUT') {
+            if (type === 'button' || type === 'submit' || type === 'reset') {
+                return true;
+            }
+
+            return key === ' ' && (type === 'checkbox' || type === 'radio');
+        }
+
+        return false;
+    }
+
+    function isVisible(element) {
+        return element.getClientRects().length > 0;
+    }
+
+    function openModalDialog() {
+        var dialogs = document.querySelectorAll('dialog[open]');
+
+        for (var index = dialogs.length - 1; index >= 0; index--) {
+            try {
+                if (dialogs[index].matches(':modal')) {
+                    return dialogs[index];
+                }
+            } catch (error) {
+                // Navegador sin `:modal`: cualquier <dialog> abierto vale.
+                return dialogs[index];
+            }
+        }
+
+        return null;
+    }
+
+    function focusNext() {
+        var scope = openModalDialog() || document;
+        var tabbables = Array.prototype.filter.call(
+            scope.querySelectorAll(TABBABLE_SELECTOR),
+            isVisible,
+        );
+
+        if (tabbables.length === 0) {
+            return;
+        }
+
+        var current = tabbables.indexOf(document.activeElement);
+        tabbables[(current + 1) % tabbables.length].focus();
+    }
+
+    function closeModalDialog() {
+        var dialog = openModalDialog();
+        if (!dialog) {
+            return;
+        }
+
+        var cancel = new Event('cancel', { cancelable: true });
+        if (dialog.dispatchEvent(cancel)) {
+            dialog.close();
+        }
+    }
+
     function connect(options) {
         options = options || {};
 
@@ -111,6 +207,7 @@
                 embedded: false,
                 version: VERSION,
                 session: null,
+                debug: false,
                 exit: noop,
                 disconnect: noop,
             };
@@ -119,11 +216,13 @@
         var session = null;
         var authenticated = false;
         var disconnected = false;
+        var debug = false;
         var startedAt = Date.now();
         var readyTimer = null;
         var cursor = null;
         var heldKeys = {};
         var pendingReleases = {};
+        var heldButtons = {};
 
         function post(message) {
             global.parent.postMessage(message, portalOrigin);
@@ -158,6 +257,7 @@
             );
         }
 
+        /** Despacha la tecla y devuelve `{ target, handled }`. */
         function dispatchKey(type, code, key) {
             var event = new KeyboardEvent(type, {
                 key: key,
@@ -167,6 +267,7 @@
                 composed: true,
             });
             var legacy = legacyKeyCode(code);
+            var target = inputTarget();
 
             try {
                 Object.defineProperty(event, 'keyCode', {
@@ -183,7 +284,29 @@
                 // Navegador que no deja redefinirlos: `key` y `code` bastan.
             }
 
-            inputTarget().dispatchEvent(event);
+            return { target: target, handled: !target.dispatchEvent(event) };
+        }
+
+        function pressKey(code, key) {
+            var result = dispatchKey('keydown', code, key);
+
+            heldKeys[code] = {
+                key: key,
+                downAt: Date.now(),
+                handled: result.handled,
+            };
+
+            if (result.handled) {
+                return;
+            }
+
+            if (key === 'Enter' && isNativeControl(result.target, key)) {
+                result.target.click();
+            } else if (key === 'Tab') {
+                focusNext();
+            } else if (key === 'Escape') {
+                closeModalDialog();
+            }
         }
 
         function releaseKey(code) {
@@ -195,7 +318,18 @@
             clearTimeout(pendingReleases[code]);
             delete pendingReleases[code];
             delete heldKeys[code];
-            dispatchKey('keyup', code, held.key);
+
+            var result = dispatchKey('keyup', code, held.key);
+
+            // El navegador pulsa un botón con Espacio al soltar la tecla.
+            if (
+                held.key === ' ' &&
+                !held.handled &&
+                !result.handled &&
+                isNativeControl(result.target, held.key)
+            ) {
+                result.target.click();
+            }
         }
 
         function handleKey(message) {
@@ -232,8 +366,7 @@
                     return;
                 }
 
-                heldKeys[code] = { key: key, downAt: Date.now() };
-                dispatchKey('keydown', code, key);
+                pressKey(code, key);
 
                 return;
             }
@@ -305,6 +438,10 @@
             );
         }
 
+        function anyButtonHeld() {
+            return Object.keys(heldButtons).length > 0;
+        }
+
         function handleCursor(message) {
             if (
                 typeof message.x !== 'number' ||
@@ -321,17 +458,47 @@
 
             if (simulateInput) {
                 var position = pointerPosition();
-                dispatchPointer('pointermove', position, 0, false);
-                dispatchPointer('mousemove', position, 0, false);
+                dispatchPointer('pointermove', position, 0, anyButtonHeld());
+                dispatchPointer('mousemove', position, 0, anyButtonHeld());
             }
         }
 
-        function handleClick(message) {
-            var button = message.button === 'right' ? 2 : 0;
+        function releaseButton(button) {
+            var pressedOn = heldButtons[button];
+            if (pressedOn === undefined) {
+                return;
+            }
+            delete heldButtons[button];
+
             var position = pointerPosition();
 
-            call(options.onClick, {
+            dispatchPointer('pointerup', position, button, false);
+            dispatchPointer('mouseup', position, button, false);
+
+            // Como el navegador: solo hay clic si se suelta donde se pulsó.
+            if (position.target === pressedOn) {
+                dispatchPointer(
+                    button === 2 ? 'contextmenu' : 'click',
+                    position,
+                    button,
+                    false,
+                );
+            }
+        }
+
+        function handlePointer(message) {
+            var state = message.state;
+            var button = message.button === 'right' ? 2 : 0;
+
+            if (state !== 'down' && state !== 'up') {
+                return;
+            }
+
+            var position = pointerPosition();
+
+            call(options.onPointer, {
                 button: button === 2 ? 'right' : 'left',
+                state: state,
                 x: position.clientX,
                 y: position.clientY,
                 at: message.at,
@@ -341,16 +508,25 @@
                 return;
             }
 
+            if (state === 'up') {
+                releaseButton(button);
+
+                return;
+            }
+
+            if (heldButtons[button] !== undefined) {
+                return;
+            }
+
+            heldButtons[button] = position.target;
             dispatchPointer('pointerdown', position, button, true);
             dispatchPointer('mousedown', position, button, true);
-            dispatchPointer('pointerup', position, button, false);
-            dispatchPointer('mouseup', position, button, false);
-            dispatchPointer(
-                button === 2 ? 'contextmenu' : 'click',
-                position,
-                button,
-                false,
-            );
+        }
+
+        function releaseAllButtons() {
+            Object.keys(heldButtons).forEach(function (button) {
+                releaseButton(Number(button));
+            });
         }
 
         // ── Mensajes del portal ──────────────────────────────────────────
@@ -367,6 +543,18 @@
                 return;
             }
 
+            if (message.type === 'VOUT_AUTH' && message.debug === true) {
+                debug = true;
+            }
+            if (debug && message.type !== 'VOUT_CURSOR') {
+                // El token nunca se escribe en la consola.
+                console.debug(
+                    '[VoutGame]',
+                    message.type,
+                    Object.assign({}, message, { token: undefined }),
+                );
+            }
+
             switch (message.type) {
                 case 'VOUT_AUTH':
                     if (typeof message.token !== 'string') {
@@ -379,6 +567,7 @@
                         expiresAt: message.expiresAt,
                         voutId: message.voutId,
                         username: message.username,
+                        debug: debug,
                     };
                     call(options.onAuth, session);
                     break;
@@ -395,8 +584,8 @@
                 case 'VOUT_KEY':
                     handleKey(message);
                     break;
-                case 'VOUT_CLICK':
-                    handleClick(message);
+                case 'VOUT_POINTER':
+                    handlePointer(message);
                     break;
                 case 'VOUT_CURSOR':
                     handleCursor(message);
@@ -415,16 +604,21 @@
             get session() {
                 return session;
             },
+            /** True si el usuario abrió el juego con `?voutdebug=1` en el portal. */
+            get debug() {
+                return debug;
+            },
             /** Pide al portal cerrar el juego y volver al catálogo. */
             exit: function () {
                 post({ type: 'EXIT' });
             },
-            /** Deja de escuchar al portal y suelta las teclas simuladas. */
+            /** Deja de escuchar al portal y suelta teclas y botones simulados. */
             disconnect: function () {
                 disconnected = true;
                 clearTimeout(readyTimer);
                 global.removeEventListener('message', onMessage);
                 releaseAllKeys();
+                releaseAllButtons();
             },
         };
     }

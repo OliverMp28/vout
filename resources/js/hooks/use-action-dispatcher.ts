@@ -169,6 +169,14 @@ export function useActionDispatcher({
 
     const onGesture = useCallback((event: GestureEvent) => {
         if (!enabledRef.current) return;
+
+        // El gesto terminó: soltar lo que mantenía pulsado.
+        if (event.phase === 'end') {
+            dispatcherRef.current.release(event.gesture, event.timestamp);
+
+            return;
+        }
+
         dispatcherRef.current.dispatch(event.gesture, event.timestamp);
     }, []);
 

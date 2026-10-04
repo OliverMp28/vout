@@ -21,10 +21,25 @@ export const GestureType = {
 
 export type GestureType = (typeof GestureType)[keyof typeof GestureType];
 
+/**
+ * Momento del gesto que representa un evento:
+ * - `start` → el gesto acaba de superar su umbral.
+ * - `hold`  → sigue activo (se repite cada `GESTURE_DEBOUNCE_MS` mientras dura).
+ * - `end`   → el gesto ha terminado: la señal cayó por debajo del umbral de
+ *             suelta, o se dejó de ver la cara.
+ */
+export type GesturePhase = 'start' | 'hold' | 'end';
+
 export type GestureEvent = {
     gesture: GestureType;
     confidence: number;
+    /**
+     * Marca del fotograma, en la línea de tiempo de `performance.now()` del
+     * hilo principal. En un `end` es la del primer fotograma en que el gesto
+     * ya no estaba: la mejor estimación de cuándo se soltó.
+     */
     timestamp: number;
+    phase: GesturePhase;
 };
 
 // ---------------------------------------------------------------------------

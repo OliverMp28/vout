@@ -133,7 +133,7 @@ export default function VisionLab() {
 
             // Dispatch action and add to dispatch log if enabled.
             dispatcher.onGesture(event);
-            if (dispatchEnabled) {
+            if (dispatchEnabled && event.phase !== 'end') {
                 setDispatchLog((prev) => {
                     const entry: DispatchLogEntry = {
                         id: ++dispatchLogIdRef.current,

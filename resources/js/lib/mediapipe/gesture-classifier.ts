@@ -1,35 +1,57 @@
 /**
  * Pure gesture classification from MediaPipe blendshapes.
  *
+ * Cada gesto es una pequeña máquina de estados (inactivo ↔ activo) que emite
+ * tres clases de evento:
+ *
+ *   - `start` en el fotograma en que la señal supera el umbral de activación.
+ *   - `hold`  cada `GESTURE_DEBOUNCE_MS` mientras sigue activo.
+ *   - `end`   cuando la señal lleva `GESTURE_RELEASE_MS` por debajo del
+ *             umbral de suelta (histéresis, `GESTURE_RELEASE_RATIO`).
+ *
+ * Emitir el final de forma explícita es lo que permite a un juego distinguir
+ * un toque de una pulsación mantenida y encadenar gestos rápidos: antes el
+ * final solo podía deducirse por inactividad, más de medio segundo tarde.
+ *
  * Worker-safe — no DOM or React imports.
  */
 
 import {
     GESTURE_BLENDSHAPE_MAP,
     GESTURE_DEBOUNCE_MS,
+    GESTURE_RELEASE_MS,
+    GESTURE_RELEASE_RATIO,
     GESTURE_THRESHOLD_SCALE,
     sensitivityToThreshold,
 } from './constants';
 import type { GestureEvent, GestureType, NeutralBaseline } from './types';
 
 // ---------------------------------------------------------------------------
-// Internal debounce state (lives inside the worker scope)
+// Internal tracking state (lives inside the worker scope)
 // ---------------------------------------------------------------------------
 
-const lastFiredAt: Partial<Record<GestureType, number>> = {};
+type GestureTracking = {
+    /** Timestamp del último `start` o `hold` emitido. */
+    lastEmittedAt: number;
+    /** Primer fotograma seguido por debajo del umbral de suelta, o null. */
+    belowSince: number | null;
+};
+
+/** Gestos actualmente activos. Un gesto ausente del mapa está inactivo. */
+const activeGestures = new Map<GestureType, GestureTracking>();
 
 // ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
 
 /**
- * Classify active gestures from a blendshape record.
+ * Classify gestures from a blendshape record.
  *
  * @param blendshapes - Raw blendshape values from MediaPipe (0-1 range).
  * @param sensitivity - User sensitivity setting (1-10).
  * @param baseline    - Optional neutral baseline to subtract.
  * @param timestamp   - Frame timestamp in ms.
- * @returns Array of detected gesture events (may be empty).
+ * @returns Gesture events for this frame (may be empty).
  */
 export function classifyGestures(
     blendshapes: Record<string, number>,
@@ -58,27 +80,82 @@ export function classifyGestures(
             raw = Math.max(0, raw - baselineMax);
         }
 
-        // Check threshold — apply per-gesture scale for low-amplitude blendshapes.
-        const scale = GESTURE_THRESHOLD_SCALE[gestureType] ?? 1.0;
-        if (raw < threshold * scale) continue;
+        // Apply per-gesture scale for low-amplitude blendshapes.
+        const activationThreshold =
+            threshold * (GESTURE_THRESHOLD_SCALE[gestureType] ?? 1.0);
+        const tracking = activeGestures.get(gestureType);
 
-        // Debounce — skip if the same gesture fired too recently.
-        const last = lastFiredAt[gestureType] ?? 0;
-        if (timestamp - last < GESTURE_DEBOUNCE_MS) continue;
+        if (tracking === undefined) {
+            if (raw >= activationThreshold) {
+                activeGestures.set(gestureType, {
+                    lastEmittedAt: timestamp,
+                    belowSince: null,
+                });
+                events.push({
+                    gesture: gestureType,
+                    confidence: raw,
+                    timestamp,
+                    phase: 'start',
+                });
+            }
 
-        lastFiredAt[gestureType] = timestamp;
-        events.push({ gesture: gestureType, confidence: raw, timestamp });
+            continue;
+        }
+
+        if (raw >= activationThreshold * GESTURE_RELEASE_RATIO) {
+            tracking.belowSince = null;
+
+            if (timestamp - tracking.lastEmittedAt >= GESTURE_DEBOUNCE_MS) {
+                tracking.lastEmittedAt = timestamp;
+                events.push({
+                    gesture: gestureType,
+                    confidence: raw,
+                    timestamp,
+                    phase: 'hold',
+                });
+            }
+
+            continue;
+        }
+
+        tracking.belowSince ??= timestamp;
+
+        if (timestamp - tracking.belowSince >= GESTURE_RELEASE_MS) {
+            activeGestures.delete(gestureType);
+            events.push({
+                gesture: gestureType,
+                confidence: raw,
+                timestamp: tracking.belowSince,
+                phase: 'end',
+            });
+        }
     }
 
     return events;
 }
 
 /**
- * Reset debounce timers — call when pausing/resuming detection
- * to avoid stale timestamps blocking new events.
+ * Da por terminados todos los gestos activos. Lo usa el worker cuando deja
+ * de ver la cara el tiempo suficiente: sin cara no hay señal que medir, y
+ * un gesto sostenido no debe quedarse "pulsado".
+ *
+ * @param timestamp - Momento en que se dejó de ver la cara.
  */
-export function resetDebouncers(): void {
-    for (const key of Object.keys(lastFiredAt) as GestureType[]) {
-        delete lastFiredAt[key];
+export function releaseActiveGestures(timestamp: number): GestureEvent[] {
+    const events: GestureEvent[] = [];
+
+    for (const gesture of activeGestures.keys()) {
+        events.push({ gesture, confidence: 0, timestamp, phase: 'end' });
     }
+    activeGestures.clear();
+
+    return events;
+}
+
+/**
+ * Olvida el estado de todos los gestos sin emitir nada — call when
+ * pausing/resuming detection so stale state doesn't block new events.
+ */
+export function resetGestureTracking(): void {
+    activeGestures.clear();
 }

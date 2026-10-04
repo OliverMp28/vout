@@ -69,7 +69,7 @@ export const GESTURE_THRESHOLD_SCALE: Partial<Record<GestureType, number>> = {};
  *
  * Higher sensitivity → lower threshold (easier to trigger).
  * Sensitivity 1  = threshold 0.85 (very hard to trigger)
- * Sensitivity 5  = threshold 0.45 (balanced)
+ * Sensitivity 5  = threshold 0.52 (balanced)
  * Sensitivity 10 = threshold 0.10 (very easy)
  */
 export function sensitivityToThreshold(sensitivity: number): number {
@@ -82,14 +82,39 @@ export function sensitivityToThreshold(sensitivity: number): number {
 // ---------------------------------------------------------------------------
 
 /**
- * Minimum ms between two consecutive events of the **same** gesture.
+ * Minimum ms between two consecutive `hold` events of the **same** gesture
+ * while it stays active.
  *
- * Sesión 3.4 §5.1 — rebajado de 300→180ms. El onset/repetición ya se
- * distingue en ActionDispatcher.trackGestureActive (GESTURE_INACTIVITY_MS=750),
- * así que la reducción solo acelera las renovaciones del hold-timer y permite
- * re-triggers más frecuentes en modo press sin riesgo de doble-onset.
+ * Sesión 3.4 §5.1 — rebajado de 300→180ms. Solo espacia las renovaciones de
+ * un gesto sostenido: el inicio (`start`) y el final (`end`) se emiten en el
+ * fotograma en que ocurren, sin esperar a este intervalo.
  */
 export const GESTURE_DEBOUNCE_MS = 180;
+
+/**
+ * Histéresis de suelta: un gesto activo se da por terminado cuando su señal
+ * baja de `umbral de activación × GESTURE_RELEASE_RATIO`.
+ *
+ * Usar un umbral de suelta más bajo que el de activación evita que un gesto
+ * sostenido justo en el límite parpadee entre activo e inactivo con el ruido
+ * normal de los blendshapes.
+ */
+export const GESTURE_RELEASE_RATIO = 0.75;
+
+/**
+ * Tiempo que la señal debe permanecer por debajo del umbral de suelta para
+ * emitir el `end`. Absorbe un fotograma suelto mal medido sin retrasar la
+ * suelta de forma perceptible (antes se deducía por inactividad: 600-750 ms).
+ */
+export const GESTURE_RELEASE_MS = 60;
+
+/**
+ * Tiempo sin detectar la cara tras el que se dan por terminados los gestos
+ * activos. Más tolerante que `GESTURE_RELEASE_MS`: el detector pierde la
+ * cara un instante con cierta frecuencia (boca muy abierta, giro brusco) y
+ * eso no debe cortar un gesto sostenido.
+ */
+export const FACE_LOST_RELEASE_MS = 250;
 
 // ---------------------------------------------------------------------------
 // Head pose

@@ -167,13 +167,13 @@ export const PRESET_ACCESSIBLE: ActionPreset = {
 // ---------------------------------------------------------------------------
 
 /**
- * Saltar y agacharse con gestos faciales o con la cabeza.
+ * Saltar y agacharse con gestos faciales o con la cabeza, y pausar
+ * frunciendo el ceño (el mismo gesto que la pausa en los demás presets).
  *
  * A diferencia del resto, no simula teclas: emite `game_event`, que viaja al
- * juego como `VOUT_ACTION { event: 'JUMP' | 'DUCK' }` por postMessage. Es el
- * preset indicado para juegos embebidos de otro origen, donde el navegador
- * impide al portal despachar eventos de teclado dentro del iframe. Un juego
- * lo propone enviando `suggestedPreset: 'runner'` en su READY.
+ * juego como `VOUT_ACTION { event: 'JUMP' | 'DUCK' | 'PAUSE' }` por
+ * postMessage, con su `VOUT_ACTION_END` al soltar el gesto. Un juego lo
+ * propone enviando `suggestedPreset: 'runner'` en su READY.
  */
 export const PRESET_RUNNER: ActionPreset = {
     nameKey: 'vision.preset.runner',
@@ -181,6 +181,7 @@ export const PRESET_RUNNER: ActionPreset = {
     mapping: {
         [GestureType.BrowRaise]: { type: 'game_event', event: 'JUMP' },
         [GestureType.MouthOpen]: { type: 'game_event', event: 'DUCK' },
+        [GestureType.BrowFrown]: { type: 'game_event', event: 'PAUSE' },
         [HeadDirectionType.HeadUp]: { type: 'game_event', event: 'JUMP' },
         [HeadDirectionType.HeadDown]: { type: 'game_event', event: 'DUCK' },
     },

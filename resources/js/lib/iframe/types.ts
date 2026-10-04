@@ -21,7 +21,7 @@
  * | Vout → iframe   | VOUT_ACTION  | ActionDispatcher (empieza una acción) |
  * | Vout → iframe   | VOUT_ACTION_END | ActionDispatcher (termina la acción) |
  * | Vout → iframe   | VOUT_KEY     | ActionDispatcher (tecla, juego de otro origen) |
- * | Vout → iframe   | VOUT_CLICK   | ActionDispatcher (clic, juego de otro origen) |
+ * | Vout → iframe   | VOUT_POINTER | ActionDispatcher (botón de ratón, juego de otro origen) |
  * | Vout → iframe   | VOUT_CURSOR  | HeadTracker (modo cursor)            |
  *
  * La versión para integradores vive en `docs/integration-guide.md`
@@ -69,6 +69,13 @@ export type VoutAuthMessage = {
     expiresAt: number;
     voutId: string;
     username: string;
+    /**
+     * Presente (y `true`) solo cuando el usuario abrió el juego con
+     * `?voutdebug=1` en la URL del portal. Invita al juego a mostrar su
+     * modo de depuración. La URL del iframe no cambia: el aviso viaja aquí
+     * para no meter parámetros de la URL del portal en la del juego.
+     */
+    debug?: true;
 };
 
 /**
@@ -142,13 +149,18 @@ export type VoutKeyMessage = {
 };
 
 /**
- * Clic de ratón, para juegos de otro origen que el portal. No lleva
- * coordenadas: el juego lo aplica donde esté el cursor virtual que recibe
- * por `VOUT_CURSOR` (o donde le convenga si no usa cursor).
+ * Botón de ratón pulsado o soltado, para juegos de otro origen que el
+ * portal. Como una tecla, queda pulsado lo que dura el gesto del usuario:
+ * `down` al empezarlo y `up` al terminarlo. Un "clic" es un `up` que sigue a
+ * un `down`.
+ *
+ * No lleva coordenadas: el juego lo aplica donde esté el cursor virtual que
+ * recibe por `VOUT_CURSOR` (o donde le convenga si no usa cursor).
  */
-export type VoutClickMessage = {
-    type: 'VOUT_CLICK';
+export type VoutPointerMessage = {
+    type: 'VOUT_POINTER';
     button: 'left' | 'right';
+    state: 'down' | 'up';
     at: number;
 };
 
@@ -169,7 +181,7 @@ export type VoutToGameMessage =
     | VoutActionMessage
     | VoutActionEndMessage
     | VoutKeyMessage
-    | VoutClickMessage
+    | VoutPointerMessage
     | VoutCursorMessage;
 
 // ---------------------------------------------------------------------------

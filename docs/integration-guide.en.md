@@ -608,7 +608,9 @@ Vout publishes a script that does everything in this section for you. Load it, t
 </script>
 ```
 
-With that, your game already works with face control. The keys and clicks the player makes with their face reach your page as regular keyboard and mouse events (`keydown`, `keyup`, `click`…), so **your existing controls code works untouched**.
+With that, your game already works with face control. The keys and mouse the player drives with their face reach your page as regular keyboard and mouse events (`keydown`, `keyup`, `mousedown`, `click`…), so **your existing controls code works untouched**. A held gesture is a held key: if holding jump makes it higher in your game, it does with the face too.
+
+The SDK also does what the browser would do with a real key and a code-created event doesn't: Enter and Space press the focused button, Tab moves to the next control and Escape closes an open `<dialog>`. That way a menu built in HTML can be navigated with gestures. Arrow keys don't move focus: if your menu is navigated with arrows, you handle that.
 
 | Option | What for |
 | :--- | :--- |
@@ -616,11 +618,11 @@ With that, your game already works with face control. The keys and clicks the pl
 | `onAuth(session)` | Identity and token. Called on connect and on every renewal. |
 | `onSessionEnd(reason)` | The portal will no longer renew the token. |
 | `suggestedPreset` | Gesture preset your game recommends (see "Face control"). |
-| `simulateInput` | `true` by default. Set it to `false` if you prefer to handle keys yourself with `onKey` and `onClick`. |
+| `simulateInput` | `true` by default. Set it to `false` if you prefer to handle keys and mouse yourself with `onKey` and `onPointer`. |
 | `onAction(event, at)` / `onActionEnd(event, at)` | Game events (`JUMP`, `DUCK`…), if you use them. |
-| `onKey(key)` / `onClick(click)` / `onCursor(x, y)` | The raw input, in case you want something custom. |
+| `onKey(key)` / `onPointer(pointer)` / `onCursor(x, y)` | The raw input, in case you want something custom. |
 
-What it returns: `vout.embedded` (whether you are inside the portal), `vout.session` (the latest session, or `null`), `vout.exit()` and `vout.disconnect()`.
+What it returns: `vout.embedded` (whether you are inside the portal), `vout.session` (the latest session, or `null`), `vout.debug` (see "Debugging the integration"), `vout.exit()` and `vout.disconnect()`.
 
 Outside the portal, `VoutGame.connect()` does nothing and `vout.embedded` is `false`. You can always call it and use your regular OAuth flow when you are not embedded.
 
@@ -638,7 +640,7 @@ The rest of this section explains what happens underneath. Read it if you want t
 | portal → game | `{ type: 'VOUT_ACTION', event: string, at: number }` | An action starts: a user gesture mapped to a game event (face control). |
 | portal → game | `{ type: 'VOUT_ACTION_END', event: string, at: number }` | That action ends: the user stopped making the gesture. |
 | portal → game | `{ type: 'VOUT_KEY', code, key, state: 'down' \| 'up', at }` | The user presses or releases a key with a gesture. `code` and `key` are those of `KeyboardEvent`. |
-| portal → game | `{ type: 'VOUT_CLICK', button: 'left' \| 'right', at }` | The user clicks with a gesture. Apply it where the cursor is. |
+| portal → game | `{ type: 'VOUT_POINTER', button: 'left' \| 'right', state: 'down' \| 'up', at }` | The user presses or releases a mouse button with a gesture. Apply it where the cursor is. |
 | portal → game | `{ type: 'VOUT_CURSOR', x: number, y: number }` | Head-movement cursor. Coordinates from 0 to 1, relative to your iframe. |
 | game → portal | `{ type: 'EXIT' }` | The user wants to leave. The portal takes them to the catalog. |
 | game → portal | `{ type: 'GAME_STATE', state: 'playing' \| 'paused' \| 'ended', score?: number }` | Reserved. The portal accepts it but does nothing with it yet. |
@@ -715,7 +717,7 @@ The browser doesn't let the portal simulate keys or clicks inside an iframe from
 | The user mapped the gesture to… | Your game receives | With the SDK |
 | :--- | :--- | :--- |
 | A key | `VOUT_KEY` on press and on release | Real `keydown` and `keyup` events |
-| A click | `VOUT_CLICK` | Real mouse and pointer events at the cursor position |
+| A mouse button | `VOUT_POINTER` on press and on release | Real `mousedown`, `mouseup` and `click` events (and the pointer ones) at the cursor position |
 | The cursor with the head | `VOUT_CURSOR` | `mousemove` and `pointermove` events |
 | A game event | `VOUT_ACTION` and `VOUT_ACTION_END` | Your `onAction` and `onActionEnd` callbacks |
 
@@ -728,7 +730,7 @@ The presets Vout offers:
 | `platformer` | Keys: Space, arrows, Z, X, C |
 | `shooter` | Keys, left click and head cursor |
 | `accessible` | Keys: Space, Enter, arrows, Escape |
-| `runner` | Game events `JUMP` and `DUCK` |
+| `runner` | Game events `JUMP`, `DUCK` and `PAUSE` |
 
 If your game has actions of its own that don't fit a key, you can recommend a preset by sending `suggestedPreset` in your `READY` (for example `'runner'`). The portal will offer the user to switch to that preset for the current session, without touching their saved configuration. It is a suggestion: the user can decline it, so don't rely on it alone.
 
@@ -756,19 +758,28 @@ Three things the SDK already handles and you will need to take care of:
 
 These events don't count as a real user action for the browser (`isTrusted` is `false`). They work for your game logic, but not for things that require a real gesture: going fullscreen, unlocking audio or copying to the clipboard.
 
+The portal draws the cursor: a reticle on top of your game, at the same position it sends you through `VOUT_CURSOR`. You don't need to draw another one; highlighting what is underneath helps.
+
 #### Taps and held actions
 
-Every action has a start and an end. `VOUT_ACTION` arrives when the user starts the gesture and `VOUT_ACTION_END`, with the same `event`, when they stop.
+A held gesture is a held action. Everything the user does with a gesture has a start and an end:
 
-- If your game works with taps (jumping), keep `VOUT_ACTION` and ignore the end.
-- If it has hold mechanics (gliding, a thruster), start on `VOUT_ACTION` and stop on `VOUT_ACTION_END`.
+| Gesture mapping | When the gesture starts | When it ends |
+| :--- | :--- | :--- |
+| Key in hold mode | `VOUT_KEY` with `state: 'down'` | `VOUT_KEY` with `state: 'up'` |
+| Key in tap mode | `VOUT_KEY` `down` and `up` back to back | Nothing |
+| Mouse button | `VOUT_POINTER` with `state: 'down'` | `VOUT_POINTER` with `state: 'up'` |
+| Game event | `VOUT_ACTION` | `VOUT_ACTION_END` |
 
-Two details worth knowing:
+If your game tells a tap from a long press (short or high jump, crouching while held, gliding), treat Vout's input just like a keyboard's. Three details worth knowing:
 
-- **The end doesn't arrive equally fast for every gesture.** With the head (up, down, sideways) it is immediate. With a facial gesture (eyebrows, mouth) it arrives between 0.6 and 0.75 seconds after the user relaxes the gesture, because the portal infers it once it stops seeing it. For an action that must be released precisely, the head works better. The same goes for releasing a held key: with a facial gesture, the release `VOUT_KEY` arrives about half a second late.
+- **How long the end takes to arrive.** With the head (up, down, sideways) it is immediate. With a facial gesture (eyebrows, mouth) it arrives one or two tenths of a second after the user relaxes it: the time the signal takes to drop plus a short margin so that one bad frame is not mistaken for a release.
+- **A gesture is slower than a finger.** The fastest tap a person makes with their eyebrows or mouth lasts between 0.2 and 0.4 seconds. If your threshold between "tap" and "hold" was designed for a keyboard (0.1 seconds, for example), every gesture will look held to you. For Vout's input a longer threshold works better.
 - **Two gestures can hold the same action.** In the `runner` preset, both raising the eyebrows and tilting the head up emit `JUMP`. You may receive two `VOUT_ACTION` in a row for the same event; `VOUT_ACTION_END` arrives only once, when the user releases the last one.
 
-The portal always closes what it opens: if the user turns the camera off, switches tabs or changes preset with an action in progress, you receive its `VOUT_ACTION_END`.
+Two gestures in a row are two actions: as soon as the user releases, the next gesture starts from scratch, with no waiting.
+
+The portal always releases what it presses. If the user turns the camera off, switches tabs, changes preset or leaves the camera frame with something held, you receive its end. If the face stops being seen, the end arrives after a quarter of a second.
 
 #### When the gesture happened
 
@@ -819,7 +830,7 @@ window.addEventListener('message', (event) => {
             // A key from the user's mapping: turn it into a real event.
             onVoutKey(message);
             break;
-        // VOUT_CLICK, VOUT_CURSOR and any unknown type: ignore them if you don't use them.
+        // VOUT_POINTER, VOUT_CURSOR and any unknown type: ignore them if you don't use them.
     }
 });
 
@@ -836,6 +847,12 @@ function exitToPortal() {
 ```
 
 To know whether you are embedded, check `window.parent !== window`. Outside the portal, use the regular OAuth flow.
+
+### Debugging the integration
+
+Open your game in the portal adding `?voutdebug=1` to the address (for example `/play/your-game?voutdebug=1`). The portal doesn't change your iframe URL: it tells you inside `VOUT_AUTH`, with the `debug: true` field. Use it to turn on your own debug mode.
+
+With the SDK, `vout.debug` is `true` and every portal message is written to the console (without the token).
 
 ### Security rules
 

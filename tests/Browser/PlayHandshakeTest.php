@@ -71,10 +71,21 @@ beforeEach(function (): void {
         <html lang="en">
         <head><meta charset="utf-8"><title>Embedded SDK game stub</title></head>
         <body style="margin:0;height:100vh">
+        <button id="menu-button" style="position:absolute;top:0;left:0">Jugar</button>
         <script src="/sdk/vout-game.js"></script>
         <script>
             const portalOrigin = new URL(document.referrer).origin;
-            const log = { auth: [], keys: [], clicks: [], actions: [], sessionEnds: [] };
+            const log = { auth: [], keys: [], mouse: [], clicks: [], actions: [], sessionEnds: [], buttonClicks: 0, focused: null };
+
+            document.getElementById('menu-button').addEventListener('click', () => {
+                log.buttonClicks += 1;
+            });
+            document.addEventListener('focusin', (event) => {
+                log.focused = event.target.id || event.target.tagName;
+            });
+            for (const type of ['mousedown', 'mouseup', 'click']) {
+                document.addEventListener(type, (event) => log.mouse.push(type));
+            }
 
             for (const type of ['keydown', 'keyup']) {
                 document.addEventListener(type, (event) => {
@@ -106,7 +117,7 @@ beforeEach(function (): void {
 
             setInterval(() => {
                 window.parent.postMessage(
-                    { type: 'TEST_ECHO', received: [], log, embedded: vout.embedded, hasSession: vout.session !== null },
+                    { type: 'TEST_ECHO', received: [], log, embedded: vout.embedded, hasSession: vout.session !== null, debug: vout.debug },
                     portalOrigin,
                 );
             }, 100);
@@ -461,7 +472,7 @@ test('un juego integrado con el SDK recibe la identidad sin escribir el saludo a
         ->assertSee('runner');
 });
 
-test('el SDK convierte las teclas, clics y acciones del portal en entrada real del juego', function (): void {
+test('el SDK convierte las teclas, el ratón y las acciones del portal en entrada real del juego', function (): void {
     $this->actingAs(User::factory()->create());
 
     visit('/catalog');
@@ -482,7 +493,8 @@ test('el SDK convierte las teclas, clics y acciones del portal en entrada real d
             send({ type: 'VOUT_KEY', code: 'Space', key: ' ', state: 'down', at: Date.now() });
             send({ type: 'VOUT_KEY', code: 'Space', key: ' ', state: 'up', at: Date.now() });
             send({ type: 'VOUT_CURSOR', x: 0.25, y: 0.5 });
-            send({ type: 'VOUT_CLICK', button: 'left', at: Date.now() });
+            send({ type: 'VOUT_POINTER', button: 'left', state: 'down', at: Date.now() });
+            send({ type: 'VOUT_POINTER', button: 'left', state: 'up', at: Date.now() });
             send({ type: 'VOUT_ACTION', event: 'JUMP', at: 111 });
             send({ type: 'VOUT_ACTION_END', event: 'JUMP', at: 222 });
             send({ type: 'VOUT_ALGO_FUTURO', whatever: true });
@@ -502,6 +514,8 @@ test('el SDK convierte las teclas, clics y acciones del portal en entrada real d
         ->and($keyUp)->toMatchArray(['type' => 'keyup', 'code' => 'Space', 'keyCode' => 32])
         ->and($keyUp['t'] - $keyDown['t'])->toBeGreaterThanOrEqual(70)
         ->and($echo['log']['keys'])->toHaveCount(2)
+        ->and($echo['log']['buttonClicks'])->toBe(0)
+        ->and($echo['log']['mouse'])->toBe(['mousedown', 'mouseup', 'click'])
         ->and($echo['log']['clicks'][0]['button'])->toBe(0)
         ->and(abs($echo['log']['clicks'][0]['x'] - 0.25))->toBeLessThan(0.02)
         ->and(abs($echo['log']['clicks'][0]['y'] - 0.5))->toBeLessThan(0.02)
@@ -511,6 +525,115 @@ test('el SDK convierte las teclas, clics y acciones del portal en entrada real d
         ]);
 
     $page->assertNoJavaScriptErrors();
+});
+
+test('con el SDK, un gesto mantenido es una tecla o un botón mantenidos', function (): void {
+    $this->actingAs(User::factory()->create());
+
+    visit('/catalog');
+    $game = embedStubIn(Game::factory()->create(['is_active' => true]), '/__embedded-sdk-game');
+
+    $page = visit('/play/'.$game->slug);
+
+    expect(waitForSdkEcho($page, 'echo.log.auth.length >= 1'))->not->toBeNull();
+
+    // Empieza el gesto: tecla y botón abajo, y nada más hasta que termine.
+    $page->script(<<<'JS'
+        (() => {
+            const frame = document.querySelector('iframe');
+            const origin = new URL(frame.src).origin;
+            window.__send = (message) => frame.contentWindow.postMessage(message, origin);
+
+            window.__send({ type: 'VOUT_KEY', code: 'ArrowDown', key: 'ArrowDown', state: 'down', at: Date.now() });
+            window.__send({ type: 'VOUT_CURSOR', x: 0.75, y: 0.5 });
+            window.__send({ type: 'VOUT_POINTER', button: 'left', state: 'down', at: Date.now() });
+        })()
+    JS);
+
+    $held = waitForSdkEcho($page, 'echo.log.keys.length >= 1 && echo.log.mouse.length >= 1');
+
+    expect($held)->not->toBeNull();
+
+    $page->wait(0.4);
+
+    $stillHeld = waitForSdkEcho($page, 'true');
+
+    expect(array_column($stillHeld['log']['keys'], 'type'))->toBe(['keydown'])
+        ->and($stillHeld['log']['mouse'])->toBe(['mousedown']);
+
+    // Termina el gesto: se sueltan.
+    $page->script(<<<'JS'
+        (() => {
+            window.__send({ type: 'VOUT_KEY', code: 'ArrowDown', key: 'ArrowDown', state: 'up', at: Date.now() });
+            window.__send({ type: 'VOUT_POINTER', button: 'left', state: 'up', at: Date.now() });
+        })()
+    JS);
+
+    $released = waitForSdkEcho($page, 'echo.log.keys.length >= 2 && echo.log.mouse.length >= 3');
+
+    expect($released)->not->toBeNull();
+
+    [$keyDown, $keyUp] = $released['log']['keys'];
+
+    expect($keyUp['type'])->toBe('keyup')
+        ->and($keyUp['keyCode'])->toBe(40)
+        ->and($keyUp['t'] - $keyDown['t'])->toBeGreaterThanOrEqual(350)
+        ->and($released['log']['mouse'])->toBe(['mousedown', 'mouseup', 'click']);
+});
+
+test('con el SDK, Tab, Enter y Espacio recorren un menú HTML como con un teclado real', function (): void {
+    $this->actingAs(User::factory()->create());
+
+    visit('/catalog');
+    $game = embedStubIn(Game::factory()->create(['is_active' => true]), '/__embedded-sdk-game');
+
+    $page = visit('/play/'.$game->slug);
+
+    expect(waitForSdkEcho($page, 'echo.log.auth.length >= 1'))->not->toBeNull();
+
+    // Un evento de teclado creado por código no mueve el foco ni pulsa
+    // botones por sí solo: el SDK hace lo que haría el navegador.
+    $page->script(<<<'JS'
+        (() => {
+            const frame = document.querySelector('iframe');
+            const origin = new URL(frame.src).origin;
+            const tap = (code, key) => {
+                frame.contentWindow.postMessage({ type: 'VOUT_KEY', code, key, state: 'down', at: Date.now() }, origin);
+                frame.contentWindow.postMessage({ type: 'VOUT_KEY', code, key, state: 'up', at: Date.now() }, origin);
+            };
+
+            tap('Tab', 'Tab');
+            setTimeout(() => tap('Enter', 'Enter'), 200);
+            setTimeout(() => tap('Space', ' '), 400);
+        })()
+    JS);
+
+    $echo = waitForSdkEcho($page, 'echo.log.buttonClicks >= 2');
+
+    expect($echo)->not->toBeNull()
+        ->and($echo['log']['focused'])->toBe('menu-button')
+        ->and($echo['log']['buttonClicks'])->toBe(2);
+
+    $page->assertNoJavaScriptErrors();
+});
+
+test('?voutdebug=1 en el portal avisa al juego sin tocar la URL del iframe', function (): void {
+    $this->actingAs(User::factory()->create());
+
+    visit('/catalog');
+    $game = embedStubIn(Game::factory()->create(['is_active' => true]), '/__embedded-sdk-game');
+
+    $page = visit('/play/'.$game->slug.'?voutdebug=1');
+    $echo = waitForSdkEcho($page, 'echo.log.auth.length >= 1');
+
+    expect($echo)->not->toBeNull()
+        ->and($echo['debug'])->toBeTrue()
+        ->and($echo['log']['auth'][0]['debug'])->toBeTrue()
+        ->and($page->script("document.querySelector('iframe').getAttribute('src')"))->toBe($game->embed_url);
+
+    $withoutFlag = visit('/play/'.$game->slug);
+
+    expect(waitForSdkEcho($withoutFlag, 'echo.log.auth.length >= 1')['debug'])->toBeFalse();
 });
 
 test('con el SDK, vout.exit() devuelve al usuario al catálogo', function (): void {

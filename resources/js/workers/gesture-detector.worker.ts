@@ -22,13 +22,15 @@ import type { FaceLandmarker as FaceLandmarkerInstance } from '@mediapipe/tasks-
 import {
     CALIBRATION_FRAME_COUNT,
     DEFAULT_DETECTION_CONFIG,
+    FACE_LOST_RELEASE_MS,
     HEAD_POSE_GESTURE_GATE,
     MEDIAPIPE_CDN_BASE,
     USED_BLENDSHAPE_KEYS,
 } from '@/lib/mediapipe/constants';
 import {
     classifyGestures,
-    resetDebouncers,
+    releaseActiveGestures,
+    resetGestureTracking,
 } from '@/lib/mediapipe/gesture-classifier';
 import { extractHeadPose } from '@/lib/mediapipe/head-pose';
 import { PerformanceAdapter } from '@/lib/mediapipe/performance-adapter';
@@ -83,6 +85,9 @@ let calibrationSamples: Record<string, number>[] = [];
 let isCalibrating = false;
 
 let frameCounter = 0;
+
+/** Timestamp del primer fotograma seguido sin cara, o null si se ve la cara. */
+let faceLostSince: number | null = null;
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -277,11 +282,26 @@ function handleFrame(bitmap: ImageBitmap, timestamp: number): void {
     // único fotograma de calentamiento no tiene cara (cámara aún oscura,
     // usuario fuera de plano, cámara que no apunta a nadie) se quedaba
     // esperando para siempre en "cargando".
+    //
+    // Si la cara lleva `FACE_LOST_RELEASE_MS` sin verse, los gestos que
+    // estuvieran activos se dan por terminados: sin cara no hay señal que
+    // medir y un gesto sostenido no debe quedarse "pulsado" en el juego.
     if (!result.faceLandmarks || result.faceLandmarks.length === 0) {
-        post({ type: 'RESULT', gestures: [], headPose: null });
+        faceLostSince ??= timestamp;
+
+        post({
+            type: 'RESULT',
+            gestures:
+                timestamp - faceLostSince >= FACE_LOST_RELEASE_MS
+                    ? releaseActiveGestures(faceLostSince)
+                    : [],
+            headPose: null,
+        });
 
         return;
     }
+
+    faceLostSince = null;
 
     // -- Blendshapes --
     // En modo Vision Lab necesitamos las 52 categorías para el panel de debug.
@@ -406,7 +426,8 @@ self.onmessage = (e: MessageEvent<WorkerInMessage>) => {
 
         case 'PAUSE':
             paused = true;
-            resetDebouncers();
+            resetGestureTracking();
+            faceLostSince = null;
             break;
 
         case 'RESUME':
