@@ -167,6 +167,18 @@
             flex-shrink: 0;
         }
         #clear-btn:hover { border-color: #4a4a6a; color: #94a3b8; }
+
+        #exit-btn {
+            background: transparent;
+            border: 1px solid #7c3aed60;
+            color: #a78bfa;
+            border-radius: 4px;
+            padding: 0.15rem 0.6rem;
+            font-size: 0.75rem;
+            cursor: pointer;
+            font-family: monospace;
+        }
+        #exit-btn:hover { background: #7c3aed20; }
     </style>
 </head>
 <body>
@@ -176,6 +188,7 @@
         <div id="dot" class="waiting"></div>
         <span id="status-text">Enviando READY a Vout...</span>
         <span id="username-badge" style="display:none"></span>
+        <button id="exit-btn" type="button" onclick="exitToPortal()">Salir</button>
     </div>
 
     <!-- Cursor virtual recibido por VOUT_CURSOR -->
@@ -191,6 +204,8 @@
                 <div class="auth-row"><span class="label">Estado</span><span class="value" id="auth-status">Esperando...</span></div>
                 <div class="auth-row"><span class="label">username</span><span class="value" id="auth-username">—</span></div>
                 <div class="auth-row"><span class="label">vout_id</span><span class="value" id="auth-voutid">—</span></div>
+                <div class="auth-row"><span class="label">expira</span><span class="value" id="auth-expires">—</span></div>
+                <div class="auth-row"><span class="label">VOUT_AUTH recibidos</span><span class="value" id="auth-count">0</span></div>
                 <div class="auth-row" style="align-items:flex-start"><span class="label">token (primeros 40 chars)</span></div>
                 <div id="token-preview">—</div>
             </div>
@@ -212,6 +227,12 @@
 
     // ── Estado interno ────────────────────────────────────────────────────────
     let cursorVisible = false;
+    let authCount = 0;
+
+    // Origen del portal. Este juego de prueba se sirve desde el propio Vout,
+    // así que coincide con el suyo. Un juego real lo lleva fijo en su
+    // configuración: nunca '*' ni deducido del mensaje recibido.
+    const VOUT_ORIGIN = window.location.origin;
 
     // ── Helpers de UI ─────────────────────────────────────────────────────────
     function now() {
@@ -247,26 +268,44 @@
     }
 
     // ── Protocolo Vout ────────────────────────────────────────────────────────
-    // 1. Enviar READY al padre en cuanto el DOM está listo.
-    //    suggestedPreset le dice a Vout qué preset aplicar por defecto.
-    window.parent.postMessage(
-        { type: 'READY', suggestedPreset: 'platformer' },
-        '*'
-    );
-    addLog('system', 'READY →', 'Enviado a parent. suggestedPreset=platformer');
+    // 1. Enviar READY al padre y repetirlo hasta recibir VOUT_AUTH: si el
+    //    portal aún no estaba escuchando, el primero se habría perdido.
+    //    suggestedPreset le dice a Vout qué preset ofrecer al usuario.
+    (function announce() {
+        if (authCount > 0) return;
+        window.parent.postMessage(
+            { type: 'READY', suggestedPreset: 'platformer' },
+            VOUT_ORIGIN
+        );
+        addLog('system', 'READY →', 'Enviado a parent. suggestedPreset=platformer');
+        setTimeout(announce, 500);
+    })();
     setStatus('Enviando READY a Vout…', 'waiting');
 
-    // 2. Escuchar respuestas de Vout
+    // EXIT: el juego pide salir y el portal decide a dónde llevar al usuario.
+    function exitToPortal() {
+        window.parent.postMessage({ type: 'EXIT' }, VOUT_ORIGIN);
+        addLog('system', 'EXIT →', 'Enviado a parent');
+    }
+
+    // 2. Escuchar respuestas de Vout (solo del portal, solo de la ventana padre)
     window.addEventListener('message', function(e) {
+        if (e.origin !== VOUT_ORIGIN || e.source !== window.parent) return;
+
         const data = e.data;
         if (!data || !data.type) return;
 
         switch (data.type) {
 
+            // Llega tras READY y de nuevo en cada renovación del token.
             case 'VOUT_AUTH': {
+                authCount += 1;
                 document.getElementById('auth-status').textContent  = '✓ Autenticado';
                 document.getElementById('auth-username').textContent = data.username ?? '—';
                 document.getElementById('auth-voutid').textContent  = data.voutId   ?? '—';
+                document.getElementById('auth-expires').textContent =
+                    data.expiresAt ? new Date(data.expiresAt * 1000).toLocaleTimeString('es', { hour12: false }) : '—';
+                document.getElementById('auth-count').textContent = String(authCount);
                 document.getElementById('token-preview').textContent =
                     data.token ? data.token.substring(0, 40) + '…' : '—';
 
@@ -275,7 +314,11 @@
                 badge.style.display = 'block';
 
                 setStatus('Sesión activa · ' + (data.username ?? ''), 'ready');
-                addLog('auth', 'VOUT_AUTH', 'username=' + data.username + ' | voutId=' + data.voutId);
+                addLog(
+                    'auth',
+                    authCount === 1 ? 'VOUT_AUTH' : 'VOUT_AUTH ↻',
+                    'username=' + data.username + ' | voutId=' + data.voutId + ' | expiresAt=' + data.expiresAt
+                );
                 break;
             }
 

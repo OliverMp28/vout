@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\User;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Laravel\Socialite\Facades\Socialite;
@@ -35,6 +36,37 @@ it('redirects to google provider', function () {
 
     $response->assertRedirect();
     $this->assertStringContainsString('accounts.google.com', $response->headers->get('Location'));
+});
+
+it('keeps the "remember me" choice in the session while the user is at google', function (bool $remember) {
+    $this->get('/auth/google/redirect'.($remember ? '?remember=1' : ''))
+        ->assertRedirect()
+        ->assertSessionHas('socialite.remember', $remember);
+})->with([true, false]);
+
+it('remembers the google login only when the user asked for it', function (bool $remember) {
+    $user = User::factory()->create(['google_id' => 'google-12345', 'remember_token' => null]);
+    mockGoogleUser(['getAvatar' => null]);
+
+    $response = $this->withSession(['socialite.remember' => $remember])
+        ->get('/auth/google/callback')
+        ->assertRedirect(route('dashboard', absolute: false))
+        ->assertSessionMissing('socialite.remember');
+
+    $this->assertAuthenticatedAs($user);
+
+    $remember
+        ? $response->assertCookie(Auth::guard()->getRecallerName())
+        : $response->assertCookieMissing(Auth::guard()->getRecallerName());
+})->with([true, false]);
+
+it('does not remember a google login that arrives without a stored choice', function () {
+    User::factory()->create(['google_id' => 'google-12345']);
+    mockGoogleUser(['getAvatar' => null]);
+
+    $this->get('/auth/google/callback')
+        ->assertRedirect(route('dashboard', absolute: false))
+        ->assertCookieMissing(Auth::guard()->getRecallerName());
 });
 
 it('creates a new user, downloads avatar locally, and redirects to consent interstitial', function () {

@@ -1,6 +1,11 @@
 <?php
 
+use App\Models\Game;
+use App\Models\OAuthUserGrant;
+use App\Models\RegisteredApp;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Laravel\Passport\ClientRepository;
 use Tests\TestCase;
 
 /*
@@ -57,4 +62,54 @@ function fakePngBytes(): string
     return base64_decode(
         'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII='
     );
+}
+
+/**
+ * Juego activo cuya `RegisteredApp` tiene un client OAuth real, creado por
+ * el mismo camino que el Developer Portal. Third-party salvo que se
+ * indique `is_first_party` en los overrides de la app.
+ *
+ * @param  array<string, mixed>  $appOverrides
+ */
+function gameWithOAuthApp(array $appOverrides = []): Game
+{
+    $client = app(ClientRepository::class)->createAuthorizationCodeGrantClient(
+        name: 'Embedded Test App',
+        redirectUris: ['https://embedded.test/auth/callback'],
+        confidential: true,
+    );
+
+    $app = RegisteredApp::factory()->create(array_merge([
+        'oauth_client_id' => $client->id,
+        'allowed_origins' => ['https://embedded.test'],
+        'app_url' => 'https://embedded.test',
+        'is_first_party' => false,
+    ], $appOverrides));
+
+    return Game::factory()->forApp($app)->create([
+        'is_active' => true,
+        'embed_url' => 'https://embedded.test/play',
+    ]);
+}
+
+/**
+ * Deja al usuario con la app del juego ya autorizada (grant activo).
+ *
+ * @param  list<string>  $scopes
+ */
+function authorizeGameApp(User $user, Game $game, array $scopes = ['user:read']): OAuthUserGrant
+{
+    return OAuthUserGrant::factory()->forUser($user)->withScopes($scopes)->create([
+        'client_id' => $game->registeredApp->oauth_client_id,
+    ]);
+}
+
+/**
+ * Decodifica una sección (0 = header, 1 = payload) de un JWT sin verificar firma.
+ *
+ * @return array<string, mixed>
+ */
+function decodeJwtSection(string $jwt, int $section): array
+{
+    return json_decode(base64_decode(strtr(explode('.', $jwt)[$section], '-_', '+/')), true);
 }

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Jobs\IncrementGamePlayCount;
 use App\Models\Game;
+use App\Services\GameSessionTokenIssuer;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -15,15 +16,22 @@ use Inertia\Response;
  * el contexto necesario para el handshake de identidad seguro:
  *
  *   1. Carga el juego por slug (route model binding).
- *   2. Resuelve la configuración de gestos activa del usuario.
- *   3. Emite un Personal Access Token con scope `game:play` para
- *      que el iFrame pueda identificar al usuario sin exponer datos extra.
+ *   2. Si el juego es de una app third-party que el usuario aún no ha
+ *      autorizado, muestra la pantalla de consentimiento en lugar del juego.
+ *   3. Resuelve la configuración de gestos activa del usuario.
+ *   4. Emite el token de sesión del juego (`GameSessionTokenIssuer`):
+ *      para el client OAuth de la app si lo tiene, de portal si no.
  *
  * El token viaja al iFrame EXCLUSIVAMENTE por postMessage (nunca por URL).
- * Ver: useIframeHandshake.ts y el protocolo en plan-3.3.md.
+ * Ver: use-iframe-handshake.ts, use-game-session.ts y la sección
+ * "Identidad dentro del iFrame" de docs/integration-guide.md.
  */
 class PlayController extends Controller
 {
+    public function __construct(
+        private readonly GameSessionTokenIssuer $sessions,
+    ) {}
+
     /**
      * Muestra la página de juego embebido con iFrame.
      *
@@ -36,28 +44,26 @@ class PlayController extends Controller
 
         $user = $request->user();
 
+        if ($this->sessions->requiresConsent($user, $game)) {
+            return $this->consentScreen($game);
+        }
+
         // ── Configuración de gestos activa ────────────────────────────────────
         // Utiliza el mismo patrón que AppearanceController: una sola query que
         // carga la primera config activa. El frontend decide si iniciar el motor.
-        $activeGestureConfig = $user?->gestureConfigs()
+        $activeGestureConfig = $user->gestureConfigs()
             ->where('is_active', true)
             ->first();
 
         // ── Token de sesión de juego (mínimo privilegio) ──────────────────────
-        // Se genera un PAT por cada visita a la página de juego.
-        // Scope `game:play`: identifica al usuario en el iFrame sin más permisos.
-        // El token llega al iFrame sólo vía postMessage en el handshake READY.
-        $accessToken = $user?->createToken(
-            name: 'game-session:'.$game->slug,
-            scopes: ['game:play'],
-        )->accessToken;
+        // Uno por visita, con la TTL de los access tokens (60 min). El portal lo
+        // renueva antes de que caduque vía `Play\SessionTokenController`.
+        $session = $this->sessions->issue($user, $game);
 
         // Fase 3.4 — Registra la partida tras enviar la respuesta para no
         // bloquear el render del iFrame. `dispatchAfterResponse` corre en el
         // mismo proceso después de flush HTTP, sin depender de un queue worker.
-        if ($user !== null) {
-            IncrementGamePlayCount::dispatchAfterResponse($user->id, $game->id);
-        }
+        IncrementGamePlayCount::dispatchAfterResponse($user->id, $game->id);
 
         return Inertia::render('play/game', [
             // Datos públicos del juego que el frontend necesita para el iFrame.
@@ -75,9 +81,36 @@ class PlayController extends Controller
             // Null si el usuario no tiene config activa → el frontend deshabilita el motor.
             'activeGestureConfig' => $activeGestureConfig,
 
-            // Null si el usuario no está autenticado (no debería llegar aquí
-            // gracias al middleware 'auth', pero lo tipamos correctamente).
-            'accessToken' => $accessToken,
+            // `{ token, expires_at }` — solo sale del portal por postMessage.
+            'session' => $session->toArray(),
+        ]);
+    }
+
+    /**
+     * Pantalla previa al juego: pide al usuario que autorice a la app
+     * third-party antes de entregarle su identidad dentro del iFrame.
+     */
+    private function consentScreen(Game $game): Response
+    {
+        $app = $game->registeredApp;
+        $scopeCatalog = (array) config('vout.scopes', []);
+
+        return Inertia::render('play/consent', [
+            'game' => [
+                'name' => $game->name,
+                'slug' => $game->slug,
+            ],
+            'app' => [
+                'name' => $app->name,
+                'app_url' => $app->app_url,
+            ],
+            'scopes' => array_map(
+                static fn (string $id): array => [
+                    'id' => $id,
+                    'description' => (string) ($scopeCatalog[$id] ?? $id),
+                ],
+                GameSessionTokenIssuer::APP_SCOPES,
+            ),
         ]);
     }
 }

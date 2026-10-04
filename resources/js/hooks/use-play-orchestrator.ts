@@ -5,21 +5,27 @@
  * effects — dejando el componente como render puro.
  *
  * Responsabilidades:
- * - Inicializar `useIframeHandshake`, `useActionDispatcher`, `useGestureEngine`
- *   y `useCamera` con el cableado correcto entre ellos.
+ * - Inicializar `useGameSession`, `useIframeHandshake`, `useActionDispatcher`,
+ *   `useGestureEngine` y `useCamera` con el cableado correcto entre ellos.
  * - Exponer handlers estables para los controles de UI.
  * - Gestionar el ciclo de vida completo: liberar teclas en blur/visibilitychange,
  *   detener motor y cámara al desmontar.
  */
 
+import { router } from '@inertiajs/react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { useActionDispatcher } from '@/hooks/use-action-dispatcher';
 import { useCamera } from '@/hooks/use-camera';
+import { useGameSession } from '@/hooks/use-game-session';
+import type { GameSessionPayload } from '@/hooks/use-game-session';
 import { useGestureEngine } from '@/hooks/use-gesture-engine';
 import { useIframeHandshake } from '@/hooks/use-iframe-handshake';
 import { transformCursorToIframe } from '@/lib/iframe/cursor-forwarder';
-import { ALL_PRESETS, PRESET_PLATFORMER } from '@/lib/mediapipe/action-presets';
+import {
+    PRESET_PLATFORMER,
+    findPresetByKey,
+} from '@/lib/mediapipe/action-presets';
 import type {
     GestureActionMapping,
     HeadTrackingMode,
@@ -30,6 +36,7 @@ import type {
     GestureEvent,
     GestureType,
 } from '@/lib/mediapipe/types';
+import { index as catalogIndex } from '@/routes/catalog';
 
 // ---------------------------------------------------------------------------
 // Tipos
@@ -50,7 +57,8 @@ type UserInfo = {
 export type UsePlayOrchestratorOptions = {
     game: GameInfo;
     activeGestureConfig: GestureConfigData | null;
-    accessToken: string | null;
+    /** Sesión de juego inicial emitida por `PlayController`. */
+    session: GameSessionPayload;
     user: UserInfo;
     iframeRef: React.RefObject<HTMLIFrameElement | null>;
     videoRef: React.RefObject<HTMLVideoElement | null>;
@@ -90,7 +98,7 @@ export type UsePlayOrchestratorReturn = {
 export function usePlayOrchestrator({
     game,
     activeGestureConfig,
-    accessToken,
+    session: initialSession,
     user,
     iframeRef,
     videoRef,
@@ -116,18 +124,37 @@ export function usePlayOrchestrator({
 
     const hasGestureConfig = activeGestureConfig !== null;
 
+    // ── Sesión de juego ────────────────────────────────────────────────────
+    // Token vigente para el iframe. Se renueva solo antes de caducar; cada
+    // sesión nueva la reenvía el handshake al juego con otro VOUT_AUTH.
+    const session = useGameSession({
+        gameSlug: game.slug,
+        initialSession,
+    });
+
     // ── Handshake con el iframe ────────────────────────────────────────────
+    // Solo se ofrecen presets que existen: el valor llega de un origen
+    // externo y uno desconocido dejaría un banner cuyo "Aplicar" no hace nada.
     const handleReady = useCallback((suggestedPreset?: string) => {
-        if (suggestedPreset) setPresetSuggestion(suggestedPreset);
+        if (suggestedPreset && findPresetByKey(suggestedPreset)) {
+            setPresetSuggestion(suggestedPreset);
+        }
+    }, []);
+
+    // El juego pidió salir (EXIT). El destino lo decide el portal, nunca el
+    // mensaje: así un juego no puede usar EXIT para redirigir al usuario.
+    const handleExit = useCallback(() => {
+        router.visit(catalogIndex.url());
     }, []);
 
     const handshake = useIframeHandshake({
         iframeRef,
         allowedOrigins: game.effective_origins,
-        accessToken,
+        session,
         voutId: user.vout_id,
         username: user.name,
         onReady: handleReady,
+        onExit: handleExit,
     });
 
     // ── Dispatcher ────────────────────────────────────────────────────────
@@ -269,7 +296,7 @@ export function usePlayOrchestrator({
     }, [engine.status, handleActivateEngine, handleStopEngine]);
 
     const handleAcceptPreset = useCallback((presetKey: string) => {
-        const preset = ALL_PRESETS.find((p) => p.nameKey.endsWith(presetKey));
+        const preset = findPresetByKey(presetKey);
         if (preset) {
             setActiveMapping(preset.mapping);
             setHeadTrackingMode(preset.headTrackingMode);

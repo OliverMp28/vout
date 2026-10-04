@@ -14,6 +14,11 @@
  *
  * Nota 3.3: Para integrar con un iframe, llamar setTarget(iframe.contentWindow).
  * Los eventos se despacharán en el contexto del juego embebido.
+ *
+ * Juegos de otro origen: el navegador no permite a la página padre tocar el
+ * documento de un iframe cross-origin ni despachar eventos en su ventana, así
+ * que las acciones `keyboard` y `mouse_click` se descartan. Solo `game_event`
+ * (postMessage `VOUT_ACTION`) llega al juego — ver `PRESET_RUNNER`.
  */
 
 import { HeadDirectionType, resolveEventKey } from './action-types';
@@ -254,8 +259,8 @@ export class ActionDispatcher {
      * `keyboard` y `mouse_click` se despachan sobre `contentWindow.document`
      * (no sobre la Window) para que propaguen correctamente — `document.addEventListener`
      * en el juego los recibe; los `game_event` viajan por `postMessage`.
-     * Para iframes cross-origin los keyboard events caen sobre la Window como
-     * último recurso (el juego debe escuchar en `window` en ese caso).
+     * Para iframes cross-origin los eventos de teclado y ratón no se pueden
+     * entregar (ver `eventTarget`); solo `game_event` alcanza al juego.
      */
     setTarget(target: EventTarget): void {
         this.releaseAllHeldKeys();
@@ -286,21 +291,29 @@ export class ActionDispatcher {
      * Para acciones `game_event` se sigue usando `this.target` directamente
      * (postMessage pertenece al objeto Window, no al Document).
      *
-     * Para iframes cross-origin, acceder a `contentWindow.document` lanzaría
-     * SecurityError — en ese caso recae en `this.target` (keydown en window,
-     * que el juego puede capturar si escucha sobre window en lugar de document).
+     * Para iframes cross-origin devuelve `null`: acceder a
+     * `contentWindow.document` lanza SecurityError, y `dispatchEvent` tampoco
+     * es accesible en una Window de otro origen (la same-origin policy solo
+     * expone `postMessage`, `location`, `close`, `focus` y poco más). No hay
+     * forma de entregar un KeyboardEvent/MouseEvent a ese juego.
      */
-    private get eventTarget(): EventTarget {
+    private get eventTarget(): EventTarget | null {
         if (this.targetIsWindow) {
             try {
                 return (this.target as Window).document;
             } catch {
-                // Iframe cross-origin: no se puede acceder a su document.
-                // El juego debe escuchar los keyboard events en window.
-                return this.target;
+                return null;
             }
         }
         return this.target;
+    }
+
+    /**
+     * Despacha un evento DOM sobre el target actual. No-op si el target es
+     * un iframe de otro origen (ver `eventTarget`).
+     */
+    private dispatchDom(event: Event): void {
+        this.eventTarget?.dispatchEvent(event);
     }
 
     /**
@@ -357,7 +370,7 @@ export class ActionDispatcher {
                     // Fallback local: Vision Lab, tests, o iframe sin
                     // handshake completado todavía. Mantiene compatibilidad
                     // con cualquier listener `vout:game_event` ya existente.
-                    this.eventTarget.dispatchEvent(
+                    this.dispatchDom(
                         new CustomEvent('vout:game_event', {
                             bubbles: true,
                             detail: { event: action.event },
@@ -386,21 +399,15 @@ export class ActionDispatcher {
         const eventKey = resolveEventKey(code);
 
         if (mode === 'press') {
-            this.eventTarget.dispatchEvent(
-                this.makeKeyEvent('keydown', eventKey, code),
-            );
-            this.eventTarget.dispatchEvent(
-                this.makeKeyEvent('keyup', eventKey, code),
-            );
+            this.dispatchDom(this.makeKeyEvent('keydown', eventKey, code));
+            this.dispatchDom(this.makeKeyEvent('keyup', eventKey, code));
             return;
         }
 
         // Modo hold — keydown ahora, keyup diferido.
         if (!this.heldKeys.has(eventKey)) {
             this.heldKeys.set(eventKey, code);
-            this.eventTarget.dispatchEvent(
-                this.makeKeyEvent('keydown', eventKey, code),
-            );
+            this.dispatchDom(this.makeKeyEvent('keydown', eventKey, code));
         }
 
         if (!isHeadDir) {
@@ -421,21 +428,21 @@ export class ActionDispatcher {
 
     private dispatchMouseClick(button: 'left' | 'right'): void {
         const buttonIndex = button === 'left' ? 0 : 2;
-        this.eventTarget.dispatchEvent(
+        this.dispatchDom(
             new MouseEvent('mousedown', {
                 button: buttonIndex,
                 bubbles: true,
                 cancelable: true,
             }),
         );
-        this.eventTarget.dispatchEvent(
+        this.dispatchDom(
             new MouseEvent('mouseup', {
                 button: buttonIndex,
                 bubbles: true,
                 cancelable: true,
             }),
         );
-        this.eventTarget.dispatchEvent(
+        this.dispatchDom(
             new MouseEvent('click', {
                 button: buttonIndex,
                 bubbles: true,
@@ -449,17 +456,13 @@ export class ActionDispatcher {
         const code = this.heldKeys.get(eventKey);
         if (code === undefined) return;
         this.heldKeys.delete(eventKey);
-        this.eventTarget.dispatchEvent(
-            this.makeKeyEvent('keyup', eventKey, code),
-        );
+        this.dispatchDom(this.makeKeyEvent('keyup', eventKey, code));
     }
 
     /** Libera todas las teclas retenidas y cancela todos los timers de hold. */
     private releaseAllHeldKeys(): void {
         for (const [eventKey, code] of this.heldKeys) {
-            this.eventTarget.dispatchEvent(
-                this.makeKeyEvent('keyup', eventKey, code),
-            );
+            this.dispatchDom(this.makeKeyEvent('keyup', eventKey, code));
         }
         this.heldKeys.clear();
 

@@ -23,6 +23,7 @@ import type { CursorOverlayHandle } from '@/components/play/cursor-overlay';
 import { EngineOverlay } from '@/components/play/engine-overlay';
 import { NowPlayingHeader } from '@/components/play/now-playing-header';
 import { PresetSuggestionBanner } from '@/components/play/preset-suggestion-banner';
+import type { GameSessionPayload } from '@/hooks/use-game-session';
 import { useMascotContext } from '@/hooks/use-mascot-context';
 import { usePlayOrchestrator } from '@/hooks/use-play-orchestrator';
 import { useTranslation } from '@/hooks/use-translation';
@@ -45,7 +46,7 @@ type PlayGameProps = {
         effective_origins: string[];
     };
     activeGestureConfig: GestureConfigData | null;
-    accessToken: string | null;
+    session: GameSessionPayload;
 };
 
 // ---------------------------------------------------------------------------
@@ -55,7 +56,7 @@ type PlayGameProps = {
 export default function PlayGame({
     game,
     activeGestureConfig,
-    accessToken,
+    session,
 }: PlayGameProps) {
     const { t } = useTranslation();
     const { auth } = usePage<{ auth: Auth }>().props;
@@ -111,7 +112,7 @@ export default function PlayGame({
     } = usePlayOrchestrator({
         game,
         activeGestureConfig,
-        accessToken,
+        session,
         user: auth.user,
         iframeRef,
         videoRef,

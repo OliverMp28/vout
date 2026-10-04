@@ -57,6 +57,9 @@ Para comunicar Vout con los iFrames de juegos, el paso de tokens será **sólo p
 1. El iFrame del juego cargará mediante una URL limpia (ej. `https://dino.vout.com/play`).
 2. Una vez que el minijuego esté preparado, enviará un mensaje de tipo `{ type: "READY" }` vía `postMessage` hacia Vout (parent).
 3. Sólo al recibir la confirmación de "READY", Vout comprobará la fuente y responderá con el Access Token de Passport (y/u otras credenciales necesarias) al iFrame mediante un `postMessage` cifrado y/o con **validación estricta de origen** basada en `allowed_origins`.
+4. El token lo emite `GameSessionTokenIssuer` (TTL de 60 minutos): si el juego pertenece a una app con client OAuth, va emitido para ese client (`aud` = su `client_id`, scope `user:read`); si no, es un token de portal (scope `game:play`). Una app de terceros solo lo recibe si el usuario la autorizó — si no, `/play/{game}` muestra antes la pantalla de consentimiento.
+5. El iFrame no puede renovar su token: lo hace el portal (`POST /play/{game}/token`) y reenvía `VOUT_AUTH` antes de que caduque el anterior.
+6. Protocolo completo (`READY`, `VOUT_AUTH`, `VOUT_ACTION`, `VOUT_CURSOR`, `EXIT`, `GAME_STATE`): `resources/js/lib/iframe/types.ts` y la sección "Identidad dentro del iFrame" de `docs/integration-guide.md`. Ambos deben mantenerse sincronizados.
 
 ## 6. Intención y Estado del Proyecto
 

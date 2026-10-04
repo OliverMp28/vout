@@ -11,31 +11,58 @@
  *
  * Tabla resumen del protocolo:
  *
- * | Dirección       | Tipo         | Quién envía            |
- * |-----------------|--------------|------------------------|
- * | iframe → Vout   | READY        | Juego (al inicializar) |
- * | iframe → Vout   | GAME_STATE   | Juego (futuro)         |
- * | Vout → iframe   | VOUT_AUTH    | Portal (tras READY)    |
- * | Vout → iframe   | VOUT_ACTION  | ActionDispatcher       |
- * | Vout → iframe   | VOUT_CURSOR  | HeadTracker (modo cursor) |
+ * | Dirección       | Tipo         | Quién envía                          |
+ * |-----------------|--------------|--------------------------------------|
+ * | iframe → Vout   | READY        | Juego (al inicializar; repetible)    |
+ * | iframe → Vout   | EXIT         | Juego (el usuario quiere salir)      |
+ * | iframe → Vout   | GAME_STATE   | Juego (futuro)                       |
+ * | Vout → iframe   | VOUT_AUTH    | Portal (tras READY y en cada renovación) |
+ * | Vout → iframe   | VOUT_ACTION  | ActionDispatcher                     |
+ * | Vout → iframe   | VOUT_CURSOR  | HeadTracker (modo cursor)            |
+ *
+ * La versión para integradores vive en `docs/integration-guide.md`
+ * ("Identidad dentro del iFrame"). Cualquier cambio aquí debe reflejarse allí.
  *
  * Sin dependencias de DOM ni React — utilizable en workers o tests.
  */
+
+// ---------------------------------------------------------------------------
+// Sesión de juego (token vigente que el portal entrega al iframe)
+// ---------------------------------------------------------------------------
+
+/**
+ * Token de identidad vigente para el juego embebido. Lo emite el backend
+ * (`GameSessionTokenIssuer`) y `useGameSession` lo renueva antes de que
+ * caduque.
+ */
+export type GameSession = {
+    token: string;
+    /** Expiración en segundos Unix (igual al claim `exp` del JWT). */
+    expiresAt: number;
+};
 
 // ---------------------------------------------------------------------------
 // Vout → Game (mensajes que el portal ENVÍA al iframe)
 // ---------------------------------------------------------------------------
 
 /**
- * Identidad del usuario autenticado, enviada tras la validación del READY.
+ * Identidad del usuario autenticado, enviada tras la validación del READY y
+ * de nuevo cada vez que el portal renueva el token (unos minutos antes de
+ * que caduque el anterior). El juego debe quedarse siempre con el último.
  *
- * El token es un Personal Access Token de Passport con scope `game:play` y
- * TTL de 60 minutos. El juego debe validarlo localmente con la clave pública
- * RS256 expuesta por Vout — nunca consultar la base de datos del portal.
+ * El token es un Access Token de Vout (JWT RS256) emitido por
+ * `GameSessionTokenIssuer` con la TTL de los access tokens (60 min):
+ * - Juego de una app con client OAuth → `aud` = su `client_id`, scope `user:read`.
+ * - Juego sin client OAuth → token de portal con scope `game:play`.
+ *
+ * El juego debe validarlo localmente con la clave pública expuesta en
+ * `/oauth/jwks` — nunca consultar la base de datos del portal.
  */
 export type VoutAuthMessage = {
     type: 'VOUT_AUTH';
     token: string;
+    /** Expiración del token en segundos Unix (igual al claim `exp`). */
+    expiresAt: number;
     voutId: string;
     username: string;
 };
@@ -92,7 +119,20 @@ export type GameStateMessage = {
     score?: number;
 };
 
-export type GameToVoutMessage = GameReadyMessage | GameStateMessage;
+/**
+ * El juego pide al portal que cierre la sesión de juego (botón "Salir").
+ *
+ * No lleva destino: el portal decide a dónde navegar. Un juego embebido
+ * no puede navegar la ventana superior por sí mismo (sandbox del iframe).
+ */
+export type GameExitMessage = {
+    type: 'EXIT';
+};
+
+export type GameToVoutMessage =
+    | GameReadyMessage
+    | GameStateMessage
+    | GameExitMessage;
 
 // ---------------------------------------------------------------------------
 // Estado del handshake (consumido por componentes UI)
@@ -147,6 +187,8 @@ export function isGameMessage(data: unknown): data is GameToVoutMessage {
                 state.score === undefined || typeof state.score === 'number';
             return validState && validScore;
         }
+        case 'EXIT':
+            return true;
         default:
             return false;
     }

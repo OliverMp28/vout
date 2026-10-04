@@ -6,27 +6,41 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Services\ExternalAvatarDownloader;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Laravel\Socialite\Facades\Socialite;
 
 class SocialiteController extends Controller
 {
+    /**
+     * Clave de sesión donde se guarda la preferencia "recordarme" mientras
+     * el usuario está en Google. Se consume una sola vez en el callback.
+     */
+    private const string REMEMBER_SESSION_KEY = 'socialite.remember';
+
     public function __construct(private ExternalAvatarDownloader $avatarDownloader) {}
 
     /**
      * Redirige al usuario al proveedor de autenticación (Google).
+     *
+     * El formulario de login envía `?remember=1` cuando la casilla
+     * "recordarme" está marcada, igual que en el login con contraseña.
      */
-    public function redirect(): RedirectResponse
+    public function redirect(Request $request): RedirectResponse
     {
+        $request->session()->put(self::REMEMBER_SESSION_KEY, $request->boolean('remember'));
+
         return Socialite::driver('google')->redirect();
     }
 
     /**
      * Maneja el callback de Google y autentica al usuario.
      */
-    public function callback(): RedirectResponse
+    public function callback(Request $request): RedirectResponse
     {
+        $remember = (bool) $request->session()->pull(self::REMEMBER_SESSION_KEY, false);
+
         try {
             $googleUser = Socialite::driver('google')->user();
         } catch (\Exception $e) {
@@ -50,7 +64,7 @@ class SocialiteController extends Controller
                 }
             }
 
-            Auth::login($user);
+            Auth::login($user, $remember);
 
             return redirect()->intended(route('dashboard', absolute: false));
         }
@@ -81,7 +95,7 @@ class SocialiteController extends Controller
                 'avatar' => $avatar,
             ]);
 
-            Auth::login($user);
+            Auth::login($user, $remember);
 
             return redirect()->intended(route('dashboard', absolute: false));
         }
@@ -108,7 +122,7 @@ class SocialiteController extends Controller
         // Marcamos el correo como verificado porque viene autenticado por Google
         $user->markEmailAsVerified();
 
-        Auth::login($user);
+        Auth::login($user, $remember);
 
         // Fase 5 — Primer registro vía Google: pedimos consentimiento explícito
         // (Términos + edad ≥14) antes de dejarlo navegar el portal.

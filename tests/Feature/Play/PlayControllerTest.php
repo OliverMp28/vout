@@ -90,9 +90,9 @@ it('incluye effective_origins derivado de embed_url', function () {
         );
 });
 
-// ─── Props Inertia: access token ─────────────────────────────
+// ─── Props Inertia: token de sesión del juego ────────────────
 
-it('incluye un access token para el usuario autenticado', function () {
+it('incluye el token de sesión y su expiración para el usuario autenticado', function () {
     $user = User::factory()->create();
     $game = Game::factory()->create(['is_active' => true]);
 
@@ -100,8 +100,38 @@ it('incluye un access token para el usuario autenticado', function () {
         ->get(route('play.show', $game))
         ->assertOk()
         ->assertInertia(fn ($page) => $page
-            ->has('accessToken')
-            ->whereType('accessToken', 'string')
+            ->whereType('session.token', 'string')
+            ->whereType('session.expires_at', 'integer')
+            ->where('session.expires_at', fn (int $expiresAt): bool => $expiresAt > now()->getTimestamp()
+                && $expiresAt <= now()->addMinutes(config('vout.passport.access_token_ttl_minutes'))->getTimestamp())
+        );
+});
+
+it('emite el token para el client de la app cuando el usuario ya la autorizó', function () {
+    $user = User::factory()->create();
+    $game = gameWithOAuthApp();
+    authorizeGameApp($user, $game);
+
+    $this->actingAs($user)
+        ->get(route('play.show', $game))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('play/game', false)
+            ->where('game.effective_origins', ['https://embedded.test'])
+            ->where('session.token', fn (string $jwt): bool => decodeJwtSection($jwt, 1)['aud'] === $game->registeredApp->oauth_client_id)
+        );
+});
+
+it('entra directo al juego, sin consentimiento, si la app es first-party', function () {
+    $user = User::factory()->create();
+    $game = gameWithOAuthApp(['is_first_party' => true]);
+
+    $this->actingAs($user)
+        ->get(route('play.show', $game))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('play/game', false)
+            ->where('session.token', fn (string $jwt): bool => decodeJwtSection($jwt, 1)['aud'] === $game->registeredApp->oauth_client_id)
         );
 });
 

@@ -19,14 +19,19 @@ use Illuminate\Database\Seeder;
  *
  * ─── Flujo de prueba E2E ──────────────────────────────────────────────────
  * 1. El iframe carga http://localhost/test-game/index.html.
- * 2. El juego envía READY con suggestedPreset='platformer'.
+ * 2. El juego envía READY con suggestedPreset='platformer' (y lo repite
+ *    hasta recibir respuesta).
  * 3. useIframeHandshake valida el origen (http://localhost) y responde VOUT_AUTH.
- * 4. El juego muestra el nombre de usuario y el vout_id.
+ * 4. El juego muestra el nombre de usuario, el vout_id y la expiración del
+ *    token. Al no tener app OAuth, recibe el token de portal (`game:play`).
  * 5. Si el usuario activa el motor de visión, los gestos llegan como:
- *    - KEYDOWN/KEYUP para acciones de teclado.
+ *    - KEYDOWN/KEYUP para acciones de teclado (solo porque el juego de
+ *      prueba comparte origen con el portal; a un juego externo no le llegan).
  *    - VOUT_ACTION para game_events.
  *    - VOUT_CURSOR (x, y) para el modo cursor.
  * 6. Alt-Tab fuera de la ventana → no deben quedar teclas bloqueadas.
+ * 7. Unos 5 minutos antes de caducar el token llega otro VOUT_AUTH (renovación).
+ * 8. El botón "Salir" del juego envía EXIT y el portal vuelve al catálogo.
  *
  * ─── Idempotencia ─────────────────────────────────────────────────────────
  * Usa firstOrCreate para no duplicar el juego si se ejecuta varias veces.

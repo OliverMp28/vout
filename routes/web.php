@@ -8,6 +8,8 @@ use App\Http\Controllers\LegalController;
 use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\OAuth\JwksController;
 use App\Http\Controllers\OAuth\OidcDiscoveryController;
+use App\Http\Controllers\Play\ConsentController as PlayConsentController;
+use App\Http\Controllers\Play\SessionTokenController as PlaySessionTokenController;
 use App\Http\Controllers\PlayController;
 use App\Http\Controllers\VisionLabController;
 use App\Http\Middleware\HandleAppearance;
@@ -76,6 +78,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Fase 3.3 — Reproductor de juegos embebidos.
     // Requiere autenticación verificada porque genera un token de identidad.
     Route::get('play/{game}', [PlayController::class, 'show'])->name('play.show');
+
+    // Consentimiento previo para juegos de apps third-party sin autorizar.
+    Route::post('play/{game}/consent', [PlayConsentController::class, 'store'])
+        ->middleware('throttle:6,1')
+        ->name('play.consent.store');
+
+    // Renovación del token de sesión del juego (el iFrame no puede refrescar).
+    Route::post('play/{game}/token', [PlaySessionTokenController::class, 'store'])
+        ->middleware('throttle:12,1')
+        ->name('play.token.store');
 });
 
 Route::middleware('guest')->group(function () {

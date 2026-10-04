@@ -163,6 +163,30 @@ export const PRESET_ACCESSIBLE: ActionPreset = {
 };
 
 // ---------------------------------------------------------------------------
+// PRESET_RUNNER — carrera sin fin (saltar / agacharse) por eventos de juego
+// ---------------------------------------------------------------------------
+
+/**
+ * Saltar y agacharse con gestos faciales o con la cabeza.
+ *
+ * A diferencia del resto, no simula teclas: emite `game_event`, que viaja al
+ * juego como `VOUT_ACTION { event: 'JUMP' | 'DUCK' }` por postMessage. Es el
+ * preset indicado para juegos embebidos de otro origen, donde el navegador
+ * impide al portal despachar eventos de teclado dentro del iframe. Un juego
+ * lo propone enviando `suggestedPreset: 'runner'` en su READY.
+ */
+export const PRESET_RUNNER: ActionPreset = {
+    nameKey: 'vision.preset.runner',
+    headTrackingMode: 'gesture',
+    mapping: {
+        [GestureType.BrowRaise]: { type: 'game_event', event: 'JUMP' },
+        [GestureType.MouthOpen]: { type: 'game_event', event: 'DUCK' },
+        [HeadDirectionType.HeadUp]: { type: 'game_event', event: 'JUMP' },
+        [HeadDirectionType.HeadDown]: { type: 'game_event', event: 'DUCK' },
+    },
+};
+
+// ---------------------------------------------------------------------------
 // Lista completa de presets para la UI
 // ---------------------------------------------------------------------------
 
@@ -170,4 +194,19 @@ export const ALL_PRESETS: ActionPreset[] = [
     PRESET_PLATFORMER,
     PRESET_SHOOTER,
     PRESET_ACCESSIBLE,
+    PRESET_RUNNER,
 ];
+
+/** Prefijo común de las claves i18n de los presets. */
+const PRESET_NAME_KEY_PREFIX = 'vision.preset.';
+
+/**
+ * Busca un preset por su clave corta (`'platformer'`, `'runner'`…), que es
+ * lo que un juego envía como `suggestedPreset`. Coincidencia exacta: el
+ * valor llega de un origen externo y no debe resolverse por aproximación.
+ */
+export function findPresetByKey(key: string): ActionPreset | undefined {
+    return ALL_PRESETS.find(
+        (preset) => preset.nameKey === `${PRESET_NAME_KEY_PREFIX}${key}`,
+    );
+}

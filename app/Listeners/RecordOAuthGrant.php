@@ -2,10 +2,8 @@
 
 namespace App\Listeners;
 
-use App\Models\OAuthUserGrant;
 use App\Models\RegisteredApp;
-use App\Notifications\OAuthGrantCreatedNotification;
-use Illuminate\Database\UniqueConstraintViolationException;
+use App\Services\OAuthConsentRecorder;
 use Laravel\Passport\Events\AccessTokenCreated;
 use Laravel\Passport\Passport;
 
@@ -25,6 +23,10 @@ use Laravel\Passport\Passport;
  *   3. Si la app es first-party (`is_first_party=true`) → fricción cero
  *      ya cubre el skip; no necesitamos persistir grant.
  *
+ * La creación, reactivación y ampliación del grant (y su notificación)
+ * viven en `App\Services\OAuthConsentRecorder`, compartido con el
+ * consentimiento de juegos embebidos (`Play\ConsentController`).
+ *
  * El listener es **síncrono** (no implementa `ShouldQueue`). Razón: los
  * tests deben observar el grant inmediatamente tras la respuesta HTTP de
  * `/oauth/authorize`, sin tener que esperar a la cola, y el coste es
@@ -33,6 +35,10 @@ use Laravel\Passport\Passport;
  */
 class RecordOAuthGrant
 {
+    public function __construct(
+        private readonly OAuthConsentRecorder $consents,
+    ) {}
+
     public function handle(AccessTokenCreated $event): void
     {
         if ($event->userId === null) {
@@ -53,44 +59,10 @@ class RecordOAuthGrant
             return;
         }
 
-        $tokenScopes = is_array($token->scopes) ? $token->scopes : [];
-
-        try {
-            $grant = OAuthUserGrant::firstOrCreate(
-                [
-                    'user_id' => $event->userId,
-                    'client_id' => $event->clientId,
-                ],
-                [
-                    'scopes' => $tokenScopes,
-                    'granted_at' => now(),
-                ],
-            );
-        } catch (UniqueConstraintViolationException) {
-            // Race condition: dos authorizes concurrentes del mismo par.
-            // El unique index garantiza que solo uno gana; recargamos.
-            $grant = OAuthUserGrant::query()
-                ->where('user_id', $event->userId)
-                ->where('client_id', $event->clientId)
-                ->firstOrFail();
-        }
-
-        if ($grant->wasRecentlyCreated) {
-            $grant->user?->notify(new OAuthGrantCreatedNotification($grant));
-
-            return;
-        }
-
-        // Grant pre-existente: distinguimos reactivación vs incremental.
-        if ($grant->revoked_at !== null) {
-            $grant->reactivate($tokenScopes);
-            $grant->user?->notify(new OAuthGrantCreatedNotification($grant));
-
-            return;
-        }
-
-        if (! empty(array_diff($tokenScopes, $grant->scopes ?? []))) {
-            $grant->mergeScopes($tokenScopes);
-        }
+        $this->consents->record(
+            $event->userId,
+            $event->clientId,
+            is_array($token->scopes) ? $token->scopes : [],
+        );
     }
 }

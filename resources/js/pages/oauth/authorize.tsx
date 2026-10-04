@@ -1,12 +1,14 @@
 import { Head } from '@inertiajs/react';
-import { CheckCircle2, ShieldCheck } from 'lucide-react';
 import { useState } from 'react';
 import type { FormEvent } from 'react';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { ConsentIdentity } from '@/components/oauth/consent-identity';
+import { ConsentScopeList } from '@/components/oauth/consent-scope-list';
+import type { ConsentScope } from '@/components/oauth/consent-scope-list';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { useTranslation } from '@/hooks/use-translation';
 import AuthLayout from '@/layouts/auth-layout';
+import { urlHost } from '@/lib/utils';
 
 type AuthorizeClient = {
     id: string;
@@ -22,15 +24,10 @@ type AuthorizeUser = {
     vout_id: string;
 };
 
-type AuthorizeScope = {
-    id: string;
-    description: string;
-};
-
 type Props = {
     client: AuthorizeClient;
     oauthUser: AuthorizeUser;
-    scopes: AuthorizeScope[];
+    scopes: ConsentScope[];
     authToken: string;
     redirectUri: string;
     csrfToken: string;
@@ -88,14 +85,7 @@ export default function Authorize({
     };
 
     const isProcessing = submittingAction !== null;
-    const redirectHost = redirectUri ? safeHost(redirectUri) : null;
-
-    const initials = oauthUser.name
-        .split(/\s+/)
-        .filter(Boolean)
-        .slice(0, 2)
-        .map((word) => word[0]?.toUpperCase() ?? '')
-        .join('');
+    const redirectHost = redirectUri ? urlHost(redirectUri) : null;
 
     return (
         <AuthLayout
@@ -105,83 +95,13 @@ export default function Authorize({
             <Head title={t('oauth.authorize.title', { app: client.name })} />
 
             <div className="flex flex-col gap-6">
-                {/* ── Identidad activa ─────────────────────────── */}
-                <div className="flex items-center gap-3 rounded-lg border border-border bg-muted/40 px-3 py-2.5">
-                    <Avatar className="size-10 shrink-0">
-                        <AvatarImage
-                            src={oauthUser.avatar ?? undefined}
-                            alt={oauthUser.name}
-                        />
-                        <AvatarFallback className="bg-primary/15 text-sm font-medium text-primary">
-                            {initials || '?'}
-                        </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 overflow-hidden">
-                        <p className="truncate text-sm font-medium">
-                            {oauthUser.name}
-                        </p>
-                        <p className="truncate text-xs text-muted-foreground">
-                            {oauthUser.email}
-                        </p>
-                    </div>
-                    <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">
-                        {t('oauth.authorize.signed_in_badge')}
-                    </span>
-                </div>
+                <ConsentIdentity
+                    name={oauthUser.name}
+                    email={oauthUser.email}
+                    avatar={oauthUser.avatar}
+                />
 
-                {/* ── Permisos solicitados ─────────────────────── */}
-                <section
-                    aria-labelledby="oauth-scopes-heading"
-                    className="space-y-3"
-                >
-                    <header className="space-y-1">
-                        <h2
-                            id="oauth-scopes-heading"
-                            className="text-sm font-semibold"
-                        >
-                            {t('oauth.authorize.scopes_heading', {
-                                app: client.name,
-                            })}
-                        </h2>
-                        <p className="text-xs text-muted-foreground">
-                            {t('oauth.authorize.scopes_description')}
-                        </p>
-                    </header>
-
-                    {scopes.length === 0 ? (
-                        <div className="flex items-start gap-2.5 rounded-lg border border-dashed border-border px-3 py-3">
-                            <ShieldCheck
-                                className="mt-0.5 size-4 shrink-0 text-muted-foreground"
-                                aria-hidden
-                            />
-                            <p className="text-sm text-muted-foreground">
-                                {t('oauth.authorize.scopes_empty')}
-                            </p>
-                        </div>
-                    ) : (
-                        <ul className="space-y-2" role="list">
-                            {scopes.map((scope) => (
-                                <li
-                                    key={scope.id}
-                                    className="flex items-start gap-2.5 rounded-lg border border-border bg-card px-3 py-2.5"
-                                >
-                                    <CheckCircle2
-                                        className="mt-0.5 size-4 shrink-0 text-primary"
-                                        aria-hidden
-                                    />
-                                    <div className="space-y-0.5">
-                                        <p className="text-sm font-medium">
-                                            {scope.description}
-                                        </p>
-                                        <p className="font-mono text-[11px] text-muted-foreground">
-                                            {scope.id}
-                                        </p>
-                                    </div>
-                                </li>
-                            ))}
-                        </ul>
-                    )}
-                </section>
+                <ConsentScopeList appName={client.name} scopes={scopes} />
 
                 {/* ── Destino del redirect (transparencia) ─────── */}
                 {redirectHost !== null && (
@@ -252,24 +172,11 @@ export default function Authorize({
                     <p className="text-center text-[11px] text-muted-foreground">
                         {t('oauth.authorize.app_url_hint', {
                             app: client.name,
-                            host: safeHost(client.app_url) ?? client.app_url,
+                            host: urlHost(client.app_url) ?? client.app_url,
                         })}
                     </p>
                 )}
             </div>
         </AuthLayout>
     );
-}
-
-/**
- * Devuelve solo el host de una URL — útil para mostrar dónde acabará el
- * usuario sin enseñarle un querystring lleno de parámetros internos.
- * Devuelve `null` si la URL no parsea (entrada corrupta).
- */
-function safeHost(url: string): string | null {
-    try {
-        return new URL(url).host;
-    } catch {
-        return null;
-    }
 }

@@ -47,9 +47,10 @@ export type GameAction =
     | { type: 'keyboard'; key: string; mode: 'press' | 'hold' }
     | { type: 'mouse_click'; button: 'left' | 'right' }
     /**
-     * Emite un CustomEvent en 3.2. En la fase 3.3, este tipo se reemplazará
-     * por target.postMessage({ type: 'GAME_ACTION', event }, origin) cuando
-     * el target sea un iframe.contentWindow.
+     * Acción abstracta que el juego interpreta. Con un iframe conectado viaja
+     * como postMessage `{ type: 'VOUT_ACTION', event }` al origen validado;
+     * sin iframe (Vision Lab, tests) se emite como CustomEvent local.
+     * Es el único tipo de acción que alcanza a un juego de otro origen.
      */
     | { type: 'game_event'; event: string }
     | { type: 'none' };

@@ -18,7 +18,8 @@ return [
         // Tiempo en el que un usuario deberá reconectar o consentir explícitamente una app para no usar un refresh.
         'refresh_token_ttl_days' => (int) env('VOUT_PASSPORT_REFRESH_TOKEN_TTL_DAYS', 30),
 
-        // Duración de Personal Access Tokens si fuesen emitidos para desarrollo manual.
+        // Duración de Personal Access Tokens emitidos para desarrollo manual (`createToken`).
+        // No aplica a los tokens de sesión de juego, que usan `access_token_ttl_minutes`.
         'personal_access_token_ttl_months' => (int) env('VOUT_PASSPORT_PAT_TTL_MONTHS', 6),
     ],
 
@@ -41,10 +42,10 @@ return [
         'user:email' => 'Ver tu dirección de correo electrónico',
         'games:read' => 'Ver tu historial y estadísticas de juegos',
         'games:write' => 'Guardar progreso y puntuaciones en juegos',
-        // Fase 3.3 — Token de sesión de juego (mínimo privilegio)
-        // Emitido por PlayController para el handshake READY → VOUT_AUTH.
-        // Solo permite que el receptor (iFrame) identifique al usuario.
-        // TTL: hereda `personal_access_token_ttl_months` configurado en Passport.
+        // Token de portal para juegos embebidos sin client OAuth propio.
+        // Lo emite GameSessionTokenIssuer en el handshake READY → VOUT_AUTH;
+        // los juegos de apps con client OAuth reciben `user:read` para su client.
+        // TTL: `access_token_ttl_minutes`, como cualquier access token.
         'game:play' => 'Identificarte en juegos embebidos del portal',
     ],
 

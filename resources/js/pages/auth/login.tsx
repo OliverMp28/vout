@@ -1,4 +1,5 @@
 import { Form, Head, usePage } from '@inertiajs/react';
+import { useState } from 'react';
 import { GoogleIcon } from '@/components/icons/google-icon';
 import InputError from '@/components/input-error';
 import TextLink from '@/components/text-link';
@@ -10,6 +11,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { useTranslation } from '@/hooks/use-translation';
 import AuthLayout from '@/layouts/auth-layout';
 import { register } from '@/routes';
+import { redirect as googleRedirect } from '@/routes/auth/google';
 import { store } from '@/routes/login';
 import { request } from '@/routes/password';
 
@@ -26,6 +28,10 @@ export default function Login({
 }: Props) {
     const { errors: pageErrors } = usePage().props;
     const { t } = useTranslation();
+
+    // Controlada para que "recordarme" valga también al entrar con Google:
+    // ese botón navega fuera del formulario y no envía sus campos.
+    const [remember, setRemember] = useState(false);
 
     return (
         <AuthLayout
@@ -103,6 +109,10 @@ export default function Login({
                                     id="remember"
                                     name="remember"
                                     tabIndex={3}
+                                    checked={remember}
+                                    onCheckedChange={(checked) =>
+                                        setRemember(checked === true)
+                                    }
                                 />
                                 <Label
                                     htmlFor="remember"
@@ -140,7 +150,11 @@ export default function Login({
                             variant="outline"
                             className="w-full transition-all duration-200 hover:shadow-md"
                             onClick={() =>
-                                (window.location.href = '/auth/google/redirect')
+                                (window.location.href = googleRedirect.url(
+                                    remember
+                                        ? { query: { remember: 1 } }
+                                        : undefined,
+                                ))
                             }
                         >
                             <GoogleIcon className="mr-2 size-4" />

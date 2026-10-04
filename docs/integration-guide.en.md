@@ -1,8 +1,8 @@
 # Integration Guide: Vout User Ecosystem
 
-> **Version:** 1.0  
+> **Version:** 1.1  
 > **Protocol:** OAuth 2.0 (Authorization Code + PKCE)  
-> **Last updated:** March 2026
+> **Last updated:** October 2026
 
 ---
 
@@ -34,6 +34,7 @@ Your game needs to know **who the user is** (to save scores, display their name,
 - Your app is registered in Vout with `requires_auth = true`.
 - You receive a `client_id` (and optionally a `client_secret`).
 - You implement the standard OAuth2 flow described below.
+- If you also publish the game in the portal, there is no redirect inside the iframe: the portal passes you the token over `postMessage` (see "Identity Inside the iFrame").
 
 > **Note:** The protocol is **exactly the same** for first-party and third-party projects. The only difference is that Vout's own projects (`is_first_party = true`) don't show an authorization prompt — the session starts transparently.
 
@@ -576,6 +577,145 @@ Without this header configured correctly, the portal's iframe will show a blank 
 
 ---
 
+## Identity Inside the iFrame (`postMessage` handshake)
+
+When a user opens your game from the portal, they are already signed in to Vout. Sending them to `/oauth/authorize` would make them repeat something they already did, so the portal hands your game an access token directly, over `postMessage`. Never in the URL.
+
+That token is a regular Vout access token: same format, same signature and same claims as the ones from `/oauth/token`. You validate it with the code you already have (see "Stateless Token Validation").
+
+### The messages
+
+| Direction | Message | When |
+| :--- | :--- | :--- |
+| game → portal | `{ type: 'READY', suggestedPreset?: string }` | Your game can receive the identity. Repeat it until `VOUT_AUTH` arrives. |
+| portal → game | `{ type: 'VOUT_AUTH', token, expiresAt, voutId, username }` | In response to every valid `READY`, and again each time the portal renews the token. |
+| portal → game | `{ type: 'VOUT_ACTION', event: string }` | A user gesture mapped to a game event (face control). |
+| portal → game | `{ type: 'VOUT_CURSOR', x: number, y: number }` | Head-movement cursor. Coordinates from 0 to 1, relative to your iframe. |
+| game → portal | `{ type: 'EXIT' }` | The user wants to leave. The portal takes them to the catalog. |
+| game → portal | `{ type: 'GAME_STATE', state: 'playing' \| 'paused' \| 'ended', score?: number }` | Reserved. The portal accepts it but does nothing with it yet. |
+
+`expiresAt` is the token expiry in Unix seconds (the same value as its `exp` claim).
+
+Ignore any `type` you don't know. The protocol may grow and your game shouldn't break because of it.
+
+### How it happens
+
+1. The portal loads your `embed_url` as is, with no parameters.
+2. Your game sends `READY` to `window.parent`.
+3. The portal checks two things: that `event.origin` is one of your app's `allowed_origins` (exact match on scheme, host and port) and that the message comes from the iframe it created. If anything is off, it drops the message without replying.
+4. The portal replies with `VOUT_AUTH`, addressed to that origin only.
+5. About 5 minutes before the token expires, the portal requests a new one and sends you another `VOUT_AUTH`. Always keep the latest.
+
+Your iframe stays hidden until the handshake completes. If you don't send `READY` within 8 seconds of loading, the user sees a "The game is not responding" notice with a retry button. A late `READY` still works.
+
+### Which token you get
+
+| | App with OAuth (`requires_auth = true`) | Catalog-only game |
+| :--- | :--- | :--- |
+| `aud` | Your `client_id` | An internal portal client |
+| `scopes` | `["user:read"]` | `["game:play"]` |
+| Lifetime | 60 minutes | 60 minutes |
+| Asks for consent | Only if your app is third-party and the user hasn't authorized it yet | No |
+
+If your app has an OAuth client, the token is issued for you: validate `aud` against your `client_id` just like in the direct flow, and you can use it as a Bearer token against `/api/v1/user/me`.
+
+If your game is catalog-only, the token is not issued for you. At most, use it to greet the player by name. If you need an identity you can rely on (saving progress, leaderboards), register your app with `requires_auth = true`.
+
+### Consent
+
+A third-party app only receives the identity of a user who has authorized it. The first time they open your game from the portal, before your iframe loads, they see a permissions screen with the `user:read` scope. Once they accept, the game opens.
+
+It is the same consent as in the direct flow, not a separate one:
+
+- If the user already signed in to your site with "Sign in with Vout", the portal doesn't ask again.
+- If they authorize from the portal, they won't see the screen either when they visit your site requesting only `user:read`.
+- If they revoke it at `/settings/connected-apps`, the portal stops renewing your token and will ask again next time.
+
+Vout's own apps (`is_first_party = true`) skip this screen.
+
+### Renewal: the portal does it, not you
+
+Inside an iframe your cookies are third-party cookies, and browsers block them more and more. Don't count on being able to use your refresh token or your own session while embedded.
+
+That is why the portal renews. As long as the user keeps the tab open and stays signed in to Vout, you will get a new `VOUT_AUTH` before the previous token expires. If `expiresAt` comes and none has arrived, treat the session as over: the user signed out of Vout or revoked your app.
+
+> **Watch out locally.** To the browser, `http://localhost` and `http://localhost:8090` are the same site (the port doesn't count), so on your machine your cookies do travel inside the iframe. The blocking only shows up in production, with different domains. Working locally doesn't prove your refresh works while embedded.
+
+### Face control: what reaches your game
+
+Vout lets users play with facial gestures and head movements. The user chooses what each gesture does: press a key, click, or emit a game event.
+
+There is one limitation you need to know about. If your game lives on a different origin than the portal (the usual case for an external app), the browser doesn't let the portal simulate keys or clicks inside your iframe. Only messages reach your game: `VOUT_ACTION` and `VOUT_CURSOR`.
+
+| User preset | What it emits | Does it reach a cross-origin game? |
+| :--- | :--- | :--- |
+| `platformer` | Keys (Space, arrows, Z, X, C) | No |
+| `shooter` | Keys, click and `VOUT_CURSOR` | Cursor only |
+| `accessible` | Keys (Space, Enter, arrows, Escape) | No |
+| `runner` | `VOUT_ACTION` with `JUMP` and `DUCK` | Yes |
+
+For face control to work in your game, send `suggestedPreset: 'runner'` in your `READY`. The portal will offer the user to switch to that preset for the current session, without touching their saved configuration.
+
+The user can also map a gesture to an event with any name they like, and it reaches you as is in `event`. Treat it as text you don't control: compare it against your list of actions and drop the rest.
+
+### Minimal example
+
+```js
+// The portal origin, fixed in your configuration. Never derive it from the message.
+const VOUT_ORIGIN = 'https://vout.app';
+
+let session = null;
+
+window.addEventListener('message', (event) => {
+    if (event.origin !== VOUT_ORIGIN || event.source !== window.parent) return;
+
+    const message = event.data;
+    if (!message || typeof message.type !== 'string') return;
+
+    switch (message.type) {
+        case 'VOUT_AUTH':
+            // Arrives after READY and on every renewal: keep the latest.
+            session = { token: message.token, expiresAt: message.expiresAt };
+            // Send it to your backend and validate it there (signature, iss, aud, exp).
+            break;
+        case 'VOUT_ACTION':
+            if (message.event === 'JUMP') jump();
+            if (message.event === 'DUCK') duck();
+            break;
+        // VOUT_CURSOR and any unknown type: ignore them if you don't use them.
+    }
+});
+
+// Repeat READY until VOUT_AUTH arrives, in case the portal wasn't listening yet.
+(function announce() {
+    if (session) return;
+    window.parent.postMessage({ type: 'READY', suggestedPreset: 'runner' }, VOUT_ORIGIN);
+    setTimeout(announce, 500);
+})();
+
+function exitToPortal() {
+    window.parent.postMessage({ type: 'EXIT' }, VOUT_ORIGIN);
+}
+```
+
+To know whether you are embedded, check `window.parent !== window`. Outside the portal, use the regular OAuth flow.
+
+### Security rules
+
+- **Exact origin in both directions.** When sending, pass the portal origin as `targetOrigin`, never `'*'`. When receiving, drop any message whose `event.origin` is not exactly the portal's.
+- **`voutId` and `username` are for painting the UI, not for deciding anything.** They let you show the name right away. The verifiable identity is the token's `vout_id` claim, once validated.
+- **Validate the token like any other:** signature against the JWKS, `iss`, `aud` equal to your `client_id`, and `exp`. Do it on your backend.
+- **Keep the token in memory.** Don't write it to `localStorage` or put it in a URL.
+
+### What the iframe won't let you do
+
+The portal loads your game with `sandbox="allow-scripts allow-same-origin"` and `allow="autoplay; fullscreen"`. In practice:
+
+- **You can:** run scripts, use `fetch`, play audio and go fullscreen.
+- **You can't:** open popups, use `alert()` or `confirm()`, submit classic HTML forms, or navigate the portal window. To leave, send `EXIT`.
+
+---
+
 ## Frequently Asked Questions
 
 ### Do I need a Vout-specific library?
@@ -586,6 +726,9 @@ If your game is frontend-only (HTML/JS without a server), use a PKCE client (`--
 
 ### Can I register my app but not use authentication?
 **Yes.** Register your app with `requires_auth = false`. It will appear in the Vout catalog without needing OAuth2.
+
+### Can I refresh the token from inside the portal's iframe?
+**Don't count on it.** While embedded, your cookies are third-party and the browser may block them. The portal renews the token for you and resends it with another `VOUT_AUTH` before the previous one expires (see "Identity Inside the iFrame").
 
 ### How are first-party projects different from third-party ones?
 Apps marked as `is_first_party = true` don't show the authorization prompt to the user. The OAuth2 flow is identical in both cases — the only difference is the user experience.
