@@ -22,6 +22,7 @@
 
 import { Link } from '@inertiajs/react';
 import {
+    Camera,
     ChevronDown,
     Crosshair,
     Gauge,
@@ -37,12 +38,14 @@ import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import { NativeSelect } from '@/components/ui/native-select';
 import { Separator } from '@/components/ui/separator';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
 import { useTranslation } from '@/hooks/use-translation';
 import type { HandshakeStatus } from '@/lib/iframe/types';
 import type { HeadTrackingMode } from '@/lib/mediapipe/action-types';
+import type { CameraDevice } from '@/lib/mediapipe/camera-devices';
 import type { EngineStatus, GestureType } from '@/lib/mediapipe/types';
 import { cn } from '@/lib/utils';
 import appearance from '@/routes/appearance';
@@ -68,7 +71,12 @@ type ControlPanelProps = {
     lastGesture: GestureType | null;
     /** Métrica de FPS del motor (puede ser null si aún no llegó). */
     fps: number | null;
+    /** Cámaras disponibles. El selector solo aparece si hay más de una. */
+    cameras: CameraDevice[];
+    /** Cámara en uso por el control facial, o null si no hay ninguna abierta. */
+    activeCameraId: string | null;
 
+    onSelectCamera: (deviceId: string) => void;
     onToggleEngine: () => void;
     onToggleDispatch: (enabled: boolean) => void;
     onSensitivityChange: (value: number) => void;
@@ -224,6 +232,9 @@ function RunningPanel({
     headTrackingMode,
     lastGesture,
     fps,
+    cameras,
+    activeCameraId,
+    onSelectCamera,
     onToggleEngine,
     onToggleDispatch,
     onSensitivityChange,
@@ -332,6 +343,39 @@ function RunningPanel({
                     aria-label={t('play.panel.sensitivity')}
                 />
             </section>
+
+            {/* ── Cámara ───────────────────────────────────────────────────── */}
+            {/* Solo con más de una: la elección automática puede no acertar   */}
+            {/* (teléfono enlazado, cámara virtual) y el usuario debe poder     */}
+            {/* corregirla sin salir del juego.                                 */}
+            {cameras.length > 1 && (
+                <section className="space-y-2">
+                    <Label
+                        htmlFor="play-camera"
+                        className="flex items-center gap-2 text-sm font-medium"
+                    >
+                        <Camera className="size-4 text-primary/70" />
+                        {t('play.panel.camera')}
+                    </Label>
+                    <NativeSelect
+                        id="play-camera"
+                        size="sm"
+                        value={activeCameraId ?? ''}
+                        onChange={(event) => onSelectCamera(event.target.value)}
+                        options={cameras.map((camera) => ({
+                            value: camera.deviceId,
+                            label: camera.label,
+                        }))}
+                        aria-describedby="play-camera-hint"
+                    />
+                    <p
+                        id="play-camera-hint"
+                        className="text-xs text-muted-foreground"
+                    >
+                        {t('play.panel.camera_hint')}
+                    </p>
+                </section>
+            )}
 
             {/* ── Modo de cabeza + centrar cursor ──────────────────────────── */}
             <section className="space-y-3">

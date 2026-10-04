@@ -589,12 +589,14 @@ That token is a regular Vout access token: same format, same signature and same 
 | :--- | :--- | :--- |
 | game → portal | `{ type: 'READY', suggestedPreset?: string }` | Your game can receive the identity. Repeat it until `VOUT_AUTH` arrives. |
 | portal → game | `{ type: 'VOUT_AUTH', token, expiresAt, voutId, username }` | In response to every valid `READY`, and again each time the portal renews the token. |
-| portal → game | `{ type: 'VOUT_ACTION', event: string }` | A user gesture mapped to a game event (face control). |
+| portal → game | `{ type: 'VOUT_SESSION_END', reason }` | No more renewals are coming. `reason` is `'signed_out'`, `'revoked'` or `'unavailable'`. |
+| portal → game | `{ type: 'VOUT_ACTION', event: string, at: number }` | An action starts: a user gesture mapped to a game event (face control). |
+| portal → game | `{ type: 'VOUT_ACTION_END', event: string, at: number }` | That action ends: the user stopped making the gesture. |
 | portal → game | `{ type: 'VOUT_CURSOR', x: number, y: number }` | Head-movement cursor. Coordinates from 0 to 1, relative to your iframe. |
 | game → portal | `{ type: 'EXIT' }` | The user wants to leave. The portal takes them to the catalog. |
 | game → portal | `{ type: 'GAME_STATE', state: 'playing' \| 'paused' \| 'ended', score?: number }` | Reserved. The portal accepts it but does nothing with it yet. |
 
-`expiresAt` is the token expiry in Unix seconds (the same value as its `exp` claim).
+`expiresAt` is the token expiry in Unix seconds (the same value as its `exp` claim). `at` is in Unix milliseconds.
 
 Ignore any `type` you don't know. The protocol may grow and your game shouldn't break because of it.
 
@@ -606,7 +608,9 @@ Ignore any `type` you don't know. The protocol may grow and your game shouldn't 
 4. The portal replies with `VOUT_AUTH`, addressed to that origin only.
 5. About 5 minutes before the token expires, the portal requests a new one and sends you another `VOUT_AUTH`. Always keep the latest.
 
-Your iframe stays hidden until the handshake completes. If you don't send `READY` within 8 seconds of loading, the user sees a "The game is not responding" notice with a retry button. A late `READY` still works.
+Your iframe stays hidden until the handshake completes. It is hidden through opacity, not `display: none`: it has its real size from the very start, so you can measure the window and start your game loop as usual.
+
+If you don't send `READY` within 8 seconds of your page loading, the user sees a "The game is not responding" notice with a retry button. A late `READY` still works and clears the notice by itself. Even so, send it as soon as your script starts: `READY` means "I can receive the identity", not "I finished loading all my assets".
 
 ### Which token you get
 
@@ -637,7 +641,21 @@ Vout's own apps (`is_first_party = true`) skip this screen.
 
 Inside an iframe your cookies are third-party cookies, and browsers block them more and more. Don't count on being able to use your refresh token or your own session while embedded.
 
-That is why the portal renews. As long as the user keeps the tab open and stays signed in to Vout, you will get a new `VOUT_AUTH` before the previous token expires. If `expiresAt` comes and none has arrived, treat the session as over: the user signed out of Vout or revoked your app.
+That is why the portal renews. As long as the user keeps the tab open and stays signed in to Vout, you will get a new `VOUT_AUTH` before the previous token expires.
+
+When the portal tries to renew and no longer can, it tells you with `VOUT_SESSION_END`:
+
+| `reason` | What happened |
+| :--- | :--- |
+| `signed_out` | The user signed out of Vout or their session expired. |
+| `revoked` | The user revoked your app's access. |
+| `unavailable` | Your game is no longer available in the portal. |
+
+When you receive it, drop the identity. Keep in mind that the portal finds out at renewal time, not the instant it happens: the notice can arrive up to 55 minutes later. If you need to learn about a revocation sooner, ask `/api/v1/user/me` from your backend before a sensitive operation: a revoked token gets a 401 right away.
+
+As a safety net, if `expiresAt` comes with neither a new `VOUT_AUTH` nor a `VOUT_SESSION_END` (for example, the user went offline), treat the session as over anyway.
+
+If the user switches Vout accounts in another tab, the portal reloads the whole game page. Your iframe starts from scratch and receives the new identity the usual way.
 
 > **Watch out locally.** To the browser, `http://localhost` and `http://localhost:8090` are the same site (the port doesn't count), so on your machine your cookies do travel inside the iframe. The blocking only shows up in production, with different domains. Working locally doesn't prove your refresh works while embedded.
 
@@ -655,6 +673,29 @@ There is one limitation you need to know about. If your game lives on a differen
 | `runner` | `VOUT_ACTION` with `JUMP` and `DUCK` | Yes |
 
 For face control to work in your game, send `suggestedPreset: 'runner'` in your `READY`. The portal will offer the user to switch to that preset for the current session, without touching their saved configuration.
+
+#### Taps and held actions
+
+Every action has a start and an end. `VOUT_ACTION` arrives when the user starts the gesture and `VOUT_ACTION_END`, with the same `event`, when they stop.
+
+- If your game works with taps (jumping), keep `VOUT_ACTION` and ignore the end.
+- If it has hold mechanics (gliding, a thruster), start on `VOUT_ACTION` and stop on `VOUT_ACTION_END`.
+
+Two details worth knowing:
+
+- **The end doesn't arrive equally fast for every gesture.** With the head (up, down, sideways) it is immediate. With a facial gesture (eyebrows, mouth) it arrives between 0.6 and 0.75 seconds after the user relaxes the gesture, because the portal infers it once it stops seeing it. For an action that must be released precisely, the head works better.
+- **Two gestures can hold the same action.** In the `runner` preset, both raising the eyebrows and tilting the head up emit `JUMP`. You may receive two `VOUT_ACTION` in a row for the same event; `VOUT_ACTION_END` arrives only once, when the user releases the last one.
+
+The portal always closes what it opens: if the user turns the camera off, switches tabs or changes preset with an action in progress, you receive its `VOUT_ACTION_END`.
+
+#### When the gesture happened
+
+`at` tells you when it really happened, in Unix milliseconds of the browser clock (the same as your `Date.now()`, because the portal and your game run on the same machine). Between the gesture and the message there is the time it takes to analyze the image; with `at` you can subtract it, which is useful in a rhythm game.
+
+- In `VOUT_ACTION`, `at` is the instant of the camera image in which the portal saw the gesture start.
+- In `VOUT_ACTION_END`, it is the best estimate of when it ended: the image in which the head left the zone, or the last one in which the facial gesture was seen.
+
+Treat it as a hint and bound it: if `at` is in the future or more than a couple of seconds in the past, use the moment the message reached you.
 
 The user can also map a gesture to an event with any name they like, and it reaches you as is in `event`. Treat it as text you don't control: compare it against your list of actions and drop the rest.
 
@@ -678,9 +719,19 @@ window.addEventListener('message', (event) => {
             session = { token: message.token, expiresAt: message.expiresAt };
             // Send it to your backend and validate it there (signature, iss, aud, exp).
             break;
+        case 'VOUT_SESSION_END':
+            // No more renewals are coming: drop the identity.
+            session = null;
+            break;
         case 'VOUT_ACTION':
-            if (message.event === 'JUMP') jump();
-            if (message.event === 'DUCK') duck();
+            // message.at: when the gesture started (Unix ms).
+            if (message.event === 'JUMP') startJump(message.at);
+            if (message.event === 'DUCK') startDuck(message.at);
+            break;
+        case 'VOUT_ACTION_END':
+            // You only need it if you have actions that are held.
+            if (message.event === 'JUMP') endJump(message.at);
+            if (message.event === 'DUCK') endDuck(message.at);
             break;
         // VOUT_CURSOR and any unknown type: ignore them if you don't use them.
     }
@@ -709,10 +760,10 @@ To know whether you are embedded, check `window.parent !== window`. Outside the 
 
 ### What the iframe won't let you do
 
-The portal loads your game with `sandbox="allow-scripts allow-same-origin"` and `allow="autoplay; fullscreen"`. In practice:
+The portal loads your game with `sandbox="allow-scripts allow-same-origin allow-orientation-lock"` and `allow="autoplay; fullscreen; clipboard-write; web-share"`. In practice:
 
-- **You can:** run scripts, use `fetch`, play audio and go fullscreen.
-- **You can't:** open popups, use `alert()` or `confirm()`, submit classic HTML forms, or navigate the portal window. To leave, send `EXIT`.
+- **You can:** run scripts, use `fetch`, play audio, go fullscreen, lock the screen orientation (while in fullscreen), copy to the clipboard and open the system share dialog. The last two only in response to a user action, such as a click.
+- **You can't:** open popups, use `alert()` or `confirm()`, submit classic HTML forms, read the clipboard, or navigate the portal window. To leave, send `EXIT`.
 
 ---
 

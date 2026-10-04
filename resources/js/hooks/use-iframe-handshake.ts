@@ -12,8 +12,10 @@
  *    hasta recibir respuesta: cada uno se contesta con la sesión vigente.
  * 5. Reenviar VOUT_AUTH cuando la sesión se renueva (`useGameSession`), para
  *    que el juego reciba el token nuevo antes de que caduque el anterior.
- * 6. Atender EXIT: el juego pide al portal cerrar la sesión de juego.
- * 7. Exponer `sendAction` y `sendCursor` para que ActionDispatcher y el head
+ * 6. Avisar al juego con VOUT_SESSION_END cuando la sesión deja de
+ *    renovarse (sesión web cerrada, app revocada, juego no disponible).
+ * 7. Atender EXIT: el juego pide al portal cerrar la sesión de juego.
+ * 8. Exponer `sendAction` y `sendCursor` para que ActionDispatcher y el head
  *    tracker en modo cursor puedan empujar mensajes al juego una vez que la
  *    sesión está autenticada.
  *
@@ -54,6 +56,7 @@ import type {
     GameSession,
     GameToVoutMessage,
     HandshakeStatus,
+    VoutSessionEndReason,
     VoutToGameMessage,
 } from '@/lib/iframe/types';
 
@@ -77,6 +80,11 @@ export type UseIframeHandshakeOptions = {
      * en `error`.
      */
     session: GameSession | null;
+    /**
+     * Motivo por el que la sesión dejó de renovarse, o null mientras sigue
+     * viva. Al pasar a un motivo se avisa al juego con VOUT_SESSION_END.
+     */
+    sessionEndReason?: VoutSessionEndReason | null;
     /** UUID público del usuario (campo `vout_id` en BD). */
     voutId: string;
     /** Nombre visible del usuario para mostrar en el juego. */
@@ -143,6 +151,7 @@ export function useIframeHandshake(
         iframeRef,
         allowedOrigins,
         session,
+        sessionEndReason = null,
         voutId,
         username,
         onReady,
@@ -253,6 +262,23 @@ export function useIframeHandshake(
 
         postAuth(origin);
     }, [session, postAuth]);
+
+    // Fin de sesión: ya no habrá más renovaciones. Avisamos al juego para
+    // que suelte la identidad sin esperar a que caduque su último token.
+    useEffect(() => {
+        const targetWindow = iframeRef.current?.contentWindow;
+        const origin = connectedOriginRef.current;
+
+        if (!sessionEndReason || !targetWindow || !origin) {
+            return;
+        }
+
+        const message: VoutToGameMessage = {
+            type: 'VOUT_SESSION_END',
+            reason: sessionEndReason,
+        };
+        targetWindow.postMessage(message, origin);
+    }, [sessionEndReason, iframeRef]);
 
     // Listener global de message — registrado una vez en mount.
     // Timeout: si el iframe carga pero no envía READY en 8s → 'timeout'.
@@ -365,6 +391,7 @@ export function useIframeHandshake(
             const message: VoutToGameMessage = {
                 type: 'VOUT_ACTION',
                 event: eventName,
+                at: Date.now(),
             };
             targetWindow.postMessage(message, origin);
         },

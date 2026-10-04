@@ -27,10 +27,11 @@ use Illuminate\Database\Seeder;
  * 5. Si el usuario activa el motor de visión, los gestos llegan como:
  *    - KEYDOWN/KEYUP para acciones de teclado (solo porque el juego de
  *      prueba comparte origen con el portal; a un juego externo no le llegan).
- *    - VOUT_ACTION para game_events.
+ *    - VOUT_ACTION / VOUT_ACTION_END para el inicio y el fin de game_events.
  *    - VOUT_CURSOR (x, y) para el modo cursor.
  * 6. Alt-Tab fuera de la ventana → no deben quedar teclas bloqueadas.
  * 7. Unos 5 minutos antes de caducar el token llega otro VOUT_AUTH (renovación).
+ *    Si la renovación ya no es posible, llega VOUT_SESSION_END.
  * 8. El botón "Salir" del juego envía EXIT y el portal vuelve al catálogo.
  *
  * ─── Idempotencia ─────────────────────────────────────────────────────────

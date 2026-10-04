@@ -135,8 +135,11 @@ type UseGestureEngineOptions = {
     onGesture?: (event: GestureEvent) => void;
     /** Callback con la orientación de la cabeza cada frame. */
     onHeadPose?: (pose: HeadPose) => void;
-    /** Callback con la posición del cursor virtual (head tracking). */
-    onHeadMove?: (position: HeadTrackPosition) => void;
+    /**
+     * Callback con la posición del cursor virtual (head tracking) y la marca
+     * del fotograma del que sale (línea de tiempo de `performance.now()`).
+     */
+    onHeadMove?: (position: HeadTrackPosition, frameTimestamp: number) => void;
     /** Callback cuando la calibración neutral se completa. */
     onCalibrated?: (baseline: NeutralBaseline) => void;
     /** Si true, emite datos raw de blendshapes (para Vision Lab). */
@@ -283,7 +286,7 @@ export function useGestureEngine(
                         };
                         const pos = headTrackerRef.current.update(rawH, rawV);
                         setHeadTrackPosition(pos);
-                        onHeadMoveRef.current?.(pos);
+                        onHeadMoveRef.current?.(pos, msg.headPose.timestamp);
                     }
                     break;
 

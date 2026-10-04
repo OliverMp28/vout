@@ -79,6 +79,11 @@ export type UsePlayOrchestratorReturn = {
     // ── Subsistemas ────────────────────────────────────────────────────────
     engine: ReturnType<typeof useGestureEngine>;
     handshake: ReturnType<typeof useIframeHandshake>;
+    /** Cámaras disponibles, la que está en uso y cómo cambiarla. */
+    camera: Pick<
+        ReturnType<typeof useCamera>,
+        'cameras' | 'activeCameraId' | 'selectCamera'
+    >;
 
     // ── Handlers de UI ────────────────────────────────────────────────────
     handleToggleEngine: () => void;
@@ -127,10 +132,21 @@ export function usePlayOrchestrator({
     // ── Sesión de juego ────────────────────────────────────────────────────
     // Token vigente para el iframe. Se renueva solo antes de caducar; cada
     // sesión nueva la reenvía el handshake al juego con otro VOUT_AUTH.
-    const session = useGameSession({
+    const { session, endReason: sessionEndReason } = useGameSession({
         gameSlug: game.slug,
+        voutId: user.vout_id,
         initialSession,
     });
+
+    // La sesión web pasó a ser de otra cuenta (cambio de usuario en otra
+    // pestaña): esta página se renderizó para el usuario anterior. La
+    // recargamos entera para que portal y juego arranquen con la cuenta
+    // correcta, en lugar de mezclar identidades a mitad de partida.
+    useEffect(() => {
+        if (sessionEndReason === 'account_changed') {
+            window.location.reload();
+        }
+    }, [sessionEndReason]);
 
     // ── Handshake con el iframe ────────────────────────────────────────────
     // Solo se ofrecen presets que existen: el valor llega de un origen
@@ -151,6 +167,8 @@ export function usePlayOrchestrator({
         iframeRef,
         allowedOrigins: game.effective_origins,
         session,
+        sessionEndReason:
+            sessionEndReason === 'account_changed' ? null : sessionEndReason,
         voutId: user.vout_id,
         username: user.name,
         onReady: handleReady,
@@ -223,8 +241,8 @@ export function usePlayOrchestrator({
     const dispatcherOnHeadMove = dispatcher.onHeadMove;
     const handshakeSendCursor = handshake.sendCursor;
     const handleHeadMove = useCallback(
-        (position: HeadTrackPosition) => {
-            dispatcherOnHeadMove(position);
+        (position: HeadTrackPosition, frameTimestamp: number) => {
+            dispatcherOnHeadMove(position, frameTimestamp);
 
             if (headTrackingMode !== 'cursor') {
                 onCursorMoveRef.current?.(0, 0, false);
@@ -392,6 +410,7 @@ export function usePlayOrchestrator({
 
         engine,
         handshake,
+        camera,
 
         handleToggleEngine,
         handleRetryGame,

@@ -17,7 +17,9 @@
  * | iframe → Vout   | EXIT         | Juego (el usuario quiere salir)      |
  * | iframe → Vout   | GAME_STATE   | Juego (futuro)                       |
  * | Vout → iframe   | VOUT_AUTH    | Portal (tras READY y en cada renovación) |
- * | Vout → iframe   | VOUT_ACTION  | ActionDispatcher                     |
+ * | Vout → iframe   | VOUT_SESSION_END | Portal (la sesión de juego terminó) |
+ * | Vout → iframe   | VOUT_ACTION  | ActionDispatcher (empieza una acción) |
+ * | Vout → iframe   | VOUT_ACTION_END | ActionDispatcher (termina la acción) |
  * | Vout → iframe   | VOUT_CURSOR  | HeadTracker (modo cursor)            |
  *
  * La versión para integradores vive en `docs/integration-guide.md`
@@ -68,13 +70,52 @@ export type VoutAuthMessage = {
 };
 
 /**
- * Acción de juego abstracta despachada por ActionDispatcher cuando el mapeo
+ * Motivo por el que el portal da por terminada la sesión de juego:
+ * - `signed_out`  → la sesión web del usuario en Vout se cerró o caducó.
+ * - `revoked`     → el usuario revocó el acceso de la app.
+ * - `unavailable` → el juego dejó de estar disponible en el portal.
+ */
+export type VoutSessionEndReason = 'signed_out' | 'revoked' | 'unavailable';
+
+/**
+ * Aviso de que ya no llegarán más renovaciones: el juego debe soltar la
+ * identidad. El portal lo sabe cuando intenta renovar, así que llega como
+ * muy tarde unos minutos antes de que caduque el último token entregado.
+ */
+export type VoutSessionEndMessage = {
+    type: 'VOUT_SESSION_END';
+    reason: VoutSessionEndReason;
+};
+
+/**
+ * Empieza una acción de juego. La despacha ActionDispatcher cuando el mapeo
  * activo es `{ type: 'game_event', event: '...' }`. El juego es libre de
  * interpretar el evento (ej. 'ATTACK', 'JUMP_DOUBLE') según su lógica.
+ *
+ * `at` es el instante, en ms Unix del reloj del navegador, del fotograma de
+ * cámara en el que el portal vio empezar el gesto. Permite al juego
+ * descontar el retraso de la detección.
  */
 export type VoutActionMessage = {
     type: 'VOUT_ACTION';
     event: string;
+    at: number;
+};
+
+/**
+ * Termina la acción que abrió un `VOUT_ACTION` con el mismo `event`. Un
+ * juego de toques puede ignorarlo; uno con mecánicas de "mantener" lo
+ * necesita. Si varios gestos del usuario mantienen el mismo evento, solo
+ * llega cuando suelta el último.
+ *
+ * `at` es la mejor estimación de cuándo terminó el gesto: el fotograma en
+ * que la cabeza salió de la zona, o el último en que se vio el gesto facial
+ * (cuyo fin se deduce por inactividad y por eso llega con retraso).
+ */
+export type VoutActionEndMessage = {
+    type: 'VOUT_ACTION_END';
+    event: string;
+    at: number;
 };
 
 /**
@@ -90,7 +131,9 @@ export type VoutCursorMessage = {
 
 export type VoutToGameMessage =
     | VoutAuthMessage
+    | VoutSessionEndMessage
     | VoutActionMessage
+    | VoutActionEndMessage
     | VoutCursorMessage;
 
 // ---------------------------------------------------------------------------

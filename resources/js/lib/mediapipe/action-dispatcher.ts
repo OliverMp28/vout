@@ -19,10 +19,18 @@
  * documento de un iframe cross-origin ni despachar eventos en su ventana, así
  * que las acciones `keyboard` y `mouse_click` se descartan. Solo `game_event`
  * (postMessage `VOUT_ACTION`) llega al juego — ver `PRESET_RUNNER`.
+ *
+ * Eventos de juego sostenidos: cada `game_event` avisa de su inicio
+ * (`VOUT_ACTION`) y de su fin (`VOUT_ACTION_END`), ambos con `at` (ms Unix).
+ * Un juego que solo necesita toques ignora el fin; uno con mecánicas de
+ * "mantener" (planear, propulsor) usa los dos. El fin de una dirección de
+ * cabeza es inmediato; el de un gesto facial se deduce por inactividad
+ * (`GESTURE_INACTIVITY_MS`), así que llega con ese retraso.
  */
 
 import { HeadDirectionType, resolveEventKey } from './action-types';
 import type {
+    ActionTrigger,
     GameAction,
     GestureActionMapping,
     HeadTrackingMode,
@@ -74,6 +82,13 @@ const FACIAL_HOLD_EXTEND_MS = 600;
  */
 const GESTURE_INACTIVITY_MS = 750;
 
+/**
+ * Antigüedad máxima creíble de un fotograma al despacharse. Por encima de
+ * esto (pestaña congelada, reloj inconsistente) se fecha con el instante
+ * del envío en lugar de retroceder el reloj una cantidad absurda.
+ */
+const MAX_FRAME_AGE_MS = 2000;
+
 // ---------------------------------------------------------------------------
 // ActionDispatcher
 // ---------------------------------------------------------------------------
@@ -88,6 +103,24 @@ const GESTURE_INACTIVITY_MS = 750;
  */
 function isWindow(target: EventTarget): target is Window {
     return typeof (target as Partial<Window>).postMessage === 'function';
+}
+
+/**
+ * Convierte la marca de tiempo de un fotograma de cámara a milisegundos Unix.
+ *
+ * El motor de gestos fecha los fotogramas con `performance.now()`. Aquí se
+ * resta la antigüedad del fotograma al reloj de pared, en lugar de sumarle
+ * `performance.timeOrigin`: así el resultado no se desvía si el reloj
+ * monotónico se detuvo con el equipo suspendido. Sin fotograma conocido se
+ * devuelve el instante actual.
+ */
+function frameTimeToEpoch(frameTimestamp: number | undefined): number {
+    const now = Date.now();
+    if (frameTimestamp === undefined) return now;
+
+    const age = performance.now() - frameTimestamp;
+
+    return age >= 0 && age <= MAX_FRAME_AGE_MS ? Math.round(now - age) : now;
 }
 
 export class ActionDispatcher {
@@ -149,6 +182,21 @@ export class ActionDispatcher {
         ReturnType<typeof setTimeout>
     >();
 
+    /**
+     * Evento de juego que cada trigger tiene en curso. Permite avisar del
+     * fin (`VOUT_ACTION_END`) con el mismo nombre con el que empezó aunque el
+     * mapping cambie entretanto, y saber si otro trigger mapeado al mismo
+     * evento lo sigue manteniendo activo.
+     */
+    private readonly activeGameEvents = new Map<ActionTrigger, string>();
+
+    /**
+     * Último instante (ms Unix) en que se vio activo cada gesto facial con
+     * un evento de juego en curso. Cuando el gesto termina por inactividad,
+     * es la mejor estimación de cuándo dejó de hacerse realmente.
+     */
+    private readonly gameEventLastSeenAt = new Map<ActionTrigger, number>();
+
     constructor(
         mapping: GestureActionMapping,
         headTrackingMode: HeadTrackingMode,
@@ -176,21 +224,32 @@ export class ActionDispatcher {
      *
      * Llamar desde useGestureEngine.onGesture:
      * ```typescript
-     * onGesture: (e) => dispatcher.dispatch(e.gesture)
+     * onGesture: (e) => dispatcher.dispatch(e.gesture, e.timestamp)
      * ```
+     *
+     * @param frameTimestamp Marca del fotograma que disparó el gesto
+     *                       (`GestureEvent.timestamp`, en la línea de tiempo
+     *                       de `performance.now()`). Fecha los `game_event`.
      */
-    dispatch(gesture: GestureType): void {
+    dispatch(gesture: GestureType, frameTimestamp?: number): void {
         const action = this.mapping[gesture];
         if (!action || action.type === 'none') return;
 
+        const at = frameTimeToEpoch(frameTimestamp);
         const isOnset = this.trackGestureActive(gesture);
+
+        // Cada disparo de un evento de juego en curso, sea inicio o
+        // renovación, actualiza el último instante en que se vio el gesto.
+        if (action.type === 'game_event' && !isOnset) {
+            this.gameEventLastSeenAt.set(gesture, at);
+        }
 
         // Para hold-keyboard dejamos pasar aunque no sea onset: el timer de
         // auto-liberación se renueva en dispatchKeyboard, manteniendo la tecla.
         if (!isOnset && !(action.type === 'keyboard' && action.mode === 'hold'))
             return;
 
-        this.executeAction(action, false);
+        this.executeAction(action, gesture, false, at);
     }
 
     /**
@@ -206,11 +265,17 @@ export class ActionDispatcher {
      *
      * Llamar desde useGestureEngine.onHeadMove:
      * ```typescript
-     * onHeadMove: (p) => dispatcher.handleHeadMove(p)
+     * onHeadMove: (p, frameTimestamp) => dispatcher.handleHeadMove(p, frameTimestamp)
      * ```
+     *
+     * @param frameTimestamp Marca del fotograma del que sale la posición (en
+     *                       la línea de tiempo de `performance.now()`). Fecha
+     *                       el inicio y el fin de los `game_event`.
      */
-    handleHeadMove(position: HeadTrackPosition): void {
+    handleHeadMove(position: HeadTrackPosition, frameTimestamp?: number): void {
         if (this.headTrackingMode !== 'gesture') return;
+
+        const at = frameTimeToEpoch(frameTimestamp);
 
         const zones: [HeadDirectionType, boolean][] = [
             [HeadDirectionType.HeadLeft, position.x < HEAD_THRESHOLD_LOW],
@@ -227,15 +292,17 @@ export class ActionDispatcher {
                 this.activeHeadDirs.add(dir);
                 const action = this.mapping[dir];
                 if (action && action.type !== 'none') {
-                    this.executeAction(action, true);
+                    this.executeAction(action, dir, true, at);
                 }
             } else if (!isActive && wasActive) {
-                // Dirección recién desactivada: liberar tecla si estaba en hold.
+                // Dirección recién desactivada: liberar tecla si estaba en
+                // hold y cerrar el evento de juego que tuviera en curso.
                 this.activeHeadDirs.delete(dir);
                 const action = this.mapping[dir];
                 if (action?.type === 'keyboard' && action.mode === 'hold') {
                     this.releaseKey(resolveEventKey(action.key));
                 }
+                this.endGameEvent(dir, at);
             }
         }
     }
@@ -245,6 +312,7 @@ export class ActionDispatcher {
      * Libera teclas retenidas antes de cambiar para evitar inputs bloqueados.
      */
     setMapping(mapping: GestureActionMapping): void {
+        this.endAllGameEvents();
         this.releaseAllHeldKeys();
         this.clearGestureActiveTimers();
         this.activeHeadDirs.clear();
@@ -263,6 +331,7 @@ export class ActionDispatcher {
      * entregar (ver `eventTarget`); solo `game_event` alcanza al juego.
      */
     setTarget(target: EventTarget): void {
+        this.endAllGameEvents();
         this.releaseAllHeldKeys();
         this.clearGestureActiveTimers();
         this.target = target;
@@ -330,6 +399,7 @@ export class ActionDispatcher {
 
     /** Cambia el modo de head tracking en tiempo de ejecución. */
     setHeadTrackingMode(mode: HeadTrackingMode): void {
+        this.endAllGameEvents();
         this.releaseAllHeldKeys();
         this.clearGestureActiveTimers();
         this.activeHeadDirs.clear();
@@ -337,10 +407,11 @@ export class ActionDispatcher {
     }
 
     /**
-     * Libera todas las teclas retenidas y cancela timers pendientes.
-     * Llamar siempre en el cleanup de useEffect.
+     * Libera todas las teclas retenidas, cierra los eventos de juego en curso
+     * y cancela timers pendientes. Llamar siempre en el cleanup de useEffect.
      */
     destroy(): void {
+        this.endAllGameEvents();
         this.releaseAllHeldKeys();
         this.clearGestureActiveTimers();
         this.activeHeadDirs.clear();
@@ -350,7 +421,12 @@ export class ActionDispatcher {
     // Internos
     // -----------------------------------------------------------------------
 
-    private executeAction(action: GameAction, isHeadDir: boolean): void {
+    private executeAction(
+        action: GameAction,
+        trigger: ActionTrigger,
+        isHeadDir: boolean,
+        at: number,
+    ): void {
         switch (action.type) {
             case 'keyboard':
                 this.dispatchKeyboard(action.key, action.mode, isHeadDir);
@@ -359,28 +435,97 @@ export class ActionDispatcher {
                 this.dispatchMouseClick(action.button);
                 break;
             case 'game_event':
-                if (this.targetIsWindow && this.allowedOrigin !== null) {
-                    // Ruta principal en juegos embebidos: el protocolo Vout
-                    // viaja por postMessage con targetOrigin estricto.
-                    (this.target as Window).postMessage(
-                        { type: 'VOUT_ACTION', event: action.event },
-                        this.allowedOrigin,
-                    );
-                } else {
-                    // Fallback local: Vision Lab, tests, o iframe sin
-                    // handshake completado todavía. Mantiene compatibilidad
-                    // con cualquier listener `vout:game_event` ya existente.
-                    this.dispatchDom(
-                        new CustomEvent('vout:game_event', {
-                            bubbles: true,
-                            detail: { event: action.event },
-                        }),
-                    );
-                }
+                this.startGameEvent(trigger, action.event, at);
                 break;
             case 'none':
                 break;
         }
+    }
+
+    /**
+     * Avisa al juego de que empieza un evento y lo deja registrado como en
+     * curso para ese trigger, hasta que `endGameEvent` lo cierre.
+     */
+    private startGameEvent(
+        trigger: ActionTrigger,
+        event: string,
+        at: number,
+    ): void {
+        this.activeGameEvents.set(trigger, event);
+        this.gameEventLastSeenAt.set(trigger, at);
+        this.emitGameEvent('VOUT_ACTION', event, at);
+    }
+
+    /**
+     * Cierra el evento de juego que el trigger tuviera en curso. Solo avisa
+     * al juego si ningún otro trigger mapeado al mismo evento lo mantiene.
+     *
+     * @param at Instante del fin (ms Unix). Si se omite se usa el último en
+     *           que se vio activo el trigger (fin de gesto por inactividad).
+     */
+    private endGameEvent(trigger: ActionTrigger, at?: number): void {
+        const event = this.activeGameEvents.get(trigger);
+        if (event === undefined) return;
+
+        const endedAt =
+            at ?? this.gameEventLastSeenAt.get(trigger) ?? Date.now();
+
+        this.activeGameEvents.delete(trigger);
+        this.gameEventLastSeenAt.delete(trigger);
+
+        for (const stillActive of this.activeGameEvents.values()) {
+            if (stillActive === event) return;
+        }
+
+        this.emitGameEvent('VOUT_ACTION_END', event, endedAt);
+    }
+
+    /**
+     * Cierra todos los eventos de juego en curso. Se llama antes de cambiar
+     * de mapping, de target o de modo y al destruir, para que el juego no
+     * se quede con una acción "mantenida" que ya nadie va a soltar.
+     */
+    private endAllGameEvents(): void {
+        const at = Date.now();
+        const events = new Set(this.activeGameEvents.values());
+
+        this.activeGameEvents.clear();
+        this.gameEventLastSeenAt.clear();
+
+        for (const event of events) {
+            this.emitGameEvent('VOUT_ACTION_END', event, at);
+        }
+    }
+
+    /**
+     * Entrega al juego el inicio o el fin de un evento.
+     *
+     * Con un iframe conectado viaja por postMessage con `targetOrigin`
+     * estricto. Sin iframe (Vision Lab, tests, handshake aún sin completar)
+     * cae a un `CustomEvent` local: `vout:game_event` / `vout:game_event_end`.
+     */
+    private emitGameEvent(
+        type: 'VOUT_ACTION' | 'VOUT_ACTION_END',
+        event: string,
+        at: number,
+    ): void {
+        if (this.targetIsWindow && this.allowedOrigin !== null) {
+            (this.target as Window).postMessage(
+                { type, event, at },
+                this.allowedOrigin,
+            );
+
+            return;
+        }
+
+        this.dispatchDom(
+            new CustomEvent(
+                type === 'VOUT_ACTION'
+                    ? 'vout:game_event'
+                    : 'vout:game_event_end',
+                { bubbles: true, detail: { event, at } },
+            ),
+        );
     }
 
     /**
@@ -499,6 +644,8 @@ export class ActionDispatcher {
 
         const timer = setTimeout(() => {
             this.gestureActiveTimers.delete(gesture);
+            // El gesto dejó de verse: si mantenía un evento de juego, termina.
+            this.endGameEvent(gesture);
         }, GESTURE_INACTIVITY_MS);
 
         this.gestureActiveTimers.set(gesture, timer);

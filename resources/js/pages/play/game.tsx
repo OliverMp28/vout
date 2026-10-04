@@ -102,6 +102,7 @@ export default function PlayGame({
         errorMessage,
         engine,
         handshake,
+        camera,
         handleToggleEngine,
         handleRetryGame,
         handleAcceptPreset,
@@ -159,6 +160,9 @@ export default function PlayGame({
             headTrackingMode={headTrackingMode}
             lastGesture={lastGesture}
             fps={engine.performance?.fps ?? null}
+            cameras={camera.cameras}
+            activeCameraId={camera.activeCameraId}
+            onSelectCamera={(deviceId) => void camera.selectCamera(deviceId)}
             onToggleEngine={handleToggleEngine}
             onToggleDispatch={setDispatchEnabled}
             onSensitivityChange={setSensitivity}
@@ -238,8 +242,8 @@ export default function PlayGame({
                         aria-label={t('play.iframe.aria_label', {
                             game: game.name,
                         })}
-                        sandbox="allow-scripts allow-same-origin"
-                        allow="autoplay; fullscreen"
+                        sandbox="allow-scripts allow-same-origin allow-orientation-lock"
+                        allow="autoplay; fullscreen; clipboard-write; web-share"
                         className={cn(
                             'absolute inset-0 size-full border-0 transition-opacity duration-700 ease-out',
                             handshake.status === 'authenticated'

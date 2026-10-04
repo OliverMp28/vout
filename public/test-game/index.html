@@ -322,8 +322,23 @@
                 break;
             }
 
+            // Empieza una acción. `at` es cuándo vio el portal el gesto (ms Unix).
             case 'VOUT_ACTION': {
-                addLog('action', 'VOUT_ACTION', data.event ?? '?');
+                addLog('action', 'VOUT_ACTION', (data.event ?? '?') + ' | hace ' + (Date.now() - data.at) + ' ms');
+                break;
+            }
+
+            // Termina la acción: lo necesitan las mecánicas de "mantener".
+            case 'VOUT_ACTION_END': {
+                addLog('action', 'ACTION_END', (data.event ?? '?') + ' | hace ' + (Date.now() - data.at) + ' ms');
+                break;
+            }
+
+            // Ya no habrá más renovaciones: el juego debe soltar la identidad.
+            case 'VOUT_SESSION_END': {
+                document.getElementById('auth-status').textContent = '✗ Sesión terminada (' + data.reason + ')';
+                setStatus('Sesión terminada · ' + data.reason, 'error');
+                addLog('system', 'SESSION_END', data.reason ?? '?');
                 break;
             }
 

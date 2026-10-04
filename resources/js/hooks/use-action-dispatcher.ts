@@ -69,8 +69,10 @@ type UseActionDispatcherReturn = {
     /**
      * Callback para useGestureEngine.onHeadMove.
      * Referencia estable: no cambia entre renders.
+     * `frameTimestamp` (línea de tiempo de `performance.now()`) fecha el
+     * inicio y el fin de los eventos de juego disparados con la cabeza.
      */
-    onHeadMove: (position: HeadTrackPosition) => void;
+    onHeadMove: (position: HeadTrackPosition, frameTimestamp?: number) => void;
     /** Actualiza el mapping sin re-crear el dispatcher ni soltar teclas (a menos que haya hold activo). */
     setMapping: (mapping: GestureActionMapping) => void;
     /** Activa o desactiva el dispatcher en tiempo de ejecución. */
@@ -167,13 +169,16 @@ export function useActionDispatcher({
 
     const onGesture = useCallback((event: GestureEvent) => {
         if (!enabledRef.current) return;
-        dispatcherRef.current.dispatch(event.gesture);
+        dispatcherRef.current.dispatch(event.gesture, event.timestamp);
     }, []);
 
-    const onHeadMove = useCallback((position: HeadTrackPosition) => {
-        if (!enabledRef.current) return;
-        dispatcherRef.current.handleHeadMove(position);
-    }, []);
+    const onHeadMove = useCallback(
+        (position: HeadTrackPosition, frameTimestamp?: number) => {
+            if (!enabledRef.current) return;
+            dispatcherRef.current.handleHeadMove(position, frameTimestamp);
+        },
+        [],
+    );
 
     const setMapping = useCallback((newMapping: GestureActionMapping) => {
         dispatcherRef.current.setMapping(newMapping);

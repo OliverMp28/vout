@@ -119,6 +119,68 @@ function waitForAuthMessages(PendingAwaitablePage|Webpage $page, int $distinctTo
     JS);
 }
 
+/**
+ * Espera a que el juego reciba un mensaje del tipo indicado y lo devuelve
+ * (o null si no llega a tiempo).
+ *
+ * @return array<string, mixed>|null
+ */
+function waitForGameMessage(PendingAwaitablePage|Webpage $page, string $type, int $timeoutMs = 8000): ?array
+{
+    return $page->script(<<<JS
+        new Promise((resolve) => {
+            const deadline = Date.now() + {$timeoutMs};
+            let found = null;
+
+            window.addEventListener('message', (event) => {
+                if (event.data && event.data.type === 'TEST_ECHO') {
+                    found = event.data.received.find((message) => message.type === '{$type}') ?? null;
+                }
+            });
+
+            (function poll() {
+                if (found !== null) {
+                    return resolve(found);
+                }
+                if (Date.now() > deadline) {
+                    return resolve(null);
+                }
+                setTimeout(poll, 100);
+            })();
+        })
+    JS);
+}
+
+/**
+ * Espera un VOUT_AUTH a nombre del usuario indicado, sobreviviendo a una
+ * recarga de la página entre medias (que destruye el contexto del script
+ * en curso y obliga a reintentar).
+ *
+ * @return array{type: string, token: string, expiresAt: int, voutId: string, username: string}|null
+ */
+function waitForAuthAs(PendingAwaitablePage|Webpage $page, string $voutId, int $timeoutMs = 30000): ?array
+{
+    $deadline = microtime(true) + $timeoutMs / 1000;
+
+    while (microtime(true) < $deadline) {
+        try {
+            $auths = waitForAuthMessages($page, timeoutMs: 1500) ?? [];
+        } catch (Throwable) {
+            $auths = [];
+        }
+
+        foreach ($auths as $auth) {
+            if ($auth['voutId'] === $voutId) {
+                return $auth;
+            }
+        }
+
+        usleep(300_000);
+    }
+
+    return null;
+}
+
 test('el portal entrega la identidad a un juego de otro origen tras su READY', function (): void {
     $user = User::factory()->create();
     $this->actingAs($user);
@@ -142,6 +204,11 @@ test('el portal entrega la identidad a un juego de otro origen tras su READY', f
 
     $page->assertNoJavaScriptErrors()
         ->assertSee('runner');
+
+    expect($page->script("document.querySelector('iframe').getAttribute('sandbox')"))
+        ->toBe('allow-scripts allow-same-origin allow-orientation-lock')
+        ->and($page->script("document.querySelector('iframe').getAttribute('allow')"))
+        ->toBe('autoplay; fullscreen; clipboard-write; web-share');
 });
 
 test('el portal reenvía un token nuevo antes de que caduque el anterior', function (): void {
@@ -168,6 +235,68 @@ test('el portal reenvía un token nuevo antes de que caduque el anterior', funct
         ->toBe(decodeJwtSection($first['token'], 1)['aud']);
 
     $page->assertNoJavaScriptErrors();
+});
+
+test('el portal avisa al juego cuando la sesión deja de renovarse', function (string $expectedReason, Closure $makeGame, Closure $endSession): void {
+    Passport::tokensExpireIn(now()->addSeconds(20));
+
+    $user = User::factory()->create();
+    $this->actingAs($user);
+
+    visit('/catalog');
+    $game = embedStubIn($makeGame($user));
+
+    $page = visit('/play/'.$game->slug);
+
+    expect(waitForAuthMessages($page))->not->toBeNull();
+
+    $endSession($user, $game);
+
+    $message = waitForGameMessage($page, 'VOUT_SESSION_END', timeoutMs: 20000);
+
+    expect($message)->toBe(['type' => 'VOUT_SESSION_END', 'reason' => $expectedReason]);
+
+    $page->assertNoJavaScriptErrors();
+})->with([
+    'el usuario revoca la app' => [
+        'revoked',
+        function (User $user): Game {
+            $game = gameWithOAuthApp();
+            authorizeGameApp($user, $game);
+
+            return $game;
+        },
+        fn (User $user, Game $game) => OAuthUserGrant::query()->where('user_id', $user->id)->sole()->revoke(),
+    ],
+    'el juego deja de estar disponible' => [
+        'unavailable',
+        fn (): Game => Game::factory()->create(['is_active' => true]),
+        fn (User $user, Game $game) => $game->update(['is_active' => false]),
+    ],
+]);
+
+test('si la sesión web pasa a otra cuenta, el portal recarga y el juego recibe la identidad nueva', function (): void {
+    Passport::tokensExpireIn(now()->addSeconds(20));
+
+    $firstUser = User::factory()->create();
+    $secondUser = User::factory()->create();
+    $this->actingAs($firstUser);
+
+    visit('/catalog');
+    $game = embedStubIn(Game::factory()->create(['is_active' => true]));
+
+    $page = visit('/play/'.$game->slug);
+
+    expect(waitForAuthAs($page, $firstUser->vout_id, timeoutMs: 8000))->not->toBeNull();
+
+    // Cambio de cuenta "en otra pestaña": la sesión web ya es de otro usuario.
+    $this->actingAs($secondUser);
+
+    $auth = waitForAuthAs($page, $secondUser->vout_id);
+
+    expect($auth)->not->toBeNull()
+        ->and($auth['username'])->toBe($secondUser->name)
+        ->and(decodeJwtSection($auth['token'], 1)['vout_id'])->toBe($secondUser->vout_id);
 });
 
 test('EXIT desde el juego devuelve al usuario al catálogo', function (): void {
