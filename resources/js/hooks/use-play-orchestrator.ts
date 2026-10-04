@@ -17,6 +17,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { useActionDispatcher } from '@/hooks/use-action-dispatcher';
 import { useCamera } from '@/hooks/use-camera';
+import type { CameraIssue } from '@/hooks/use-camera';
 import { useGameSession } from '@/hooks/use-game-session';
 import type { GameSessionPayload } from '@/hooks/use-game-session';
 import { useGestureEngine } from '@/hooks/use-gesture-engine';
@@ -30,6 +31,7 @@ import type {
     GestureActionMapping,
     HeadTrackingMode,
 } from '@/lib/mediapipe/action-types';
+import type { CameraDevice } from '@/lib/mediapipe/camera-devices';
 import type { HeadTrackPosition } from '@/lib/mediapipe/head-tracker';
 import type {
     GestureConfigData,
@@ -79,15 +81,25 @@ export type UsePlayOrchestratorReturn = {
     // ── Subsistemas ────────────────────────────────────────────────────────
     engine: ReturnType<typeof useGestureEngine>;
     handshake: ReturnType<typeof useIframeHandshake>;
-    /** Cámaras disponibles, la que está en uso y cómo cambiarla. */
-    camera: Pick<
-        ReturnType<typeof useCamera>,
-        'cameras' | 'activeCameraId' | 'selectCamera'
-    >;
+    /** Estado de la cámara que la interfaz necesita mostrar. */
+    camera: {
+        /** Cámaras disponibles. Vacío hasta abrir una por primera vez. */
+        cameras: CameraDevice[];
+        /** Cámara en uso, o null. */
+        activeCameraId: string | null;
+        /** True mientras se abre una cámara y se espera su primera imagen. */
+        busy: boolean;
+        /** Por qué no hay cámara, o null. */
+        issue: CameraIssue | null;
+        /** Cámara descartada por no dar imagen cuando se acabó usando otra. */
+        skippedCamera: string | null;
+    };
 
     // ── Handlers de UI ────────────────────────────────────────────────────
     handleToggleEngine: () => void;
     handleRetryGame: () => void;
+    /** Cambia de cámara; si no se consigue abrir ninguna, detiene el motor. */
+    handleSelectCamera: (deviceId: string) => void;
     /** Recentra el cursor al centro del iframe (no del viewport). */
     recenterCursor: () => void;
     handleAcceptPreset: (presetKey: string) => void;
@@ -291,6 +303,9 @@ export function usePlayOrchestrator({
     // ── Handlers de UI ────────────────────────────────────────────────────
     const handleActivateEngine = useCallback(async () => {
         if (engine.status === 'running' || engine.status === 'loading') return;
+        // La apertura puede tardar (espera a la primera imagen): un segundo
+        // clic mientras tanto no debe lanzar otra.
+        if (camera.status === 'requesting') return;
         const stream = await camera.requestCamera();
         if (stream && videoRef.current) {
             engine.startDetection(videoRef.current);
@@ -304,6 +319,17 @@ export function usePlayOrchestrator({
         setDispatchEnabled(false);
         onCursorMoveRef.current?.(0, 0, false);
     }, [camera, engine]);
+
+    const handleSelectCamera = useCallback(
+        (deviceId: string) => {
+            void camera.selectCamera(deviceId).then((opened) => {
+                // Ninguna cámara responde: sin imagen el motor no hace nada,
+                // así que se detiene y el panel explica el motivo.
+                if (!opened) handleStopEngine();
+            });
+        },
+        [camera, handleStopEngine],
+    );
 
     const handleToggleEngine = useCallback(() => {
         if (engine.status === 'running' || engine.status === 'loading') {
@@ -410,10 +436,17 @@ export function usePlayOrchestrator({
 
         engine,
         handshake,
-        camera,
+        camera: {
+            cameras: camera.cameras,
+            activeCameraId: camera.activeCameraId,
+            busy: camera.status === 'requesting',
+            issue: camera.issue,
+            skippedCamera: camera.skippedCamera,
+        },
 
         handleToggleEngine,
         handleRetryGame,
+        handleSelectCamera,
         recenterCursor,
         handleAcceptPreset,
         setDispatchEnabled,

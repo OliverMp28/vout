@@ -22,11 +22,13 @@
 
 import { Link } from '@inertiajs/react';
 import {
+    AlertTriangle,
     Camera,
     ChevronDown,
     Crosshair,
     Gauge,
     Hand,
+    Info,
     Loader2,
     Play,
     RotateCcw,
@@ -35,6 +37,7 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -53,6 +56,12 @@ import appearance from '@/routes/appearance';
 // ---------------------------------------------------------------------------
 // Props
 // ---------------------------------------------------------------------------
+
+/** Aviso sobre la cámara, ya traducido: un fallo o un cambio automático. */
+export type CameraNotice = {
+    tone: 'error' | 'info';
+    text: string;
+};
 
 type ControlPanelProps = {
     /** Estado actual del motor de visión. */
@@ -75,6 +84,10 @@ type ControlPanelProps = {
     cameras: CameraDevice[];
     /** Cámara en uso por el control facial, o null si no hay ninguna abierta. */
     activeCameraId: string | null;
+    /** True mientras se abre una cámara y se espera su primera imagen. */
+    cameraBusy: boolean;
+    /** Qué pasó con la cámara, si hay algo que contar al usuario. */
+    cameraNotice: CameraNotice | null;
 
     onSelectCamera: (deviceId: string) => void;
     onToggleEngine: () => void;
@@ -160,8 +173,13 @@ function UnconfiguredPanel() {
 
 function IdlePanel({
     engineStatus,
+    cameraBusy,
+    cameraNotice,
     onToggleEngine,
-}: Pick<ControlPanelProps, 'engineStatus' | 'onToggleEngine'>) {
+}: Pick<
+    ControlPanelProps,
+    'engineStatus' | 'cameraBusy' | 'cameraNotice' | 'onToggleEngine'
+>) {
     const { t } = useTranslation();
     const engineBadge = ENGINE_BADGE[engineStatus];
 
@@ -191,12 +209,24 @@ function IdlePanel({
                         id="play-engine-toggle"
                         onClick={onToggleEngine}
                         size="lg"
+                        disabled={cameraBusy}
+                        aria-busy={cameraBusy}
                         className="h-12 w-full gap-2 text-sm font-semibold shadow-md shadow-primary/20 transition-all duration-200 hover:shadow-lg hover:shadow-primary/30 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                     >
-                        <Play className="size-4 fill-current" />
-                        {t('play.panel.start')}
+                        {cameraBusy ? (
+                            <>
+                                <Loader2 className="size-4 animate-spin" />
+                                {t('play.camera.connecting')}
+                            </>
+                        ) : (
+                            <>
+                                <Play className="size-4 fill-current" />
+                                {t('play.panel.start')}
+                            </>
+                        )}
                     </Button>
                 </div>
+                <CameraNoticeAlert notice={cameraNotice} />
             </section>
 
             <Separator />
@@ -234,6 +264,8 @@ function RunningPanel({
     fps,
     cameras,
     activeCameraId,
+    cameraBusy,
+    cameraNotice,
     onSelectCamera,
     onToggleEngine,
     onToggleDispatch,
@@ -348,32 +380,42 @@ function RunningPanel({
             {/* Solo con más de una: la elección automática puede no acertar   */}
             {/* (teléfono enlazado, cámara virtual) y el usuario debe poder     */}
             {/* corregirla sin salir del juego.                                 */}
-            {cameras.length > 1 && (
+            {(cameras.length > 1 || cameraNotice !== null) && (
                 <section className="space-y-2">
-                    <Label
-                        htmlFor="play-camera"
-                        className="flex items-center gap-2 text-sm font-medium"
-                    >
-                        <Camera className="size-4 text-primary/70" />
-                        {t('play.panel.camera')}
-                    </Label>
-                    <NativeSelect
-                        id="play-camera"
-                        size="sm"
-                        value={activeCameraId ?? ''}
-                        onChange={(event) => onSelectCamera(event.target.value)}
-                        options={cameras.map((camera) => ({
-                            value: camera.deviceId,
-                            label: camera.label,
-                        }))}
-                        aria-describedby="play-camera-hint"
-                    />
-                    <p
-                        id="play-camera-hint"
-                        className="text-xs text-muted-foreground"
-                    >
-                        {t('play.panel.camera_hint')}
-                    </p>
+                    {cameras.length > 1 && (
+                        <>
+                            <Label
+                                htmlFor="play-camera"
+                                className="flex items-center gap-2 text-sm font-medium"
+                            >
+                                <Camera className="size-4 text-primary/70" />
+                                {t('play.panel.camera')}
+                            </Label>
+                            <NativeSelect
+                                id="play-camera"
+                                size="sm"
+                                value={activeCameraId ?? ''}
+                                disabled={cameraBusy}
+                                onChange={(event) =>
+                                    onSelectCamera(event.target.value)
+                                }
+                                options={cameras.map((camera) => ({
+                                    value: camera.deviceId,
+                                    label: camera.label,
+                                }))}
+                                aria-describedby="play-camera-hint"
+                            />
+                            <p
+                                id="play-camera-hint"
+                                className="text-xs text-muted-foreground"
+                            >
+                                {cameraBusy
+                                    ? t('play.camera.connecting')
+                                    : t('play.panel.camera_hint')}
+                            </p>
+                        </>
+                    )}
+                    <CameraNoticeAlert notice={cameraNotice} />
                 </section>
             )}
 
@@ -490,6 +532,30 @@ function RunningPanel({
 // ---------------------------------------------------------------------------
 // Subcomponentes compartidos
 // ---------------------------------------------------------------------------
+
+/**
+ * Aviso sobre la cámara dentro del panel. Un problema con la cámara no
+ * impide jugar con teclado, así que se explica aquí y no tapando el juego.
+ */
+function CameraNoticeAlert({ notice }: { notice: CameraNotice | null }) {
+    if (notice === null) {
+        return null;
+    }
+
+    const isError = notice.tone === 'error';
+
+    return (
+        <Alert
+            variant={isError ? 'destructive' : 'default'}
+            className="px-3 py-2.5"
+        >
+            {isError ? <AlertTriangle /> : <Info />}
+            <AlertDescription className="text-xs">
+                {notice.text}
+            </AlertDescription>
+        </Alert>
+    );
+}
 
 function SectionLabel({
     id,

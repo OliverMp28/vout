@@ -25,8 +25,9 @@ use Illuminate\Database\Seeder;
  * 4. El juego muestra el nombre de usuario, el vout_id y la expiración del
  *    token. Al no tener app OAuth, recibe el token de portal (`game:play`).
  * 5. Si el usuario activa el motor de visión, los gestos llegan como:
- *    - KEYDOWN/KEYUP para acciones de teclado (solo porque el juego de
- *      prueba comparte origen con el portal; a un juego externo no le llegan).
+ *    - KEYDOWN/KEYUP para acciones de teclado. El juego de prueba comparte
+ *      origen con el portal y los recibe como eventos reales; a un juego
+ *      externo le llegan como mensajes VOUT_KEY / VOUT_CLICK.
  *    - VOUT_ACTION / VOUT_ACTION_END para el inicio y el fin de game_events.
  *    - VOUT_CURSOR (x, y) para el modo cursor.
  * 6. Alt-Tab fuera de la ventana → no deben quedar teclas bloqueadas.

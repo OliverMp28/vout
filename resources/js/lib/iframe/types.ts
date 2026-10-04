@@ -20,6 +20,8 @@
  * | Vout → iframe   | VOUT_SESSION_END | Portal (la sesión de juego terminó) |
  * | Vout → iframe   | VOUT_ACTION  | ActionDispatcher (empieza una acción) |
  * | Vout → iframe   | VOUT_ACTION_END | ActionDispatcher (termina la acción) |
+ * | Vout → iframe   | VOUT_KEY     | ActionDispatcher (tecla, juego de otro origen) |
+ * | Vout → iframe   | VOUT_CLICK   | ActionDispatcher (clic, juego de otro origen) |
  * | Vout → iframe   | VOUT_CURSOR  | HeadTracker (modo cursor)            |
  *
  * La versión para integradores vive en `docs/integration-guide.md`
@@ -119,6 +121,38 @@ export type VoutActionEndMessage = {
 };
 
 /**
+ * Pulsación o suelta de una tecla, para juegos de otro origen que el portal.
+ *
+ * El navegador impide al portal despachar eventos de teclado dentro de un
+ * iframe ajeno, así que le dice al juego qué tecla simular. El juego la
+ * convierte en un KeyboardEvent en su propia página (el SDK
+ * `public/sdk/vout-game.js` lo hace solo) y su código de teclado de siempre
+ * funciona sin cambios. A un juego del mismo origen no le llega: ahí el
+ * portal despacha el evento directamente.
+ *
+ * `code` y `key` siguen `KeyboardEvent.code` / `KeyboardEvent.key`
+ * (`'Space'` / `' '`, `'ArrowDown'` / `'ArrowDown'`, `'KeyZ'` / `'z'`).
+ */
+export type VoutKeyMessage = {
+    type: 'VOUT_KEY';
+    code: string;
+    key: string;
+    state: 'down' | 'up';
+    at: number;
+};
+
+/**
+ * Clic de ratón, para juegos de otro origen que el portal. No lleva
+ * coordenadas: el juego lo aplica donde esté el cursor virtual que recibe
+ * por `VOUT_CURSOR` (o donde le convenga si no usa cursor).
+ */
+export type VoutClickMessage = {
+    type: 'VOUT_CLICK';
+    button: 'left' | 'right';
+    at: number;
+};
+
+/**
  * Posición normalizada del cursor virtual relativa al iframe (no a la pantalla).
  * Coordenadas en rango [0, 1]: (0,0) esquina superior izquierda, (1,1) inferior
  * derecha. Calculadas por `transformCursorToIframe` antes del envío.
@@ -134,6 +168,8 @@ export type VoutToGameMessage =
     | VoutSessionEndMessage
     | VoutActionMessage
     | VoutActionEndMessage
+    | VoutKeyMessage
+    | VoutClickMessage
     | VoutCursorMessage;
 
 // ---------------------------------------------------------------------------

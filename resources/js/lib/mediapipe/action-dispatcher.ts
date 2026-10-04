@@ -16,9 +16,11 @@
  * Los eventos se despacharán en el contexto del juego embebido.
  *
  * Juegos de otro origen: el navegador no permite a la página padre tocar el
- * documento de un iframe cross-origin ni despachar eventos en su ventana, así
- * que las acciones `keyboard` y `mouse_click` se descartan. Solo `game_event`
- * (postMessage `VOUT_ACTION`) llega al juego — ver `PRESET_RUNNER`.
+ * documento de un iframe cross-origin ni despachar eventos en su ventana.
+ * Ahí las acciones `keyboard` y `mouse_click` viajan como mensajes
+ * (`VOUT_KEY`, `VOUT_CLICK`) y es el juego quien las convierte en eventos
+ * reales dentro de su página — el SDK `public/sdk/vout-game.js` lo hace
+ * solo. Así el mapeo del usuario funciona igual en cualquier juego.
  *
  * Eventos de juego sostenidos: cada `game_event` avisa de su inicio
  * (`VOUT_ACTION`) y de su fin (`VOUT_ACTION_END`), ambos con `at` (ms Unix).
@@ -27,6 +29,8 @@
  * cabeza es inmediato; el de un gesto facial se deduce por inactividad
  * (`GESTURE_INACTIVITY_MS`), así que llega con ese retraso.
  */
+
+import type { VoutToGameMessage } from '@/lib/iframe/types';
 
 import { HeadDirectionType, resolveEventKey } from './action-types';
 import type {
@@ -328,7 +332,7 @@ export class ActionDispatcher {
      * (no sobre la Window) para que propaguen correctamente — `document.addEventListener`
      * en el juego los recibe; los `game_event` viajan por `postMessage`.
      * Para iframes cross-origin los eventos de teclado y ratón no se pueden
-     * entregar (ver `eventTarget`); solo `game_event` alcanza al juego.
+     * despachar (ver `eventTarget`): viajan como `VOUT_KEY` / `VOUT_CLICK`.
      */
     setTarget(target: EventTarget): void {
         this.endAllGameEvents();
@@ -363,8 +367,8 @@ export class ActionDispatcher {
      * Para iframes cross-origin devuelve `null`: acceder a
      * `contentWindow.document` lanza SecurityError, y `dispatchEvent` tampoco
      * es accesible en una Window de otro origen (la same-origin policy solo
-     * expone `postMessage`, `location`, `close`, `focus` y poco más). No hay
-     * forma de entregar un KeyboardEvent/MouseEvent a ese juego.
+     * expone `postMessage`, `location`, `close`, `focus` y poco más). A ese
+     * juego la entrada le llega por mensajes (`emitKey`, `dispatchMouseClick`).
      */
     private get eventTarget(): EventTarget | null {
         if (this.targetIsWindow) {
@@ -383,6 +387,46 @@ export class ActionDispatcher {
      */
     private dispatchDom(event: Event): void {
         this.eventTarget?.dispatchEvent(event);
+    }
+
+    /**
+     * Envía un mensaje del protocolo al juego embebido, con `targetOrigin`
+     * estricto. No-op si no hay un iframe conectado tras el handshake.
+     */
+    private postToGame(message: VoutToGameMessage): void {
+        if (this.targetIsWindow && this.allowedOrigin !== null) {
+            (this.target as Window).postMessage(message, this.allowedOrigin);
+        }
+    }
+
+    /**
+     * Pulsa o suelta una tecla en el juego.
+     *
+     * Mismo origen (o `document` local): KeyboardEvent real sobre el
+     * documento. Otro origen: mensaje `VOUT_KEY`, que el juego convierte en
+     * su propio KeyboardEvent.
+     */
+    private emitKey(
+        type: 'keydown' | 'keyup',
+        key: string,
+        code: string,
+        at: number = Date.now(),
+    ): void {
+        const domTarget = this.eventTarget;
+
+        if (domTarget !== null) {
+            domTarget.dispatchEvent(this.makeKeyEvent(type, key, code));
+
+            return;
+        }
+
+        this.postToGame({
+            type: 'VOUT_KEY',
+            code,
+            key,
+            state: type === 'keydown' ? 'down' : 'up',
+            at,
+        });
     }
 
     /**
@@ -429,10 +473,10 @@ export class ActionDispatcher {
     ): void {
         switch (action.type) {
             case 'keyboard':
-                this.dispatchKeyboard(action.key, action.mode, isHeadDir);
+                this.dispatchKeyboard(action.key, action.mode, isHeadDir, at);
                 break;
             case 'mouse_click':
-                this.dispatchMouseClick(action.button);
+                this.dispatchMouseClick(action.button, at);
                 break;
             case 'game_event':
                 this.startGameEvent(trigger, action.event, at);
@@ -510,10 +554,7 @@ export class ActionDispatcher {
         at: number,
     ): void {
         if (this.targetIsWindow && this.allowedOrigin !== null) {
-            (this.target as Window).postMessage(
-                { type, event, at },
-                this.allowedOrigin,
-            );
+            this.postToGame({ type, event, at });
 
             return;
         }
@@ -535,24 +576,26 @@ export class ActionDispatcher {
      * @param mode      'press' = keydown+keyup inmediatos. 'hold' = retener tecla.
      * @param isHeadDir Si es HEAD_*: el keyup lo gestiona handleHeadMove al salir del umbral.
      *                  Si es gesto facial: se usa timer de auto-liberación (FACIAL_HOLD_EXTEND_MS).
+     * @param at        Instante del gesto (ms Unix); viaja en `VOUT_KEY`.
      */
     private dispatchKeyboard(
         code: string,
         mode: 'press' | 'hold',
         isHeadDir: boolean,
+        at: number,
     ): void {
         const eventKey = resolveEventKey(code);
 
         if (mode === 'press') {
-            this.dispatchDom(this.makeKeyEvent('keydown', eventKey, code));
-            this.dispatchDom(this.makeKeyEvent('keyup', eventKey, code));
+            this.emitKey('keydown', eventKey, code, at);
+            this.emitKey('keyup', eventKey, code, at);
             return;
         }
 
         // Modo hold — keydown ahora, keyup diferido.
         if (!this.heldKeys.has(eventKey)) {
             this.heldKeys.set(eventKey, code);
-            this.dispatchDom(this.makeKeyEvent('keydown', eventKey, code));
+            this.emitKey('keydown', eventKey, code, at);
         }
 
         if (!isHeadDir) {
@@ -571,7 +614,20 @@ export class ActionDispatcher {
         // Para isHeadDir: el keyup se lanza en handleHeadMove al volver al rango central.
     }
 
-    private dispatchMouseClick(button: 'left' | 'right'): void {
+    /**
+     * Hace clic en el juego.
+     *
+     * Mismo origen: MouseEvents reales sobre el documento. Otro origen:
+     * mensaje `VOUT_CLICK`; el juego lo aplica donde esté el cursor virtual
+     * que recibe por `VOUT_CURSOR`.
+     */
+    private dispatchMouseClick(button: 'left' | 'right', at: number): void {
+        if (this.eventTarget === null) {
+            this.postToGame({ type: 'VOUT_CLICK', button, at });
+
+            return;
+        }
+
         const buttonIndex = button === 'left' ? 0 : 2;
         this.dispatchDom(
             new MouseEvent('mousedown', {
@@ -601,13 +657,13 @@ export class ActionDispatcher {
         const code = this.heldKeys.get(eventKey);
         if (code === undefined) return;
         this.heldKeys.delete(eventKey);
-        this.dispatchDom(this.makeKeyEvent('keyup', eventKey, code));
+        this.emitKey('keyup', eventKey, code);
     }
 
     /** Libera todas las teclas retenidas y cancela todos los timers de hold. */
     private releaseAllHeldKeys(): void {
         for (const [eventKey, code] of this.heldKeys) {
-            this.dispatchDom(this.makeKeyEvent('keyup', eventKey, code));
+            this.emitKey('keyup', eventKey, code);
         }
         this.heldKeys.clear();
 

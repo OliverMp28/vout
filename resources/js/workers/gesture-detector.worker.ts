@@ -272,8 +272,16 @@ function handleFrame(bitmap: ImageBitmap, timestamp: number): void {
         bitmap.close();
     }
 
-    // Sin cara detectada.
-    if (!result.faceLandmarks || result.faceLandmarks.length === 0) return;
+    // Sin cara detectada. Se responde igualmente con un RESULT vacío: el
+    // hook espera el primer RESULT para dar el motor por arrancado, y si el
+    // único fotograma de calentamiento no tiene cara (cámara aún oscura,
+    // usuario fuera de plano, cámara que no apunta a nadie) se quedaba
+    // esperando para siempre en "cargando".
+    if (!result.faceLandmarks || result.faceLandmarks.length === 0) {
+        post({ type: 'RESULT', gestures: [], headPose: null });
+
+        return;
+    }
 
     // -- Blendshapes --
     // En modo Vision Lab necesitamos las 52 categorías para el panel de debug.

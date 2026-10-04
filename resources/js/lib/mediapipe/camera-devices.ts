@@ -16,6 +16,10 @@
  *   3. En cualquier otro caso, la que decida el navegador pidiendo la
  *      frontal — imprescindible en móviles, donde todas son "del equipo".
  *
+ * Una cámara que se abrió pero no llegó a entregar imagen (un teléfono
+ * enlazado que no está conectado, por ejemplo) se descarta de la elección
+ * automática mientras dure la pestaña; el usuario puede volver a pedirla.
+ *
  * Privacidad: la elección vive solo en memoria. No se escribe en cookies,
  * `localStorage` ni servidor, así que no añade nada a la política de cookies.
  *
@@ -56,6 +60,9 @@ const BUILT_IN_OR_USB_CAMERA =
 /** Cámara elegida a mano por el usuario. Dura lo que la pestaña. */
 let chosenCameraId: string | null = null;
 
+/** Cámaras que se abrieron sin llegar a entregar imagen. Dura lo que la pestaña. */
+const unresponsiveCameraIds = new Set<string>();
+
 // ---------------------------------------------------------------------------
 // Elección
 // ---------------------------------------------------------------------------
@@ -63,6 +70,23 @@ let chosenCameraId: string | null = null;
 /** Recuerda, solo en memoria, la cámara que el usuario eligió a mano. */
 export function rememberCameraChoice(deviceId: string): void {
     chosenCameraId = deviceId;
+}
+
+/**
+ * Anota que una cámara se abrió pero no entregó imagen. Deja de entrar en
+ * la elección automática y, si era la elegida por el usuario, se olvida.
+ */
+export function markCameraUnresponsive(deviceId: string): void {
+    unresponsiveCameraIds.add(deviceId);
+
+    if (chosenCameraId === deviceId) {
+        chosenCameraId = null;
+    }
+}
+
+/** La cámara ha entregado imagen: vuelve a ser elegible. */
+export function markCameraResponsive(deviceId: string): void {
+    unresponsiveCameraIds.delete(deviceId);
 }
 
 /**
@@ -101,25 +125,36 @@ function byPreference(cameras: readonly CameraDevice[]): CameraDevice[] {
  * Cámara que conviene abrir, o `null` si es mejor dejar decidir al navegador.
  *
  * Solo se impone una cámara cuando hay diferencia real entre las
- * disponibles. En un móvil (frontal y trasera, ninguna virtual) todas
- * puntúan igual y manda `facingMode: 'user'`.
+ * disponibles, o cuando hay que esquivar una que no responde. En un móvil
+ * (frontal y trasera, ninguna virtual) todas puntúan igual y manda
+ * `facingMode: 'user'`.
  */
 export function pickPreferredCamera(
     cameras: readonly CameraDevice[],
     chosenDeviceId: string | null = chosenCameraId,
 ): string | null {
+    const usable = cameras.filter(
+        (camera) => !unresponsiveCameraIds.has(camera.deviceId),
+    );
+
     if (
         chosenDeviceId !== null &&
-        cameras.some((camera) => camera.deviceId === chosenDeviceId)
+        usable.some((camera) => camera.deviceId === chosenDeviceId)
     ) {
         return chosenDeviceId;
     }
 
-    if (cameras.length < 2) return null;
+    if (usable.length === 0) return null;
 
-    const ranked = byPreference(cameras);
+    const ranked = byPreference(usable);
     const best = ranked[0];
     const worst = ranked[ranked.length - 1];
+
+    // La cámara por defecto del navegador podría ser justo la que no
+    // responde: hay que nombrar una de las que sí.
+    if (usable.length < cameras.length) return best.deviceId;
+
+    if (usable.length < 2) return null;
 
     return scoreCamera(best.label) > scoreCamera(worst.label)
         ? best.deviceId

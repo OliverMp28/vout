@@ -18,6 +18,7 @@ import { Head, usePage } from '@inertiajs/react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { ControlPanel } from '@/components/play/control-panel';
+import type { CameraNotice } from '@/components/play/control-panel';
 import { CursorOverlay } from '@/components/play/cursor-overlay';
 import type { CursorOverlayHandle } from '@/components/play/cursor-overlay';
 import { EngineOverlay } from '@/components/play/engine-overlay';
@@ -105,6 +106,7 @@ export default function PlayGame({
         camera,
         handleToggleEngine,
         handleRetryGame,
+        handleSelectCamera,
         handleAcceptPreset,
         recenterCursor,
         setDispatchEnabled,
@@ -149,6 +151,20 @@ export default function PlayGame({
         },
     ]);
 
+    // ── Aviso de cámara ────────────────────────────────────────────────────
+    // Un problema con la cámara no bloquea el juego (se puede jugar con
+    // teclado), así que se explica en el panel y no en un overlay.
+    const cameraNotice: CameraNotice | null = camera.issue
+        ? { tone: 'error', text: t(`play.camera.${camera.issue}`) }
+        : camera.skippedCamera
+          ? {
+                tone: 'info',
+                text: t('play.camera.skipped', {
+                    camera: camera.skippedCamera,
+                }),
+            }
+          : null;
+
     // ── Panel — el mismo contenido se usa en desktop y en el Sheet móvil ──
     const panelContent = (
         <ControlPanel
@@ -162,7 +178,9 @@ export default function PlayGame({
             fps={engine.performance?.fps ?? null}
             cameras={camera.cameras}
             activeCameraId={camera.activeCameraId}
-            onSelectCamera={(deviceId) => void camera.selectCamera(deviceId)}
+            cameraBusy={camera.busy}
+            cameraNotice={cameraNotice}
+            onSelectCamera={handleSelectCamera}
             onToggleEngine={handleToggleEngine}
             onToggleDispatch={setDispatchEnabled}
             onSensitivityChange={setSensitivity}
