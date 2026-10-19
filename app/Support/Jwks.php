@@ -3,11 +3,12 @@
 namespace App\Support;
 
 use Illuminate\Support\Facades\Cache;
+use Laravel\Passport\Passport;
 use RuntimeException;
 
 /**
- * Construye el JWK público a partir de `storage/oauth-public.key`
- * (la clave pública RSA de Passport) cumpliendo:
+ * Construye el JWK público a partir de la clave pública RSA de Passport
+ * (`PASSPORT_PUBLIC_KEY` o `storage/oauth-public.key`) cumpliendo:
  *
  *   - RFC 7517 — JSON Web Key.
  *   - RFC 7518 §6.3 — RSA public key parameters (`n`, `e`).
@@ -66,18 +67,7 @@ class Jwks
      */
     private static function buildJwk(): array
     {
-        $path = storage_path('oauth-public.key');
-        if (! is_file($path) || ! is_readable($path)) {
-            throw new RuntimeException(
-                'OAuth public key not found at '.$path.'. '
-                .'Run `php artisan passport:keys` to generate Passport keys.'
-            );
-        }
-
-        $pem = file_get_contents($path);
-        if ($pem === false || $pem === '') {
-            throw new RuntimeException('OAuth public key is empty.');
-        }
+        $pem = self::publicKeyPem();
 
         $resource = openssl_pkey_get_public($pem);
         if ($resource === false) {
@@ -105,6 +95,35 @@ class Jwks
             'n' => $n,
             'e' => $e,
         ];
+    }
+
+    /**
+     * Lee la clave pública de la misma fuente que Passport: la variable
+     * `PASSPORT_PUBLIC_KEY` si existe y, si no, `storage/oauth-public.key`.
+     * Si el JWKS leyera siempre el fichero, publicaría una clave distinta
+     * de la que firma los tokens cuando la clave llega por entorno.
+     */
+    private static function publicKeyPem(): string
+    {
+        $pem = str_replace('\\n', "\n", (string) config('passport.public_key'));
+        if ($pem !== '') {
+            return $pem;
+        }
+
+        $path = Passport::keyPath('oauth-public.key');
+        if (! is_file($path) || ! is_readable($path)) {
+            throw new RuntimeException(
+                'OAuth public key not found at '.$path.'. '
+                .'Run `php artisan passport:keys` to generate Passport keys.'
+            );
+        }
+
+        $pem = file_get_contents($path);
+        if ($pem === false || $pem === '') {
+            throw new RuntimeException('OAuth public key is empty.');
+        }
+
+        return $pem;
     }
 
     /**

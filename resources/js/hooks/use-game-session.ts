@@ -23,6 +23,7 @@
 
 import { useEffect, useState } from 'react';
 
+import { csrfToken } from '@/lib/csrf';
 import type { GameSession, VoutSessionEndReason } from '@/lib/iframe/types';
 import { store as sessionTokenStore } from '@/routes/play/token';
 
@@ -119,17 +120,6 @@ function endReasonFor(status: number): GameSessionEndReason | null {
     }
 }
 
-/**
- * Lee el token CSRF de la cookie `XSRF-TOKEN` que Laravel emite en cada
- * respuesta. `fetch` no lo adjunta por sí solo (a diferencia del cliente
- * HTTP de Inertia), así que lo enviamos en la cabecera `X-XSRF-TOKEN`.
- */
-function readXsrfToken(): string {
-    const match = document.cookie.match(/(?:^|;\s*)XSRF-TOKEN=([^;]+)/);
-
-    return match ? decodeURIComponent(match[1]) : '';
-}
-
 async function requestSession(
     gameSlug: string,
     voutId: string,
@@ -141,7 +131,7 @@ async function requestSession(
             Accept: 'application/json',
             'Content-Type': 'application/json',
             'X-Requested-With': 'XMLHttpRequest',
-            'X-XSRF-TOKEN': readXsrfToken(),
+            'X-CSRF-TOKEN': csrfToken(),
         },
         body: JSON.stringify({ vout_id: voutId }),
     });

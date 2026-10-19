@@ -87,3 +87,17 @@ it('discovery endpoint tampoco envía cookies de sesión', function (): void {
     expect($response->headers->getCookies())->toBeEmpty();
     expect($response->headers->all('Set-Cookie'))->toBeEmpty();
 });
+
+it('publica la clave de PASSPORT_PUBLIC_KEY cuando llega por entorno, igual que Passport', function (): void {
+    $keyPair = openssl_pkey_new(['private_key_bits' => 2048, 'private_key_type' => OPENSSL_KEYTYPE_RSA]);
+    $details = openssl_pkey_get_details($keyPair);
+
+    // Coolify y otros paneles guardan la PEM en una línea con `\n` escapados.
+    config(['passport.public_key' => str_replace("\n", '\n', $details['key'])]);
+    Jwks::forgetCache();
+
+    $jwk = $this->get('/oauth/jwks')->json('keys.0');
+
+    expect(base64_decode(strtr($jwk['n'], '-_', '+/')))->toBe($details['rsa']['n']);
+    expect($jwk['kid'])->toBe(Jwks::keyId());
+});
