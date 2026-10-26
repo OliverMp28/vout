@@ -4,7 +4,7 @@ import { router } from '@inertiajs/react';
  * Token CSRF de la sesión, enviado siempre en la cabecera `X-CSRF-TOKEN`.
  *
  * No nos apoyamos en la cookie `XSRF-TOKEN`: en producción conviven otras
- * apps bajo `.vout.tech` que emiten una cookie con el mismo nombre para todo
+ * apps bajo `.vout.cloud` que emiten una cookie con el mismo nombre para todo
  * el dominio, y el navegador nos la manda junto a la nuestra. Laravel mira
  * `X-CSRF-TOKEN` antes que `X-XSRF-TOKEN`, así que la cookie ajena deja de
  * influir.

@@ -3,6 +3,12 @@
 
 FROM serversideup/php:8.5-fpm-nginx-alpine AS base
 
+# El tag de la imagen base es flotante: si una caché o un mirror sirve una
+# versión vieja, el build falla aquí en vez de publicar un PHP vulnerable.
+# 8.5.12 corrige CVE-2026-109618 y CVE-2026-109619 (RCE sin autenticación).
+ARG PHP_VERSION_MINIMA=8.5.12
+RUN php -r 'exit(version_compare(PHP_VERSION, getenv("PHP_VERSION_MINIMA"), ">=") ? 0 : 1);' || { echo "PHP $(php -r 'echo PHP_VERSION;') es anterior a ${PHP_VERSION_MINIMA}" >&2; exit 1; }
+
 # ---------------------------------------------------------------------------
 # Dependencias PHP (sin dev)
 # ---------------------------------------------------------------------------
@@ -54,7 +60,19 @@ RUN mkdir -p /etc/s6-overlay/s6-rc.d/laravel-queue/dependencies.d \
         > /etc/s6-overlay/s6-rc.d/laravel-queue/run \
     && chmod +x /etc/s6-overlay/s6-rc.d/laravel-queue/run
 
+# PHP_SESSION_UPLOAD_PROGRESS_ENABLED=0: mitigación oficial de CVE-2026-115560,
+# aún sin parche. La v5 de la imagen ya lo trae apagado; se fija aquí para no
+# depender de ese valor por defecto.
+#
+# TRUSTED_PROXY=off: con el valor por defecto de la v5 ("cloudflare"), nginx
+# sustituye REMOTE_ADDR por CF-Connecting-IP. Detrás del túnel eso hace que
+# Laravel vea una IP pública, deje de fiarse de X-Forwarded-Proto y genere
+# URLs http (y firmas de verificación de correo que no cuadran). Con "off",
+# REMOTE_ADDR es el proxy de la red Docker y la IP real la resuelve
+# trustProxies() en bootstrap/app.php.
 ENV PHP_OPCACHE_ENABLE=1 \
+    PHP_SESSION_UPLOAD_PROGRESS_ENABLED=0 \
+    TRUSTED_PROXY=off \
     PHP_OPCACHE_MEMORY_CONSUMPTION=128 \
     PHP_FPM_PM_CONTROL=ondemand \
     PHP_FPM_PM_MAX_CHILDREN=8 \

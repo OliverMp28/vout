@@ -23,7 +23,7 @@ it('detecta https y la IP real cuando la petición llega desde un proxy de la re
         ->withHeaders([
             'X-Forwarded-Proto' => 'https',
             'X-Forwarded-For' => '203.0.113.7',
-            'X-Forwarded-Host' => 'vout.tech',
+            'X-Forwarded-Host' => 'vout.cloud',
             'X-Forwarded-Port' => '443',
         ])
         ->get('/_test/proxy')
@@ -31,7 +31,7 @@ it('detecta https y la IP real cuando la petición llega desde un proxy de la re
         ->assertExactJson([
             'secure' => true,
             'ip' => '203.0.113.7',
-            'url' => 'https://vout.tech/games',
+            'url' => 'https://vout.cloud/games',
         ]);
 });
 

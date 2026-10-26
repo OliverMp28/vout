@@ -4,7 +4,7 @@ use Inertia\Testing\AssertableInertia as Assert;
 
 /*
  * El frontend manda el token en `X-CSRF-TOKEN` (ver `resources/js/lib/csrf.ts`)
- * en vez de leer la cookie `XSRF-TOKEN`, que en `.vout.tech` puede ser de otra
+ * en vez de leer la cookie `XSRF-TOKEN`, que en `.vout.cloud` puede ser de otra
  * app. El token sale del `<meta name="csrf-token">` en la carga inicial y de
  * la prop compartida `csrfToken` en cada respuesta de Inertia.
  */
