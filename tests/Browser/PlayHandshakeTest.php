@@ -592,12 +592,15 @@ test('con el SDK, Tab, Enter y Espacio recorren un menú HTML como con un teclad
     expect(waitForSdkEcho($page, 'echo.log.auth.length >= 1'))->not->toBeNull();
 
     // Un evento de teclado creado por código no mueve el foco ni pulsa
-    // botones por sí solo: el SDK hace lo que haría el navegador.
+    // botones por sí solo: el SDK hace lo que haría el navegador. Como el
+    // ActionDispatcher, el portal da el foco al iframe antes de cada tecla:
+    // sin él, Chromium ignora el focus() que el juego hace dentro.
     $page->script(<<<'JS'
         (() => {
             const frame = document.querySelector('iframe');
             const origin = new URL(frame.src).origin;
             const tap = (code, key) => {
+                frame.contentWindow.focus();
                 frame.contentWindow.postMessage({ type: 'VOUT_KEY', code, key, state: 'down', at: Date.now() }, origin);
                 frame.contentWindow.postMessage({ type: 'VOUT_KEY', code, key, state: 'up', at: Date.now() }, origin);
             };

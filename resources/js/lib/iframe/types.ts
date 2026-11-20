@@ -135,7 +135,8 @@ export type VoutActionEndMessage = {
  * convierte en un KeyboardEvent en su propia página (el SDK
  * `public/sdk/vout-game.js` lo hace solo) y su código de teclado de siempre
  * funciona sin cambios. A un juego del mismo origen no le llega: ahí el
- * portal despacha el evento directamente.
+ * portal despacha el evento directamente. Antes de cada pulsación el portal
+ * da el foco al iframe, para que el SDK pueda mover el foco con Tab.
  *
  * `code` y `key` siguen `KeyboardEvent.code` / `KeyboardEvent.key`
  * (`'Space'` / `' '`, `'ArrowDown'` / `'ArrowDown'`, `'KeyZ'` / `'z'`).

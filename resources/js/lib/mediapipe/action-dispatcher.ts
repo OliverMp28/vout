@@ -420,6 +420,34 @@ export class ActionDispatcher {
     }
 
     /**
+     * Da el foco del teclado al iframe del juego antes de una tecla.
+     *
+     * Chromium 159 (el de Playwright 1.65) ignora el `focus()` que un
+     * iframe de otro origen hace sobre sus propios elementos si el iframe no
+     * tiene el foco. Sin esto, el Tab que el SDK simula no mueve el foco y
+     * Enter/Espacio no pulsan nada. Solo el portal puede dárselo.
+     */
+    private focusGame(): void {
+        if (!this.targetIsWindow || this.allowedOrigin === null) {
+            return;
+        }
+
+        const active = document.activeElement;
+        if (
+            active instanceof HTMLIFrameElement &&
+            active.contentWindow === this.target
+        ) {
+            return;
+        }
+
+        try {
+            (this.target as Window).focus();
+        } catch {
+            // Sin foco el juego sigue recibiendo VOUT_KEY; solo pierde Tab.
+        }
+    }
+
+    /**
      * Pulsa o suelta una tecla en el juego.
      *
      * Mismo origen (o `document` local): KeyboardEvent real sobre el
@@ -438,6 +466,10 @@ export class ActionDispatcher {
             domTarget.dispatchEvent(this.makeKeyEvent(type, key, code));
 
             return;
+        }
+
+        if (type === 'keydown') {
+            this.focusGame();
         }
 
         this.postToGame({

@@ -610,7 +610,7 @@ Vout publishes a script that does everything in this section for you. Load it, t
 
 With that, your game already works with face control. The keys and mouse the player drives with their face reach your page as regular keyboard and mouse events (`keydown`, `keyup`, `mousedown`, `click`…), so **your existing controls code works untouched**. A held gesture is a held key: if holding jump makes it higher in your game, it does with the face too.
 
-The SDK also does what the browser would do with a real key and a code-created event doesn't: Enter and Space press the focused button, Tab moves to the next control and Escape closes an open `<dialog>`. That way a menu built in HTML can be navigated with gestures. Arrow keys don't move focus: if your menu is navigated with arrows, you handle that.
+The SDK also does what the browser would do with a real key and a code-created event doesn't: Enter and Space press the focused button, Tab moves to the next control and Escape closes an open `<dialog>`. That way a menu built in HTML can be navigated with gestures. Arrow keys don't move focus: if your menu is navigated with arrows, you handle that. Before each key the portal gives focus to your iframe: some browsers ignore `focus()` calls made by a cross-origin iframe that doesn't have focus, and without it Tab wouldn't move anything.
 
 | Option | What for |
 | :--- | :--- |
