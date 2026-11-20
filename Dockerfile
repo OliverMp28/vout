@@ -1,12 +1,12 @@
 # Imagen de producción de Vout: nginx + PHP-FPM + worker de colas (s6-overlay).
 # Construye desde el repositorio sin nada del host: ni .env, ni vendor, ni node_modules.
 
-FROM serversideup/php:8.5-fpm-nginx-alpine AS base
+FROM serversideup/php:8.5.13-fpm-nginx-alpine-v5.2.0 AS base
 
-# El tag de la imagen base es flotante: si una caché o un mirror sirve una
-# versión vieja, el build falla aquí en vez de publicar un PHP vulnerable.
-# 8.5.12 corrige CVE-2026-109618 y CVE-2026-109619 (RCE sin autenticación).
-ARG PHP_VERSION_MINIMA=8.5.12
+# Si una caché o un mirror sirve una versión vieja, el build falla aquí en vez
+# de publicar un PHP vulnerable. 8.5.13 corrige las RCE de noviembre de 2026
+# (CVE-2026-129474, -129496, -129481, -126714), las de PHP-FPM y CVE-2026-115560.
+ARG PHP_VERSION_MINIMA=8.5.13
 RUN php -r 'exit(version_compare(PHP_VERSION, getenv("PHP_VERSION_MINIMA"), ">=") ? 0 : 1);' || { echo "PHP $(php -r 'echo PHP_VERSION;') es anterior a ${PHP_VERSION_MINIMA}" >&2; exit 1; }
 
 # ---------------------------------------------------------------------------
