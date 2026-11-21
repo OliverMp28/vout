@@ -240,3 +240,57 @@ test('con una cámara lenta el panel avisa de que con más luz los gestos respon
         ->assertSeeIn('[data-camera-notice="low_fps"]', 'fps')
         ->assertNoJavaScriptErrors();
 });
+
+/**
+ * Espera a que el panel muestre la calibración en `$state` y devuelve el
+ * motivo del fallo (o `$state` si no es un fallo), o null si no llega.
+ */
+function waitForCalibration(PendingAwaitablePage|Webpage $page, string $state, int $timeoutMs = 40000): ?string
+{
+    return $page->script(<<<JS
+        new Promise((resolve) => {
+            const deadline = Date.now() + {$timeoutMs};
+
+            (function poll() {
+                const element = document.querySelector('aside [data-calibration="{$state}"]');
+
+                if (element) {
+                    return resolve(element.dataset.calibrationReason ?? '{$state}');
+                }
+
+                if (Date.now() > deadline) {
+                    return resolve(null);
+                }
+
+                setTimeout(poll, 200);
+            })();
+        })
+    JS);
+}
+
+test('al arrancar calibra la cara sola y, si no la ve, explica por qué', function (): void {
+    $game = engineTestGame();
+
+    $page = visit('/play/'.$game->slug);
+
+    useSyntheticCamera($page, 30);
+    $page->click('#play-engine-toggle');
+
+    expect(waitForEngineStatus($page, 'running'))->toBe('running');
+
+    // La cámara sintética no tiene cara: la calibración automática no puede
+    // terminar y lo dice, sin bloquear el juego.
+    expect(waitForCalibration($page, 'failed'))->toBe('no_face');
+
+    // "Centrar cursor" ya no recalibra.
+    $page->click('#play-recenter');
+
+    expect($page->script('document.querySelector(\'aside [data-calibration="calibrating"]\') === null'))->toBeTrue();
+
+    // "Recalibrar cara" vuelve a intentarlo.
+    $page->click('#play-calibrate');
+
+    expect(waitForCalibration($page, 'calibrating', 5000))->toBe('calibrating');
+
+    $page->assertNoJavaScriptErrors();
+});

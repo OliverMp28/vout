@@ -24,7 +24,6 @@ import type {
 } from '@mediapipe/tasks-vision';
 
 import {
-    CALIBRATION_FRAME_COUNT,
     DEFAULT_DETECTION_CONFIG,
     FACE_LOST_RELEASE_MS,
     HEAD_POSE_GESTURE_GATE,
@@ -38,12 +37,14 @@ import {
     resetGestureTracking,
 } from '@/lib/mediapipe/gesture-classifier';
 import { extractHeadPose } from '@/lib/mediapipe/head-pose';
+import { NeutralCalibration } from '@/lib/mediapipe/neutral-calibration';
 import type {
     EngineInfo,
     GestureEvent,
     HeadPose,
     MediaPipeRuntimeAssets,
     NeutralBaseline,
+    PreferredDelegate,
     WasmFilesetUrls,
     WorkerConfig,
     WorkerInMessage,
@@ -88,8 +89,8 @@ let config: WorkerConfig = {
 };
 let baseline: NeutralBaseline | null = null;
 
-let calibrationSamples: Record<string, number>[] = [];
-let isCalibrating = false;
+/** Calibración en curso, o null. */
+let calibration: NeutralCalibration | null = null;
 
 /** Timestamp del primer fotograma seguido sin cara, o null si se ve la cara. */
 let faceLostSince: number | null = null;
@@ -203,6 +204,7 @@ function detectWebGlRenderer(): string | null {
 async function handleInit(
     assets: MediaPipeRuntimeAssets,
     mediapipeVersion: string,
+    preferredDelegate: PreferredDelegate,
     cfg: WorkerConfig,
 ): Promise<void> {
     config = cfg;
@@ -212,20 +214,24 @@ async function handleInit(
         const simd = await vision.FilesetResolver.isSimdSupported();
         const fileset = simd ? assets.wasm.simd : assets.wasm.nosimd;
 
-        let delegate: EngineInfo['delegate'] = 'GPU';
+        let delegate: EngineInfo['delegate'] = preferredDelegate;
 
         try {
             landmarker = await createLandmarker(
                 vision,
                 fileset,
                 assets.modelUrl,
-                'GPU',
+                preferredDelegate,
             );
-        } catch (gpuErr) {
+        } catch (initErr) {
+            if (preferredDelegate === 'CPU') {
+                throw initErr;
+            }
+
             // El delegado GPU puede fallar en algunos dispositivos.
             console.warn(
                 '[GestureWorker] GPU init failed, retrying with CPU:',
-                gpuErr,
+                initErr,
             );
             delegate = 'CPU';
             landmarker = await createLandmarker(
@@ -320,6 +326,7 @@ function handleFrame(
     post({
         type: 'RESULT',
         frameId,
+        timestamp,
         ...analysis,
         gestureRiseMs: drainGestureRiseSamples(),
         timing: {
@@ -336,9 +343,42 @@ function analyse(
     result: FaceLandmarkerResult,
     timestamp: number,
 ): FrameAnalysis {
+    const hasFace = !!result.faceLandmarks && result.faceLandmarks.length > 0;
+
+    // En Vision Lab, los 52 blendshapes; en juego, solo los que usa el
+    // clasificador (Sesión 3.4 §4.2).
+    const bsMap = hasFace
+        ? blendshapeMapFromResult(
+              result.faceBlendshapes ?? [],
+              config.enableBlendshapes,
+          )
+        : null;
+
+    let headPose: HeadPose | null = null;
+    if (
+        hasFace &&
+        result.facialTransformationMatrixes &&
+        result.facialTransformationMatrixes.length > 0
+    ) {
+        const matrix = result.facialTransformationMatrixes[0].data;
+        headPose = extractHeadPose(matrix, timestamp);
+    }
+
+    // Calibración: no se clasifican gestos (los activos se terminan al
+    // empezar, en CALIBRATE_NEUTRAL), pero el cursor sigue a la cabeza.
+    if (calibration !== null) {
+        calibrate(timestamp, bsMap, headPose);
+
+        return {
+            gestures: releaseActiveGestures(timestamp),
+            headPose,
+            blendshapes: null,
+        };
+    }
+
     // Sin cara. Si lleva `FACE_LOST_RELEASE_MS` sin verse, los gestos activos
     // se dan por terminados: un gesto sostenido no debe quedarse "pulsado".
-    if (!result.faceLandmarks || result.faceLandmarks.length === 0) {
+    if (bsMap === null) {
         faceLostSince ??= timestamp;
 
         return {
@@ -352,32 +392,6 @@ function analyse(
     }
 
     faceLostSince = null;
-
-    // En Vision Lab, los 52 blendshapes; en juego, solo los que usa el
-    // clasificador (Sesión 3.4 §4.2).
-    const bsMap = blendshapeMapFromResult(
-        result.faceBlendshapes ?? [],
-        config.enableBlendshapes,
-    );
-
-    // Calibración: se acumulan muestras sin clasificar ni mover el cursor.
-    if (isCalibrating) {
-        calibrationSamples.push(bsMap);
-        if (calibrationSamples.length >= CALIBRATION_FRAME_COUNT) {
-            finishCalibration();
-        }
-
-        return { gestures: [], headPose: null, blendshapes: null };
-    }
-
-    let headPose: HeadPose | null = null;
-    if (
-        result.facialTransformationMatrixes &&
-        result.facialTransformationMatrixes.length > 0
-    ) {
-        const matrix = result.facialTransformationMatrixes[0].data;
-        headPose = extractHeadPose(matrix, timestamp);
-    }
 
     // Sesión 3.4 §6.5 — con la cabeza muy girada los blendshapes frontales se
     // distorsionan (mirar arriba → falso BROW_RAISE). Se suprimen los gestos;
@@ -401,29 +415,33 @@ function analyse(
 // Calibración
 // ---------------------------------------------------------------------------
 
-function finishCalibration(): void {
-    isCalibrating = false;
+/** Añade un fotograma a la calibración en curso y avisa si termina. */
+function calibrate(
+    timestamp: number,
+    blendshapes: Record<string, number> | null,
+    headPose: HeadPose | null,
+): void {
+    const progress = calibration?.addFrame({
+        timestamp,
+        blendshapes,
+        headPose,
+    });
 
-    if (calibrationSamples.length === 0) return;
-
-    // Promediar todos los valores de blendshapes entre los frames capturados.
-    const averaged: Record<string, number> = {};
-    const sampleCount = calibrationSamples.length;
-
-    for (const sample of calibrationSamples) {
-        for (const [key, value] of Object.entries(sample)) {
-            averaged[key] = (averaged[key] ?? 0) + value;
-        }
+    if (progress === undefined || progress.status === 'collecting') {
+        return;
     }
 
-    for (const key of Object.keys(averaged)) {
-        averaged[key] /= sampleCount;
+    calibration = null;
+
+    if (progress.status === 'done') {
+        baseline = progress.baseline;
+        post({ type: 'CALIBRATED', baseline });
+
+        return;
     }
 
-    baseline = { capturedAt: Date.now(), blendshapes: averaged };
-    calibrationSamples = [];
-
-    post({ type: 'CALIBRATED', baseline });
+    // Si falla, se mantiene la línea base anterior (o ninguna).
+    post({ type: 'CALIBRATION_FAILED', reason: progress.reason });
 }
 
 // ---------------------------------------------------------------------------
@@ -435,7 +453,12 @@ self.onmessage = (e: MessageEvent<WorkerInMessage>) => {
 
     switch (msg.type) {
         case 'INIT':
-            void handleInit(msg.assets, msg.mediapipeVersion, msg.config);
+            void handleInit(
+                msg.assets,
+                msg.mediapipeVersion,
+                msg.delegate,
+                msg.config,
+            );
             break;
 
         case 'FRAME':
@@ -447,8 +470,7 @@ self.onmessage = (e: MessageEvent<WorkerInMessage>) => {
             break;
 
         case 'CALIBRATE_NEUTRAL':
-            isCalibrating = true;
-            calibrationSamples = [];
+            calibration = new NeutralCalibration();
             break;
 
         case 'PAUSE':

@@ -29,12 +29,15 @@ import {
 } from '@/lib/mediapipe/runtime-assets';
 import { TelemetryCollector } from '@/lib/mediapipe/telemetry';
 import type {
+    AnalyzedFrame,
+    CalibrationState,
     EngineInfo,
     EngineStatus,
     GestureEvent,
     HeadPose,
     NeutralBaseline,
     PerformanceMetrics,
+    PreferredDelegate,
 } from '@/lib/mediapipe/types';
 
 // ---------------------------------------------------------------------------
@@ -72,6 +75,15 @@ type UseGestureEngineOptions = {
     /** Configuración del head tracker (zona muerta, suavizado, inversión). */
     headTrackerConfig?: Partial<HeadTrackerConfig>;
     /**
+     * Calibrar la cara neutra al arrancar (en cuanto el usuario mira de
+     * frente con la cara relajada). Ver `calibration`.
+     */
+    autoCalibrate?: boolean;
+    /** Delegado con que crear el landmarker (Vision Lab compara GPU y CPU). */
+    delegate?: PreferredDelegate;
+    /** Cada fotograma analizado (grabadora de Vision Lab). */
+    onFrame?: (frame: AnalyzedFrame) => void;
+    /**
      * Expone `headPose`, `headTrackPosition`, `blendshapes` y `lastGesture`
      * como estado (como mucho una vez por fotograma de pantalla). Solo para
      * pantallas que los pintan. Por defecto `false`: esos valores quedan a
@@ -98,6 +110,8 @@ type UseGestureEngineReturn = {
     blendshapes: Record<string, number> | null;
     performance: PerformanceMetrics | null;
     baseline: NeutralBaseline | null;
+    /** Estado de la calibración de la cara neutra. */
+    calibration: CalibrationState;
     error: string | null;
     /** Versión de MediaPipe, delegado y GPU con que corre el motor. */
     info: EngineInfo | null;
@@ -129,6 +143,9 @@ export function useGestureEngine(
         onCalibrated,
         enableBlendshapes = false,
         headTrackerConfig,
+        autoCalibrate = false,
+        delegate = 'GPU',
+        onFrame,
         liveState = false,
     } = options;
 
@@ -136,6 +153,9 @@ export function useGestureEngine(
     const [error, setError] = useState<string | null>(null);
     const [perf, setPerf] = useState<PerformanceMetrics | null>(null);
     const [baseline, setBaseline] = useState<NeutralBaseline | null>(null);
+    const [calibration, setCalibration] = useState<CalibrationState>({
+        status: 'idle',
+    });
     const [info, setInfo] = useState<EngineInfo | null>(null);
     const [lastGesture, setLastGesture] = useState<GestureEvent | null>(null);
     const [headPose, setHeadPose] = useState<HeadPose | null>(null);
@@ -155,11 +175,14 @@ export function useGestureEngine(
         sensitivity,
         enableBlendshapes,
         headTrackerConfig,
+        autoCalibrate,
+        delegate,
         liveState,
         onGesture,
         onHeadPose,
         onHeadMove,
         onCalibrated,
+        onFrame,
     });
 
     useEffect(() => {
@@ -167,11 +190,14 @@ export function useGestureEngine(
             sensitivity,
             enableBlendshapes,
             headTrackerConfig,
+            autoCalibrate,
+            delegate,
             liveState,
             onGesture,
             onHeadPose,
             onHeadMove,
             onCalibrated,
+            onFrame,
         };
     });
 
@@ -218,15 +244,14 @@ export function useGestureEngine(
         setBlendshapes(null);
     }, []);
 
-    /** El controlador se crea la primera vez que se usa, nunca en render. */
-    const getController = useCallback((): GestureEngineController => {
-        if (controllerRef.current !== null) {
-            return controllerRef.current;
-        }
-
+    /**
+     * El controlador se crea al arrancar, nunca en render. Se recrea en cada
+     * arranque para aplicar el delegado y la calibración automática pedidos.
+     */
+    const createController = useCallback((): GestureEngineController => {
         const latest = latestRef.current;
 
-        controllerRef.current = new GestureEngineController({
+        return new GestureEngineController({
             createWorker: createGestureWorker,
             resolveAssets: () => resolveRuntimeAssets(),
             mediapipeVersion: MEDIAPIPE_VERSION,
@@ -238,11 +263,15 @@ export function useGestureEngine(
                 enableBlendshapes: latest.enableBlendshapes,
             },
             headTracker: latest.headTrackerConfig,
+            delegate: latest.delegate,
+            autoCalibrate: latest.autoCalibrate,
             events: {
                 onStatusChange: setStatus,
                 onError: setError,
                 onInfo: setInfo,
                 onMetrics: setPerf,
+                onCalibrationChange: setCalibration,
+                onFrame: (frame) => latestRef.current.onFrame?.(frame),
                 onCalibrated: (captured) => {
                     setBaseline(captured);
                     latestRef.current.onCalibrated?.(captured);
@@ -267,8 +296,6 @@ export function useGestureEngine(
                     queueLiveState({ blendshapes: values }),
             },
         });
-
-        return controllerRef.current;
     }, [externalVideoRef, telemetry, queueLiveState]);
 
     // -----------------------------------------------------------------------
@@ -277,17 +304,20 @@ export function useGestureEngine(
 
     const startDetection = useCallback(
         (video: HTMLVideoElement) => {
+            if (
+                controllerRef.current !== null &&
+                controllerRef.current.status !== 'idle' &&
+                controllerRef.current.status !== 'error'
+            ) {
+                return;
+            }
+
             internalVideoRef.current = video;
-
-            const controller = getController();
-
-            controller.setSensitivity(latestRef.current.sensitivity);
-            controller.setEnableBlendshapes(
-                latestRef.current.enableBlendshapes,
-            );
-            controller.start();
+            controllerRef.current?.stop();
+            controllerRef.current = createController();
+            controllerRef.current.start();
         },
-        [getController],
+        [createController],
     );
 
     const stopDetection = useCallback(() => {
@@ -368,6 +398,7 @@ export function useGestureEngine(
         blendshapes,
         performance: perf,
         baseline,
+        calibration,
         error,
         info,
         telemetry,

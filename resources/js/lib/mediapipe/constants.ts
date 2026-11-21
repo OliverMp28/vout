@@ -220,8 +220,30 @@ export const LOW_CAMERA_FPS_SUSTAIN_MS = 3000;
 // Calibration
 // ---------------------------------------------------------------------------
 
-/** Number of frames to average during neutral calibration. */
+/** Fotogramas válidos que se promedian para la línea base neutral. */
 export const CALIBRATION_FRAME_COUNT = 30;
+
+/**
+ * Tiempo máximo de una calibración, contado desde su primer fotograma. Si en
+ * ese tiempo no se reúnen `CALIBRATION_FRAME_COUNT` fotogramas válidos, falla
+ * y se sigue jugando con la línea base anterior (o sin ninguna).
+ */
+export const CALIBRATION_TIMEOUT_MS = 8000;
+
+/**
+ * Giro máximo de la cabeza (en la escala normalizada de `head-pose.ts`) para
+ * que un fotograma valga como "de frente": ≈18° a los lados y ≈12° arriba o
+ * abajo. La línea base tomada con la cabeza girada falsea los gestos al volver
+ * al frente (las cejas, sobre todo, cambian mucho con la inclinación).
+ */
+export const CALIBRATION_MAX_HEAD_ROTATION = 0.4;
+
+/**
+ * Si algún blendshape de los que usa el clasificador supera este valor, la
+ * cara no está relajada (sonrisa, boca abierta, cejas arriba) y el fotograma
+ * no vale para la línea base.
+ */
+export const CALIBRATION_RELAXED_MAX = 0.45;
 
 // ---------------------------------------------------------------------------
 // Frame capture

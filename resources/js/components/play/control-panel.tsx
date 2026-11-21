@@ -49,7 +49,11 @@ import { useTranslation } from '@/hooks/use-translation';
 import type { HandshakeStatus } from '@/lib/iframe/types';
 import type { HeadTrackingMode } from '@/lib/mediapipe/action-types';
 import type { CameraDevice } from '@/lib/mediapipe/camera-devices';
-import type { EngineStatus, GestureType } from '@/lib/mediapipe/types';
+import type {
+    CalibrationState,
+    EngineStatus,
+    GestureType,
+} from '@/lib/mediapipe/types';
 import { cn } from '@/lib/utils';
 import appearance from '@/routes/appearance';
 
@@ -95,7 +99,12 @@ type ControlPanelProps = {
     onToggleEngine: () => void;
     onToggleDispatch: (enabled: boolean) => void;
     onSensitivityChange: (value: number) => void;
+    /** Recentra el cursor de la cabeza (no toca la calibración). */
+    onRecenter: () => void;
+    /** Vuelve a tomar la cara neutra. */
     onCalibrate: () => void;
+    /** Estado de la calibración de la cara neutra. */
+    calibration: CalibrationState;
 };
 
 // ---------------------------------------------------------------------------
@@ -272,7 +281,9 @@ function RunningPanel({
     onToggleEngine,
     onToggleDispatch,
     onSensitivityChange,
+    onRecenter,
     onCalibrate,
+    calibration,
 }: ControlPanelProps) {
     const { t } = useTranslation();
     const [advancedOpen, setAdvancedOpen] = useState(false);
@@ -280,7 +291,7 @@ function RunningPanel({
     const engineBadge = ENGINE_BADGE[engineStatus];
     const isRunning = engineStatus === 'running';
     const isLoading = engineStatus === 'loading';
-    const canCalibrate = isRunning;
+    const isCalibrating = calibration.status === 'calibrating';
 
     return (
         <div className="flex h-full flex-col gap-6 overflow-y-auto p-1">
@@ -433,17 +444,39 @@ function RunningPanel({
                     </Badge>
                 </div>
 
-                <Button
-                    id="play-calibrate"
-                    variant="secondary"
-                    size="sm"
-                    onClick={onCalibrate}
-                    disabled={!canCalibrate}
-                    className="w-full gap-2"
-                >
-                    <RotateCcw className="size-4" />
-                    {t('play.panel.calibrate')}
-                </Button>
+                <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
+                    {headTrackingMode !== 'disabled' && (
+                        <Button
+                            id="play-recenter"
+                            variant="secondary"
+                            size="sm"
+                            onClick={onRecenter}
+                            disabled={!isRunning}
+                            className="w-full gap-2"
+                        >
+                            <Crosshair className="size-4" />
+                            {t('play.panel.recenter')}
+                        </Button>
+                    )}
+                    <Button
+                        id="play-calibrate"
+                        variant="secondary"
+                        size="sm"
+                        onClick={onCalibrate}
+                        disabled={!isRunning || isCalibrating}
+                        aria-busy={isCalibrating}
+                        className="w-full gap-2"
+                    >
+                        {isCalibrating ? (
+                            <Loader2 className="size-4 animate-spin" />
+                        ) : (
+                            <RotateCcw className="size-4" />
+                        )}
+                        {t('play.panel.calibrate')}
+                    </Button>
+                </div>
+
+                <CalibrationStatus calibration={calibration} />
             </section>
 
             <Separator />
@@ -539,6 +572,44 @@ function RunningPanel({
  * Aviso sobre la cámara dentro del panel. Un problema con la cámara no
  * impide jugar con teclado, así que se explica aquí y no tapando el juego.
  */
+/**
+ * Qué pasa con la calibración de la cara neutra. Mientras calibra, pide mirar
+ * de frente con la cara relajada; si falla, explica por qué. Calibrada no
+ * dice nada: es el estado normal.
+ */
+function CalibrationStatus({ calibration }: { calibration: CalibrationState }) {
+    const { t } = useTranslation();
+
+    if (calibration.status === 'calibrating') {
+        return (
+            <p
+                role="status"
+                data-calibration="calibrating"
+                className="text-xs text-muted-foreground"
+            >
+                {t('play.calibration.calibrating')}
+            </p>
+        );
+    }
+
+    if (calibration.status === 'failed') {
+        return (
+            <Alert
+                className="px-3 py-2.5"
+                data-calibration="failed"
+                data-calibration-reason={calibration.reason}
+            >
+                <Info />
+                <AlertDescription className="text-xs">
+                    {t(`play.calibration.failed.${calibration.reason}`)}
+                </AlertDescription>
+            </Alert>
+        );
+    }
+
+    return null;
+}
+
 function CameraNoticeAlert({ notice }: { notice: CameraNotice | null }) {
     if (notice === null) {
         return null;

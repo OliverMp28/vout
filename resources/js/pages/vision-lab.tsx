@@ -27,6 +27,10 @@ import {
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
 import { CameraPreview } from '@/components/vision/camera-preview';
+import {
+    GestureRecordingPanel,
+    useGestureRecorder,
+} from '@/components/vision/gesture-recording-panel';
 import { GestureStatusIndicator } from '@/components/vision/gesture-status-indicator';
 import { useActionDispatcher } from '@/hooks/use-action-dispatcher';
 import { useCamera } from '@/hooks/use-camera';
@@ -40,9 +44,14 @@ import type {
     HeadTrackingMode,
 } from '@/lib/mediapipe/action-types';
 import { describeDiagnostics } from '@/lib/mediapipe/diagnostics';
+import type { RecordingMeta } from '@/lib/mediapipe/gesture-recording';
 import type { TelemetrySnapshot } from '@/lib/mediapipe/telemetry';
 import { GestureType } from '@/lib/mediapipe/types';
-import type { GestureEvent } from '@/lib/mediapipe/types';
+import type {
+    CalibrationState,
+    GestureEvent,
+    PreferredDelegate,
+} from '@/lib/mediapipe/types';
 import { cn } from '@/lib/utils';
 
 // ---------------------------------------------------------------------------
@@ -84,6 +93,20 @@ function actionLabel(
     }
 }
 
+/** Estado de la calibración en pocas palabras (Vision Lab, sin traducir). */
+function describeCalibration(calibration: CalibrationState): string {
+    switch (calibration.status) {
+        case 'idle':
+            return 'Sin calibrar';
+        case 'calibrating':
+            return 'Calibrando: mira al frente, cara relajada…';
+        case 'calibrated':
+            return 'Calibrada';
+        case 'failed':
+            return `Calibración fallida (${calibration.reason})`;
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
@@ -96,6 +119,17 @@ export default function VisionLab() {
     const [selectedPresetIndex, setSelectedPresetIndex] = useState(0);
     const [telemetrySnap, setTelemetrySnap] =
         useState<TelemetrySnapshot | null>(null);
+    // GPU o CPU: en algunas GPU integradas la CPU con SIMD rinde igual o más.
+    const [delegate, setDelegate] = useState<PreferredDelegate>('GPU');
+
+    // Contexto que acompaña a la grabación guiada (se lee al terminarla).
+    const recordingMetaRef = useRef<RecordingMeta>({
+        info: null,
+        sensitivity: 5,
+        baseline: null,
+        calibration: { status: 'idle' },
+    });
+    const recorder = useGestureRecorder(() => recordingMetaRef.current);
 
     const logIdRef = useRef(0);
     const dispatchLogIdRef = useRef(0);
@@ -158,6 +192,17 @@ export default function VisionLab() {
         enableBlendshapes: true,
         // Vision Lab pinta la pose, el cursor y los blendshapes en vivo.
         liveState: true,
+        delegate,
+        onFrame: recorder.onFrame,
+    });
+
+    useEffect(() => {
+        recordingMetaRef.current = {
+            info: engine.info,
+            sensitivity,
+            baseline: engine.baseline,
+            calibration: engine.calibration,
+        };
     });
 
     // Stable refs for cleanup without causing effect re-runs.
@@ -309,12 +354,50 @@ export default function VisionLab() {
                             <Button
                                 variant="secondary"
                                 onClick={engine.calibrateNeutral}
-                                disabled={engine.status !== 'running'}
+                                disabled={
+                                    engine.status !== 'running' ||
+                                    engine.calibration.status === 'calibrating'
+                                }
                             >
                                 <RotateCcw className="size-4" />
                                 Calibrate neutral
                             </Button>
+                            <span
+                                className="text-xs text-muted-foreground"
+                                data-calibration={engine.calibration.status}
+                            >
+                                {describeCalibration(engine.calibration)}
+                            </span>
                         </>
+                    )}
+
+                    {(engine.status === 'idle' ||
+                        engine.status === 'error') && (
+                        <div className="flex items-center gap-2">
+                            <Label
+                                htmlFor="vision-delegate"
+                                className="text-xs"
+                            >
+                                Delegate
+                            </Label>
+                            <Select
+                                value={delegate}
+                                onValueChange={(value) =>
+                                    setDelegate(value as PreferredDelegate)
+                                }
+                            >
+                                <SelectTrigger
+                                    id="vision-delegate"
+                                    className="h-8 w-24 text-xs"
+                                >
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="GPU">GPU</SelectItem>
+                                    <SelectItem value="CPU">CPU</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
                     )}
 
                     <div className="flex items-center gap-2">
@@ -567,6 +650,12 @@ export default function VisionLab() {
                                 )}
                             </div>
                         </div>
+
+                        {/* Grabación guiada para ajustar la detección */}
+                        <GestureRecordingPanel
+                            recorder={recorder}
+                            canRecord={engine.status === 'running'}
+                        />
 
                         {/* Performance */}
                         <div className="space-y-3">

@@ -41,6 +41,8 @@ import { realScheduler } from './scheduler';
 import type { Scheduler, TimerHandle } from './scheduler';
 import type { TelemetryCollector } from './telemetry';
 import type {
+    AnalyzedFrame,
+    CalibrationState,
     EngineInfo,
     EngineStatus,
     GestureEvent,
@@ -48,6 +50,7 @@ import type {
     MediaPipeRuntimeAssets,
     NeutralBaseline,
     PerformanceMetrics,
+    PreferredDelegate,
     WorkerConfig,
     WorkerInMessage,
     WorkerOutMessage,
@@ -72,6 +75,9 @@ export type GestureEngineEvents = {
     onHeadMove?: (position: HeadTrackPosition, frameTimestamp: number) => void;
     onBlendshapes?: (values: Record<string, number>) => void;
     onCalibrated?: (baseline: NeutralBaseline) => void;
+    onCalibrationChange?: (state: CalibrationState) => void;
+    /** Cada fotograma analizado, después de los callbacks anteriores. */
+    onFrame?: (frame: AnalyzedFrame) => void;
 };
 
 /** Lo que el motor usa de la fuente de imágenes de la cámara. */
@@ -115,6 +121,13 @@ export type GestureEngineOptions = {
      * navegador no lo da. Ver `EngineMetrics.recordCameraFrameCount`.
      */
     readCameraFrameCount?: (video: HTMLVideoElement | null) => number | null;
+    /** Delegado con que crear el landmarker (por defecto, GPU). */
+    delegate?: PreferredDelegate;
+    /**
+     * Calibrar la cara neutra en cuanto el motor esté listo. Solo cuenta si
+     * el usuario mira de frente con la cara relajada (`neutral-calibration.ts`).
+     */
+    autoCalibrate?: boolean;
 };
 
 /** Nombres de las métricas de telemetría (overlay Ctrl+M y CSV de Vision Lab). */
@@ -160,6 +173,7 @@ export class GestureEngineController {
     private config: WorkerConfig;
     private currentStatus: EngineStatus = 'idle';
     private info: EngineInfo | null = null;
+    private calibration: CalibrationState = { status: 'idle' };
     private lastMetrics: PerformanceMetrics | null = null;
 
     private handle: GestureWorkerHandle | null = null;
@@ -223,6 +237,7 @@ export class GestureEngineController {
             type: 'INIT',
             assets: this.options.resolveAssets(),
             mediapipeVersion: this.options.mediapipeVersion,
+            delegate: this.options.delegate ?? 'GPU',
             config: { ...this.config },
         });
 
@@ -272,8 +287,16 @@ export class GestureEngineController {
         this.frameSource?.start();
     }
 
+    /**
+     * Toma la cara neutra de nuevo. Mientras dura (≈1 s si el usuario mira de
+     * frente y relajado) no se detectan gestos; el cursor sigue a la cabeza.
+     */
     calibrateNeutral(): void {
-        this.post({ type: 'CALIBRATE_NEUTRAL' });
+        this.startCalibration(false);
+    }
+
+    get calibrationState(): CalibrationState {
+        return this.calibration;
     }
 
     /**
@@ -328,7 +351,19 @@ export class GestureEngineController {
                 break;
 
             case 'CALIBRATED':
+                this.setCalibration({
+                    status: 'calibrated',
+                    automatic: this.isAutomaticCalibration(),
+                });
                 this.options.events.onCalibrated?.(message.baseline);
+                break;
+
+            case 'CALIBRATION_FAILED':
+                this.setCalibration({
+                    status: 'failed',
+                    automatic: this.isAutomaticCalibration(),
+                    reason: message.reason,
+                });
                 break;
 
             case 'ERROR':
@@ -387,6 +422,10 @@ export class GestureEngineController {
                 durationMs,
             ),
         );
+
+        if (this.options.autoCalibrate) {
+            this.startCalibration(true);
+        }
 
         if (this.currentStatus !== 'paused') {
             this.pump.start();
@@ -453,6 +492,13 @@ export class GestureEngineController {
         if (message.blendshapes !== null) {
             events.onBlendshapes?.(message.blendshapes);
         }
+
+        events.onFrame?.({
+            timestamp: message.timestamp,
+            headPose: message.headPose,
+            blendshapes: message.blendshapes,
+            gestures: message.gestures,
+        });
 
         this.options.telemetry.push(
             TELEMETRY_KEYS.mainHandlerMs,
@@ -565,6 +611,10 @@ export class GestureEngineController {
 
         this.info = null;
         this.options.events.onInfo?.(null);
+
+        if (this.calibration.status !== 'idle') {
+            this.setCalibration({ status: 'idle' });
+        }
         this.metrics.reset();
         this.lastMetrics = null;
         this.options.events.onMetrics?.(null);
@@ -599,6 +649,24 @@ export class GestureEngineController {
 
             this.scheduleMetrics();
         }, METRICS_EMIT_INTERVAL_MS);
+    }
+
+    private startCalibration(automatic: boolean): void {
+        if (this.handle === null) {
+            return;
+        }
+
+        this.post({ type: 'CALIBRATE_NEUTRAL' });
+        this.setCalibration({ status: 'calibrating', automatic });
+    }
+
+    private isAutomaticCalibration(): boolean {
+        return 'automatic' in this.calibration && this.calibration.automatic;
+    }
+
+    private setCalibration(state: CalibrationState): void {
+        this.calibration = state;
+        this.options.events.onCalibrationChange?.(state);
     }
 
     private updateConfig(partial: Partial<WorkerConfig>): void {

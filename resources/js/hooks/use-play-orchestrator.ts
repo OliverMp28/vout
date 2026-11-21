@@ -290,6 +290,9 @@ export function usePlayOrchestrator({
         onGesture: handleGesture,
         onHeadMove: handleHeadMove,
         enableBlendshapes: false,
+        // La cara neutra se toma sola al arrancar, en cuanto el usuario mira
+        // de frente y relajado; el panel permite repetirla.
+        autoCalibrate: true,
     });
 
     const camera = useCamera({ videoRef });

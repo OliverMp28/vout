@@ -161,6 +161,7 @@ function setup(
         worker().reply({
             type: 'RESULT',
             frameId: frame.frameId,
+            timestamp: 0,
             gestures: [],
             headPose: null,
             blendshapes: null,
@@ -215,6 +216,7 @@ describe('GestureEngineController', () => {
             type: 'INIT',
             assets: ASSETS,
             mediapipeVersion: '0.10.35',
+            delegate: 'GPU',
             config: { sensitivity: 5, enableBlendshapes: false },
         });
     });
@@ -319,6 +321,7 @@ describe('GestureEngineController', () => {
         worker().reply({
             type: 'RESULT',
             frameId: frame.frameId,
+            timestamp: 0,
             gestures: [],
             headPose: null,
             blendshapes: null,
@@ -342,6 +345,7 @@ describe('GestureEngineController', () => {
         worker().reply({
             type: 'RESULT',
             frameId: second.frameId,
+            timestamp: 60,
             gestures: [],
             headPose: null,
             blendshapes: null,
@@ -598,5 +602,127 @@ describe('GestureEngineController', () => {
         scheduler.advance(1500);
 
         expect(emitted.at(-1)?.cameraFps).toBe(60);
+    });
+
+    test('el delegado pedido llega al worker', () => {
+        const { engine, worker } = setup({}, { delegate: 'CPU' });
+
+        engine.start();
+
+        expect(worker().posted[0].message).toMatchObject({
+            type: 'INIT',
+            delegate: 'CPU',
+        });
+    });
+
+    test('con autoCalibrate calibra en cuanto el motor está listo', () => {
+        const states: string[] = [];
+        const { engine, worker } = setup(
+            { onCalibrationChange: (state) => states.push(state.status) },
+            { autoCalibrate: true },
+        );
+
+        engine.start();
+        expect(worker().types()).not.toContain('CALIBRATE_NEUTRAL');
+
+        worker().reply(READY);
+
+        expect(worker().types()).toContain('CALIBRATE_NEUTRAL');
+        expect(engine.calibrationState).toEqual({
+            status: 'calibrating',
+            automatic: true,
+        });
+        expect(states).toEqual(['calibrating']);
+    });
+
+    test('sin autoCalibrate solo calibra cuando se pide', () => {
+        const { engine, worker } = setup();
+
+        engine.start();
+        worker().reply(READY);
+
+        expect(worker().types()).not.toContain('CALIBRATE_NEUTRAL');
+        expect(engine.calibrationState).toEqual({ status: 'idle' });
+
+        engine.calibrateNeutral();
+
+        expect(engine.calibrationState).toEqual({
+            status: 'calibrating',
+            automatic: false,
+        });
+    });
+
+    test('informa de la calibración terminada o fallida', () => {
+        const baselines: number[] = [];
+        const { engine, worker } = setup(
+            { onCalibrated: (baseline) => baselines.push(baseline.capturedAt) },
+            { autoCalibrate: true },
+        );
+
+        engine.start();
+        worker().reply(READY);
+        worker().reply({
+            type: 'CALIBRATION_FAILED',
+            reason: 'not_frontal',
+        });
+
+        expect(engine.calibrationState).toEqual({
+            status: 'failed',
+            automatic: true,
+            reason: 'not_frontal',
+        });
+
+        engine.calibrateNeutral();
+        worker().reply({
+            type: 'CALIBRATED',
+            baseline: { capturedAt: 9, blendshapes: {} },
+        });
+
+        expect(engine.calibrationState).toEqual({
+            status: 'calibrated',
+            automatic: false,
+        });
+        expect(baselines).toEqual([9]);
+    });
+
+    test('calibrar sin motor arrancado no hace nada', () => {
+        const { engine } = setup();
+
+        engine.calibrateNeutral();
+
+        expect(engine.calibrationState).toEqual({ status: 'idle' });
+    });
+
+    test('al parar, la calibración vuelve a idle', () => {
+        const { engine, worker } = setup({}, { autoCalibrate: true });
+
+        engine.start();
+        worker().reply(READY);
+        engine.stop();
+
+        expect(engine.calibrationState).toEqual({ status: 'idle' });
+    });
+
+    test('cada fotograma analizado llega a onFrame', async () => {
+        const frames: unknown[] = [];
+        const { replyToLastFrame, startAndBecomeReady } = setup({
+            onFrame: (frame) => frames.push(frame),
+        });
+
+        await startAndBecomeReady();
+        replyToLastFrame({
+            timestamp: 12,
+            headPose: { yaw: 0, pitch: 0, roll: 0, timestamp: 12 },
+            blendshapes: { jawOpen: 0.4 },
+        });
+
+        expect(frames).toEqual([
+            {
+                timestamp: 12,
+                headPose: { yaw: 0, pitch: 0, roll: 0, timestamp: 12 },
+                blendshapes: { jawOpen: 0.4 },
+                gestures: [],
+            },
+        ]);
     });
 });

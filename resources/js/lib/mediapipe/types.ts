@@ -70,6 +70,27 @@ export type NeutralBaseline = {
     blendshapes: Record<string, number>;
 };
 
+/**
+ * Por qué falló una calibración:
+ * - `no_face`     → no se veía la cara.
+ * - `not_frontal` → la cabeza no miraba de frente a la cámara.
+ * - `not_relaxed` → la cara no estaba relajada (sonrisa, boca abierta…).
+ * - `timeout`     → llegaron demasiado pocas imágenes a tiempo.
+ */
+export type CalibrationFailureReason =
+    'no_face' | 'not_frontal' | 'not_relaxed' | 'timeout';
+
+/** Estado de la calibración de la cara neutra en el motor. */
+export type CalibrationState =
+    | { status: 'idle' }
+    | { status: 'calibrating'; automatic: boolean }
+    | { status: 'calibrated'; automatic: boolean }
+    | {
+          status: 'failed';
+          automatic: boolean;
+          reason: CalibrationFailureReason;
+      };
+
 // ---------------------------------------------------------------------------
 // Performance
 // ---------------------------------------------------------------------------
@@ -132,6 +153,13 @@ export type WorkerConfig = {
     enableBlendshapes: boolean;
 };
 
+/**
+ * Con qué se intenta crear el landmarker. Con `GPU`, si falla, se vuelve a
+ * intentar con CPU. `CPU` sirve para comparar en Vision Lab: en algunas GPU
+ * integradas la CPU con SIMD es igual de rápida.
+ */
+export type PreferredDelegate = EngineInfo['delegate'];
+
 // ---------------------------------------------------------------------------
 // Worker ↔ Main thread protocol (discriminated unions)
 // ---------------------------------------------------------------------------
@@ -148,6 +176,18 @@ export type FrameTiming = {
     postedAt: number;
 };
 
+/**
+ * Un fotograma ya analizado, tal como lo ve el hilo principal. Lo usa la
+ * grabadora de Vision Lab (`gesture-recording.ts`).
+ */
+export type AnalyzedFrame = {
+    timestamp: number;
+    headPose: HeadPose | null;
+    /** Con `enableBlendshapes`; null sin cara o durante la calibración. */
+    blendshapes: Record<string, number> | null;
+    gestures: GestureEvent[];
+};
+
 /** Por qué el worker no analizó un fotograma. */
 export type FrameDropReason = 'not_ready' | 'paused' | 'error';
 
@@ -161,6 +201,7 @@ export type WorkerInMessage =
           type: 'INIT';
           assets: MediaPipeRuntimeAssets;
           mediapipeVersion: string;
+          delegate: PreferredDelegate;
           config: WorkerConfig;
       }
     | {
@@ -181,6 +222,8 @@ export type WorkerOutMessage =
     | {
           type: 'RESULT';
           frameId: number;
+          /** Marca del fotograma (la del `FRAME`). */
+          timestamp: number;
           gestures: GestureEvent[];
           headPose: HeadPose | null;
           /** Los 52 blendshapes, solo con `enableBlendshapes`. */
@@ -191,6 +234,7 @@ export type WorkerOutMessage =
       }
     | { type: 'FRAME_DROPPED'; frameId: number; reason: FrameDropReason }
     | { type: 'CALIBRATED'; baseline: NeutralBaseline }
+    | { type: 'CALIBRATION_FAILED'; reason: CalibrationFailureReason }
     | { type: 'ERROR'; code: string; message: string };
 
 // ---------------------------------------------------------------------------

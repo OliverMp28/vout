@@ -215,10 +215,9 @@ export default function PlayGame({
             onToggleEngine={handleToggleEngine}
             onToggleDispatch={setDispatchEnabled}
             onSensitivityChange={setSensitivity}
-            onCalibrate={() => {
-                engine.calibrateNeutral();
-                recenterCursor();
-            }}
+            onRecenter={recenterCursor}
+            onCalibrate={engine.calibrateNeutral}
+            calibration={engine.calibration}
         />
     );
 

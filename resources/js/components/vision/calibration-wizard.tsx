@@ -116,7 +116,19 @@ function CalibrationWizard({
         videoRef,
         onGesture: handleGesture,
         onCalibrated: handleCalibrated,
+        // Con perfil se salta el paso de la cara neutra: se toma sola.
+        autoCalibrate: hasExistingProfile,
     });
+
+    // Una captura que falla (no mirabas de frente, sonreías…) vuelve a
+    // permitir el botón y explica el motivo.
+    const calibrationFailure =
+        calibrationState === 'capturing' &&
+        engine.calibration.status === 'failed'
+            ? engine.calibration.reason
+            : null;
+    const baselineState =
+        calibrationFailure !== null ? 'idle' : calibrationState;
 
     // Refs para cleanup al desmontar. Se capturan en variable local dentro del effect.
     const engineRef = useRef(engine);
@@ -134,8 +146,8 @@ function CalibrationWizard({
     const handleEnableCamera = useCallback(async () => {
         const stream = await camera.requestCamera();
         if (stream) {
-            // Con perfil existente, saltar directamente a test (la baseline ya
-            // fue calibrada previamente). Sin perfil, ir al paso de baseline.
+            // Con perfil existente, saltar directamente a test (la cara neutra
+            // se calibra sola al arrancar). Sin perfil, ir al paso de baseline.
             setStep(hasExistingProfile ? 'test' : 'baseline');
         }
     }, [camera, hasExistingProfile]);
@@ -340,25 +352,37 @@ function CalibrationWizard({
                     <Button
                         onClick={handleCaptureBaseline}
                         disabled={
-                            calibrationState !== 'idle' ||
+                            baselineState !== 'idle' ||
                             engine.status !== 'running'
                         }
                     >
-                        {(calibrationState === 'capturing' ||
+                        {(baselineState === 'capturing' ||
                             engine.status === 'loading') && (
                             <Loader2 className="size-4 animate-spin" />
                         )}
-                        {calibrationState === 'done' && (
+                        {baselineState === 'done' && (
                             <Check className="size-4" />
                         )}
                         {engine.status === 'loading'
                             ? t('vision.status.loading')
-                            : calibrationState === 'capturing'
+                            : baselineState === 'capturing'
                               ? t('vision.calibration.step2.capturing')
-                              : calibrationState === 'done'
+                              : baselineState === 'done'
                                 ? t('vision.calibration.step2.done')
                                 : t('vision.calibration.step2.button')}
                     </Button>
+
+                    {calibrationFailure !== null && (
+                        <p
+                            role="status"
+                            data-calibration-reason={calibrationFailure}
+                            className="text-sm text-muted-foreground"
+                        >
+                            {t(
+                                `vision.calibration.step2.failed.${calibrationFailure}`,
+                            )}
+                        </p>
+                    )}
                 </div>
             )}
 
