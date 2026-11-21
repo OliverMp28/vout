@@ -39,10 +39,10 @@ class UserController extends Controller
 
         // Datos base: siempre disponibles con scope user:read.
         $data = [
-            'vout_id'  => $user->vout_id,
-            'name'     => $user->name,
+            'vout_id' => $user->vout_id,
+            'name' => $user->name,
             'username' => $user->username,
-            'avatar'   => $user->avatar,
+            'avatar' => $user->avatar,
         ];
 
         // Datos sensibles: solo disponibles con scope user:email.

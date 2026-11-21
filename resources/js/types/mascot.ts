@@ -1,10 +1,5 @@
 export type MascotState =
-    | 'entering'
-    | 'idle'
-    | 'hovering'
-    | 'tapped'
-    | 'celebrating'
-    | 'sleeping';
+    'entering' | 'idle' | 'hovering' | 'tapped' | 'celebrating' | 'sleeping';
 
 export type MascotTone = 'success' | 'error' | 'info';
 

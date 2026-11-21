@@ -191,8 +191,7 @@ export default function ConnectedApps({ grants }: Props) {
                                                             grant.id,
                                                         )}
                                                         options={{
-                                                            preserveScroll:
-                                                                true,
+                                                            preserveScroll: true,
                                                         }}
                                                     >
                                                         {({ processing }) => (

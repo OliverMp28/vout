@@ -86,10 +86,7 @@ export function DocsTableOfContents({ content }: DocsTableOfContentsProps) {
     }
 
     return (
-        <nav
-            aria-label={t('developers.docs.toc.label')}
-            className="text-sm"
-        >
+        <nav aria-label={t('developers.docs.toc.label')} className="text-sm">
             <p className="mb-3 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
                 {t('developers.docs.toc.title')}
             </p>
@@ -104,7 +101,7 @@ export function DocsTableOfContents({ content }: DocsTableOfContentsProps) {
                                     '-ml-px block border-l-2 py-1 transition-colors',
                                     entry.level === 3 ? 'pl-6' : 'pl-3',
                                     isActive
-                                        ? 'border-primary text-foreground font-medium'
+                                        ? 'border-primary font-medium text-foreground'
                                         : 'border-transparent text-muted-foreground hover:border-border hover:text-foreground',
                                 )}
                                 aria-current={isActive ? 'location' : undefined}

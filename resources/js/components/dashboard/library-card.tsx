@@ -93,7 +93,7 @@ function LibraryLink({
                 <div className="min-w-0 flex-1 space-y-0.5">
                     <div className="flex items-center gap-2">
                         <span className="text-sm font-medium">{label}</span>
-                        <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-semibold tabular-nums text-muted-foreground">
+                        <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-semibold text-muted-foreground tabular-nums">
                             {count.toLocaleString(locale)}
                         </span>
                     </div>

@@ -39,7 +39,9 @@ import type { MessageCandidate } from '@/types/mascot';
  * identidad, y garantiza que `when`/`text` reflejen el último estado
  * React en el momento en que Vou lee los candidatos.
  */
-export function useMascotContext(candidates: readonly MessageCandidate[]): void {
+export function useMascotContext(
+    candidates: readonly MessageCandidate[],
+): void {
     const sourceId = useId();
     const candidatesRef = useRef<readonly MessageCandidate[]>(candidates);
 

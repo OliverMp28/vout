@@ -1,5 +1,5 @@
 import { Head, Link, usePage } from '@inertiajs/react';
-import { ArrowRight, Sparkles, Zap } from 'lucide-react';
+import { ArrowRight, Gamepad2, Sparkles, Zap } from 'lucide-react';
 import { FeaturedCarousel } from '@/components/catalog/featured-carousel';
 import { GameCard } from '@/components/catalog/game-card';
 import { Button } from '@/components/ui/button';

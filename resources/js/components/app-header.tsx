@@ -49,7 +49,10 @@ import { useTranslation } from '@/hooks/use-translation';
 import { cn } from '@/lib/utils';
 import { dashboard } from '@/routes';
 import { index as catalogIndex } from '@/routes/catalog';
-import { favorites as libraryFavorites, saved as librarySaved } from '@/routes/library';
+import {
+    favorites as libraryFavorites,
+    saved as librarySaved,
+} from '@/routes/library';
 import type { BreadcrumbItem, NavItem } from '@/types';
 
 type Props = {

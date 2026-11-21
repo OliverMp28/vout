@@ -222,9 +222,7 @@ export type GameExitMessage = {
 };
 
 export type GameToVoutMessage =
-    | GameReadyMessage
-    | GameStateMessage
-    | GameExitMessage;
+    GameReadyMessage | GameStateMessage | GameExitMessage;
 
 // ---------------------------------------------------------------------------
 // Estado del handshake (consumido por componentes UI)
@@ -238,11 +236,7 @@ export type GameToVoutMessage =
  * - `timeout`        → el iframe cargó pero no envió READY en el tiempo esperado.
  */
 export type HandshakeStatus =
-    | 'waiting'
-    | 'ready'
-    | 'authenticated'
-    | 'error'
-    | 'timeout';
+    'waiting' | 'ready' | 'authenticated' | 'error' | 'timeout';
 
 // ---------------------------------------------------------------------------
 // Type guards

@@ -32,13 +32,18 @@ jobs:
           tools: composer:v2
           coverage: xdebug
 
+      # Node sigue haciendo falta: el binario de Playwright que lanza el plugin
+      # de navegador de Pest se ejecuta con node.
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: '22'
 
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+
       - name: Install Node Dependencies
-        run: npm i
+        run: bun install --frozen-lockfile
 
       - name: Install Dependencies
         run: composer install --no-interaction --prefer-dist --optimize-autoloader
@@ -53,10 +58,10 @@ jobs:
         run: php artisan passport:keys --no-interaction
 
       - name: Build Assets
-        run: npm run build
+        run: bun run build
 
       - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium
+        run: bunx playwright install --with-deps chromium
 
       - name: Tests
         run: ./vendor/bin/pest

@@ -206,7 +206,11 @@ export function MascotProvider({ children }: { children: ReactNode }) {
     }, []);
 
     const notify = useCallback(
-        (text: string, tone: MascotTone = 'info', durationMs?: number): void => {
+        (
+            text: string,
+            tone: MascotTone = 'info',
+            durationMs?: number,
+        ): void => {
             const fallback =
                 tone === 'error'
                     ? ERROR_NOTIFY_DURATION_MS
@@ -318,7 +322,8 @@ function useFlashWatcher(
         if (flash.status && flash.status !== lastSeen.current.status) {
             lastSeen.current.status = flash.status;
             const translated = t(flash.status);
-            const text = translated === flash.status ? flash.status : translated;
+            const text =
+                translated === flash.status ? flash.status : translated;
             notify(text, 'success');
             celebrate();
         } else if (!flash.status) {

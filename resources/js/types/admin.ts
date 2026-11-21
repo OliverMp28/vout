@@ -2,6 +2,8 @@
  * Tipos del Panel de Administración (Fase 4.2).
  */
 
+import type { GameStatus } from '@/types/developers';
+
 // ── Admin: Apps ─────────────────────────────────────────────────────────
 
 export type AdminAppOwner = {
@@ -59,8 +61,6 @@ export type AdminAppFilters = {
 };
 
 // ── Admin: Games ───────────────────────────────────────────────────────
-
-export type GameStatus = 'draft' | 'pending_review' | 'published' | 'rejected';
 
 export type AdminGameSubmitter = {
     id: number;

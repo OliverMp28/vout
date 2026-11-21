@@ -123,8 +123,7 @@ export function Vou() {
                 TOOLTIP_TAP_AUTOCLOSE_MS,
             );
         } else {
-            const msg =
-                greetings[Math.floor(Math.random() * greetings.length)];
+            const msg = greetings[Math.floor(Math.random() * greetings.length)];
             showGreeting(msg, 'info', TOOLTIP_TAP_AUTOCLOSE_MS);
         }
     }, [dispatch, guidance, greetings, showGreeting]);

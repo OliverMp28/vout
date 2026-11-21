@@ -68,7 +68,7 @@ export function MascotTooltip({
             {progress ? (
                 <span
                     data-test="mascot-guide-progress"
-                    className="ml-1 rounded-full bg-primary/15 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-primary"
+                    className="ml-1 rounded-full bg-primary/15 px-1.5 py-0.5 text-[10px] font-semibold text-primary tabular-nums"
                     aria-label={`${progress.current} / ${progress.total}`}
                 >
                     {progress.current}/{progress.total}

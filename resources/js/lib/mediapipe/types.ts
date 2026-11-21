@@ -124,19 +124,10 @@ export type WorkerOutMessage =
 // ---------------------------------------------------------------------------
 
 export type EngineStatus =
-    | 'idle'
-    | 'loading'
-    | 'ready'
-    | 'running'
-    | 'paused'
-    | 'error';
+    'idle' | 'loading' | 'ready' | 'running' | 'paused' | 'error';
 
 export type CameraStatus =
-    | 'idle'
-    | 'requesting'
-    | 'active'
-    | 'denied'
-    | 'error';
+    'idle' | 'requesting' | 'active' | 'denied' | 'error';
 
 // ---------------------------------------------------------------------------
 // Gesture mapping (DB ↔ frontend)
