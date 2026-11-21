@@ -3,6 +3,7 @@
 use App\Models\OAuthUserGrant;
 use App\Models\RegisteredApp;
 use App\Models\User;
+use Illuminate\Support\Facades\URL;
 use Laravel\Passport\ClientRepository;
 
 /*
@@ -385,4 +386,64 @@ it('la pantalla incluye descripciones humanas de los scopes (i18n vout.scopes)',
     $response->assertInertia(fn ($page) => $page
         ->where('scopes.0.description', $expectedDescription)
     );
+});
+
+/**
+ * Query de autorización estándar para los tests de email sin confirmar.
+ *
+ * @return array<string, string>
+ */
+function unverifiedAuthorizeQuery(RegisteredApp $app): array
+{
+    return [
+        'client_id' => $app->oauth_client_id,
+        'redirect_uri' => 'https://daino.test/auth/callback',
+        'response_type' => 'code',
+        'scope' => 'user:read user:email',
+        'state' => 'random-state-xyz',
+        'code_challenge' => str_repeat('a', 43),
+        'code_challenge_method' => 'S256',
+    ];
+}
+
+it('una cuenta sin email confirmado no ve la pantalla de autorización', function (bool $firstParty): void {
+    $owner = User::factory()->create();
+    $app = makeOAuthCallable($owner, ['is_first_party' => $firstParty]);
+    $user = User::factory()->unverified()->create();
+
+    $this->actingAs($user)
+        ->get('/oauth/authorize?'.http_build_query(unverifiedAuthorizeQuery($app)))
+        ->assertRedirect(route('verification.notice'));
+})->with(['third-party' => false, 'first-party' => true]);
+
+it('una cuenta sin email confirmado no puede aprobar una autorización', function (): void {
+    $user = User::factory()->unverified()->create();
+
+    $this->actingAs($user)
+        ->post('/oauth/authorize', ['auth_token' => 'cualquiera'])
+        ->assertRedirect(route('verification.notice'));
+});
+
+it('tras confirmar el email vuelve a la autorización que tenía a medias', function (): void {
+    $owner = User::factory()->create();
+    $app = makeOAuthCallable($owner);
+    $user = User::factory()->unverified()->create();
+    $this->actingAs($user)->get('/oauth/authorize?'.http_build_query(unverifiedAuthorizeQuery($app)));
+
+    $verificationUrl = URL::temporarySignedRoute(
+        'verification.verify',
+        now()->addMinutes(60),
+        ['id' => $user->id, 'hash' => sha1($user->email)],
+    );
+
+    $location = $this->actingAs($user)
+        ->get($verificationUrl)
+        ->assertRedirect()
+        ->headers->get('Location');
+
+    parse_str((string) parse_url($location, PHP_URL_QUERY), $query);
+
+    expect(parse_url($location, PHP_URL_PATH))->toBe('/oauth/authorize')
+        ->and($query)->toEqual(unverifiedAuthorizeQuery($app))
+        ->and($user->fresh()->hasVerifiedEmail())->toBeTrue();
 });
