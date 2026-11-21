@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Services\ExternalAvatarDownloader;
+use App\Services\UnverifiedAccessRevoker;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -19,7 +20,10 @@ class SocialiteController extends Controller
      */
     private const string REMEMBER_SESSION_KEY = 'socialite.remember';
 
-    public function __construct(private ExternalAvatarDownloader $avatarDownloader) {}
+    public function __construct(
+        private ExternalAvatarDownloader $avatarDownloader,
+        private UnverifiedAccessRevoker $unverifiedAccessRevoker,
+    ) {}
 
     /**
      * Redirige al usuario al proveedor de autenticación (Google).
@@ -88,6 +92,14 @@ class SocialiteController extends Controller
             $avatar = $user->avatar;
             if ($avatar === null || $this->isExternalAvatar($avatar)) {
                 $avatar = $this->avatarDownloader->download($googleUser->getAvatar());
+            }
+
+            // Email sin confirmar: quien creó la cuenta no demostró que el correo
+            // fuera suyo y Google acaba de demostrar que es de esta persona.
+            // Se retira su acceso antes de unir las dos cosas.
+            if (! $user->hasVerifiedEmail()) {
+                $this->unverifiedAccessRevoker->revoke($user);
+                $user->markEmailAsVerified();
             }
 
             $user->update([

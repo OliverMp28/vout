@@ -1,6 +1,9 @@
 <?php
 
 use App\Models\User;
+use App\Notifications\QueuedVerifyEmail;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Support\Facades\Notification;
 
 test('registration screen can be rendered', function () {
     $response = $this->get(route('register'));
@@ -73,4 +76,24 @@ test('registration is rejected when both consents missing', function () {
     $response->assertRedirect(route('register'));
     $response->assertSessionHasErrors(['accept_terms', 'confirm_age']);
     $this->assertGuest();
+});
+
+test('registration sends the email confirmation through the queue', function () {
+    Notification::fake();
+
+    $this->post(route('register.store'), [
+        'name' => 'Queued User',
+        'username' => 'queueduser',
+        'email' => 'queued@example.com',
+        'password' => 'password',
+        'password_confirmation' => 'password',
+        'accept_terms' => true,
+        'confirm_age' => true,
+    ]);
+
+    $user = User::where('email', 'queued@example.com')->firstOrFail();
+
+    expect($user->hasVerifiedEmail())->toBeFalse();
+    Notification::assertSentTo($user, QueuedVerifyEmail::class);
+    expect(new QueuedVerifyEmail)->toBeInstanceOf(ShouldQueue::class);
 });

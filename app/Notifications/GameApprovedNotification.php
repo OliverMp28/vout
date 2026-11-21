@@ -4,6 +4,7 @@ namespace App\Notifications;
 
 use App\Models\Game;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
@@ -12,7 +13,7 @@ use Illuminate\Notifications\Notification;
  *
  * Canales: mail + database.
  */
-class GameApprovedNotification extends Notification
+class GameApprovedNotification extends Notification implements ShouldQueue
 {
     use Queueable;
 

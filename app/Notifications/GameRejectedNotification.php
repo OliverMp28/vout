@@ -4,6 +4,7 @@ namespace App\Notifications;
 
 use App\Models\Game;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
@@ -12,7 +13,7 @@ use Illuminate\Notifications\Notification;
  *
  * Canales: mail + database. Incluye el motivo del rechazo.
  */
-class GameRejectedNotification extends Notification
+class GameRejectedNotification extends Notification implements ShouldQueue
 {
     use Queueable;
 

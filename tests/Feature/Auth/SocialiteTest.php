@@ -2,6 +2,7 @@
 
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Laravel\Socialite\Facades\Socialite;
@@ -285,4 +286,47 @@ it('cancel does not delete an already-consented user', function () {
     $this->actingAs($user)->post(route('auth.google.cancel'));
 
     expect(User::find($userId))->not->toBeNull();
+});
+
+it('linking google to an unconfirmed account confirms the email and drops the previous password', function () {
+    $squatter = User::factory()->unverified()->create([
+        'email' => 'victim@test.com',
+        'google_id' => null,
+        'avatar' => '/storage/avatars/squatter.png',
+        'password' => 'squatter-password',
+        'terms_accepted_at' => now(),
+        'privacy_version_accepted' => '1.0.0',
+    ]);
+
+    mockGoogleUser(['getId' => 'google-victim', 'getEmail' => 'victim@test.com']);
+
+    $this->get('/auth/google/callback')
+        ->assertRedirect(route('dashboard', absolute: false));
+
+    $squatter->refresh();
+    expect($squatter->google_id)->toBe('google-victim')
+        ->and($squatter->hasVerifiedEmail())->toBeTrue()
+        ->and(Hash::check('squatter-password', $squatter->password))->toBeFalse();
+
+    $this->assertAuthenticatedAs($squatter);
+});
+
+it('linking google to a confirmed account keeps its password', function () {
+    $user = User::factory()->create([
+        'email' => 'owner@test.com',
+        'google_id' => null,
+        'avatar' => '/storage/avatars/owner.png',
+        'password' => 'owner-password',
+        'terms_accepted_at' => now(),
+        'privacy_version_accepted' => '1.0.0',
+    ]);
+    $verifiedAt = $user->email_verified_at;
+
+    mockGoogleUser(['getId' => 'google-owner', 'getEmail' => 'owner@test.com']);
+
+    $this->get('/auth/google/callback');
+
+    $user->refresh();
+    expect(Hash::check('owner-password', $user->password))->toBeTrue()
+        ->and($user->email_verified_at->equalTo($verifiedAt))->toBeTrue();
 });

@@ -93,3 +93,11 @@ test('already verified user visiting verification link is redirected without fir
     Event::assertNotDispatched(Verified::class);
     expect($user->fresh()->hasVerifiedEmail())->toBeTrue();
 });
+
+test('unverified user cannot reach the portal until the email is confirmed', function (string $routeName) {
+    $user = User::factory()->unverified()->create();
+
+    $this->actingAs($user)
+        ->get(route($routeName))
+        ->assertRedirect(route('verification.notice'));
+})->with(['dashboard', 'privacy.edit']);

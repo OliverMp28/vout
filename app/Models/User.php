@@ -2,7 +2,11 @@
 
 namespace App\Models;
 
+use App\Notifications\QueuedResetPassword;
+use App\Notifications\QueuedVerifyEmail;
 use Database\Factories\UserFactory;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Contracts\Translation\HasLocalePreference;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -22,8 +26,12 @@ use Laravel\Passport\HasApiTokens;
  * Es la entidad central del sistema de identidad (IdP).
  * Un usuario puede tener configuración personal, perfiles
  * de gestos faciales, y un historial de juegos interactuados.
+ *
+ * Las cuentas con contraseña deben confirmar su email antes de usar el
+ * portal (`MustVerifyEmail` + middleware `verified`); las de Google llegan
+ * ya confirmadas.
  */
-class User extends Authenticatable implements OAuthenticatable
+class User extends Authenticatable implements HasLocalePreference, MustVerifyEmail, OAuthenticatable
 {
     /** @use HasFactory<UserFactory> */
     use HasApiTokens;
@@ -156,6 +164,37 @@ class User extends Authenticatable implements OAuthenticatable
     public function developerProfile(): HasOne
     {
         return $this->hasOne(Developer::class);
+    }
+
+    // ─── Notificaciones ──────────────────────────────────────
+
+    /**
+     * Idioma de los correos y notificaciones: el que eligió en Ajustes.
+     *
+     * Necesario para las que salen por la cola, donde no hay petición de la
+     * que sacar el idioma. Sin ajustes, se usa el idioma por defecto.
+     */
+    public function preferredLocale(): ?string
+    {
+        return $this->settings?->locale;
+    }
+
+    /**
+     * Envía el correo de confirmación de email por la cola.
+     */
+    public function sendEmailVerificationNotification(): void
+    {
+        $this->notify(new QueuedVerifyEmail);
+    }
+
+    /**
+     * Envía el enlace de recuperación de contraseña por la cola.
+     *
+     * @param  string  $token
+     */
+    public function sendPasswordResetNotification(#[\SensitiveParameter] $token): void
+    {
+        $this->notify(new QueuedResetPassword($token));
     }
 
     // ─── Accessors ───────────────────────────────────────────

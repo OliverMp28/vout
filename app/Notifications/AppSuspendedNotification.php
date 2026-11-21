@@ -4,6 +4,7 @@ namespace App\Notifications;
 
 use App\Models\RegisteredApp;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
@@ -13,7 +14,7 @@ use Illuminate\Notifications\Notification;
  * Canales: mail + database. El owner ve la razón de la suspensión y sabe
  * que debe regenerar credenciales OAuth tras la reactivación.
  */
-class AppSuspendedNotification extends Notification
+class AppSuspendedNotification extends Notification implements ShouldQueue
 {
     use Queueable;
 
