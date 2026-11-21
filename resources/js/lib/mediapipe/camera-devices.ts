@@ -26,6 +26,8 @@
  * Sin dependencias de React — utilizable desde cualquier hook.
  */
 
+import { CAMERA_FRAME_RATE_IDEAL } from './constants';
+
 // ---------------------------------------------------------------------------
 // Tipos y constantes
 // ---------------------------------------------------------------------------
@@ -36,9 +38,21 @@ export type CameraDevice = {
     label: string;
 };
 
-const VIDEO_SIZE = {
+/**
+ * Lo que se pide a la cámara. Todo es `ideal`: una cámara que no lo cumpla
+ * entrega lo más parecido en vez de fallar.
+ *
+ * - 640×480 4:3: el motor trabaja a 320 px de ancho y el modelo está ajustado
+ *   con esa proporción. Sin `aspectRatio`, pedir más fps puede llevar al
+ *   navegador a un modo 16:9 de menor alto.
+ * - `frameRate`: a más fps, la imagen que se analiza es más reciente
+ *   (`CAMERA_FRAME_RATE_IDEAL`).
+ */
+const VIDEO_CONSTRAINTS = {
     width: { ideal: 640 },
     height: { ideal: 480 },
+    aspectRatio: { ideal: 4 / 3 },
+    frameRate: { ideal: CAMERA_FRAME_RATE_IDEAL },
 } as const;
 
 /**
@@ -169,8 +183,8 @@ function open(deviceId: string | null): Promise<MediaStream> {
     return navigator.mediaDevices.getUserMedia({
         video:
             deviceId === null
-                ? { ...VIDEO_SIZE, facingMode: 'user' }
-                : { ...VIDEO_SIZE, deviceId: { exact: deviceId } },
+                ? { ...VIDEO_CONSTRAINTS, facingMode: 'user' }
+                : { ...VIDEO_CONSTRAINTS, deviceId: { exact: deviceId } },
         audio: false,
     });
 }

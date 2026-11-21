@@ -13,6 +13,9 @@
  * un toque de una pulsación mantenida y encadenar gestos rápidos: antes el
  * final solo podía deducirse por inactividad, más de medio segundo tarde.
  *
+ * Además mide, sin influir en la detección, cuánto tarda cada gesto en
+ * cruzar su umbral desde que la señal empieza a subir (`drainGestureRiseSamples`).
+ *
  * Worker-safe — no DOM or React imports.
  */
 
@@ -21,6 +24,7 @@ import {
     GESTURE_DEBOUNCE_MS,
     GESTURE_RELEASE_MS,
     GESTURE_RELEASE_RATIO,
+    GESTURE_RISE_FLOOR_RATIO,
     GESTURE_THRESHOLD_SCALE,
     sensitivityToThreshold,
 } from './constants';
@@ -39,6 +43,15 @@ type GestureTracking = {
 
 /** Gestos actualmente activos. Un gesto ausente del mapa está inactivo. */
 const activeGestures = new Map<GestureType, GestureTracking>();
+
+/**
+ * Gestos inactivos cuya señal ya superó el suelo de subida: momento del primer
+ * fotograma por encima. Se borra si la señal vuelve a bajar del suelo.
+ */
+const risingSince = new Map<GestureType, number>();
+
+/** Tiempos de subida (ms) de los `start` emitidos desde el último drenado. */
+let riseSamples: number[] = [];
 
 // ---------------------------------------------------------------------------
 // Public API
@@ -86,7 +99,13 @@ export function classifyGestures(
         const tracking = activeGestures.get(gestureType);
 
         if (tracking === undefined) {
+            trackRise(gestureType, raw, activationThreshold, timestamp);
+
             if (raw >= activationThreshold) {
+                riseSamples.push(
+                    timestamp - (risingSince.get(gestureType) ?? timestamp),
+                );
+                risingSince.delete(gestureType);
                 activeGestures.set(gestureType, {
                     lastEmittedAt: timestamp,
                     belowSince: null,
@@ -158,4 +177,42 @@ export function releaseActiveGestures(timestamp: number): GestureEvent[] {
  */
 export function resetGestureTracking(): void {
     activeGestures.clear();
+    risingSince.clear();
+    riseSamples = [];
+}
+
+/**
+ * Devuelve y olvida los tiempos de subida medidos: para cada `start`, los ms
+ * desde el primer fotograma en que la señal superó el suelo de subida hasta
+ * el que cruzó el umbral. 0 si lo cruzó de un fotograma a otro.
+ *
+ * Es telemetría: dice cuánto retraso añade el umbral al gesto.
+ */
+export function drainGestureRiseSamples(): number[] {
+    const samples = riseSamples;
+    riseSamples = [];
+
+    return samples;
+}
+
+// ---------------------------------------------------------------------------
+// Internal helpers
+// ---------------------------------------------------------------------------
+
+/** Anota el inicio de la subida de un gesto inactivo, o lo olvida si cae. */
+function trackRise(
+    gesture: GestureType,
+    raw: number,
+    activationThreshold: number,
+    timestamp: number,
+): void {
+    if (raw < activationThreshold * GESTURE_RISE_FLOOR_RATIO) {
+        risingSince.delete(gesture);
+
+        return;
+    }
+
+    if (!risingSince.has(gesture)) {
+        risingSince.set(gesture, timestamp);
+    }
 }

@@ -116,6 +116,14 @@ export const GESTURE_RELEASE_MS = 60;
  */
 export const FACE_LOST_RELEASE_MS = 250;
 
+/**
+ * Para medir cuánto tarda un gesto en cruzar su umbral (`gestureRiseMs`): la
+ * subida empieza cuando la señal supera `umbral × GESTURE_RISE_FLOOR_RATIO`,
+ * por encima del ruido de una cara en reposo. Solo es una medida: no cambia
+ * cuándo se detecta el gesto.
+ */
+export const GESTURE_RISE_FLOOR_RATIO = 0.25;
+
 // ---------------------------------------------------------------------------
 // Head pose
 // ---------------------------------------------------------------------------
@@ -144,30 +152,69 @@ export const HEAD_POSE_LANDMARKS = {
 } as const;
 
 // ---------------------------------------------------------------------------
-// Performance tiers
+// Ritmo del motor
+// ---------------------------------------------------------------------------
+
+/*
+ * No hay un fps objetivo: el motor analiza cada imagen nueva de la cámara con
+ * un solo fotograma en vuelo hacia el worker (`frame-pump.ts`). Su ritmo es el
+ * menor entre los fps de la cámara y lo que tarde la inferencia, sin cola.
+ * Sustituye a los `FPS_TIERS` de la Fase 3.4, que limitaban el envío por
+ * intervalo pero no evitaban que los fotogramas se acumularan en el worker.
+ */
+
+/**
+ * Si el worker no responde a un fotograma en este tiempo, el motor se da por
+ * bloqueado y falla con un error (el usuario puede reintentar). Una inferencia
+ * normal tarda decenas de ms; la primera compila los shaders y, sin GPU real,
+ * puede tardar varios segundos.
+ */
+export const FRAME_RESPONSE_TIMEOUT_MS = 15_000;
+
+/**
+ * Si `requestVideoFrameCallback` no avisa de ninguna imagen en este tiempo con
+ * el vídeo listo, se pasa a detectar las imágenes nuevas por sondeo. Un
+ * `<video>` que no se ve en pantalla puede no llegar a componerse y entonces
+ * ese aviso no llega nunca.
+ */
+export const VIDEO_FRAME_CALLBACK_SILENCE_MS = 1000;
+
+/** Ventana de las métricas que ve la interfaz (fps, inferencia, cámara). */
+export const METRICS_WINDOW_MS = 2000;
+
+/** Cada cuánto se recalculan esas métricas mientras el motor está en marcha. */
+export const METRICS_EMIT_INTERVAL_MS = 500;
+
+/** Si el motor no avisa de que está listo en este tiempo, se da por fallido. */
+export const ENGINE_INIT_TIMEOUT_MS = 30_000;
+
+/**
+ * Fallos seguidos de `detectForVideo` tras los que el motor deja de intentarlo
+ * y avisa del error. Uno suelto se ignora (se descarta ese fotograma).
+ */
+export const MAX_CONSECUTIVE_INFERENCE_ERRORS = 30;
+
+// ---------------------------------------------------------------------------
+// Cámara
 // ---------------------------------------------------------------------------
 
 /**
- * Target FPS thresholds keyed by average inference time (ms).
- *
- * Orden: del más rápido al más lento. El `PerformanceAdapter` empieza en el
- * tier 0 (60fps optimista) y degrada cuando `inferenceMs` supera el límite
- * con histéresis del 10% — ver `performance-adapter.ts`.
- *
- * 60fps = 16.6ms por frame. Para sostenerlo la inferencia debe ocupar <14ms,
- * dejando ~3ms para captura + postMessage.
+ * Frecuencia que se pide a la cámara. Es `ideal`: la que no llegue entrega la
+ * suya. A más fps, la imagen que se analiza es más reciente. Si con alguna
+ * cámara la imagen sale demasiado oscura (menos exposición por fotograma),
+ * bajar a 30.
  */
-export const FPS_TIERS = [
-    { maxInferenceMs: 14, targetFps: 60 },
-    { maxInferenceMs: 22, targetFps: 45 },
-    { maxInferenceMs: 33, targetFps: 30 },
-    { maxInferenceMs: 50, targetFps: 20 },
-    { maxInferenceMs: 100, targetFps: 15 },
-    { maxInferenceMs: 200, targetFps: 10 },
-] as const;
+export const CAMERA_FRAME_RATE_IDEAL = 60;
 
-/** Absolute minimum FPS — below this the engine should warn the user. */
-export const MIN_VIABLE_FPS = 5;
+/**
+ * Aviso de cámara lenta: por debajo de `LOW_CAMERA_FPS` durante
+ * `LOW_CAMERA_FPS_SUSTAIN_MS` se avisa al usuario (suele ser falta de luz:
+ * la exposición automática baja los fps). Desaparece al superar
+ * `LOW_CAMERA_FPS_RECOVER` (histéresis, para que no parpadee).
+ */
+export const LOW_CAMERA_FPS = 20;
+export const LOW_CAMERA_FPS_RECOVER = 24;
+export const LOW_CAMERA_FPS_SUSTAIN_MS = 3000;
 
 // ---------------------------------------------------------------------------
 // Calibration
@@ -181,45 +228,24 @@ export const CALIBRATION_FRAME_COUNT = 30;
 // ---------------------------------------------------------------------------
 
 /**
- * Resolución del ImageBitmap que se transfiere al worker.
+ * Ancho del ImageBitmap que se transfiere al worker. El alto sale de la
+ * proporción de la cámara (`captureSize` en `frame-capture.ts`) para no
+ * deformar la cara: 320×240 con una cámara 4:3.
  *
  * Se probó 256×192 (Sesión 3.4 §4.1) pero inferenceMs p50 subió de 51→56ms.
- * MediaPipe parece ya optimizado para este tamaño. Revertido a 320×240.
  */
 export const CAPTURE_WIDTH = 320;
-export const CAPTURE_HEIGHT = 240;
 
 // ---------------------------------------------------------------------------
-// Model defaults
-// ---------------------------------------------------------------------------
-
-export const DEFAULT_MODEL_PATH =
-    'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task';
-
-// ---------------------------------------------------------------------------
-// MediaPipe CDN — versión fija
+// Modelo
 // ---------------------------------------------------------------------------
 
 /**
- * Versión de @mediapipe/tasks-vision usada en runtime (CDN).
- * Es la misma versión del ejemplo oficial de Google que se verificó funcional
- * en "ejemplos mediapipe/deteccion de gestos2/". Si se actualiza, verificar
- * compatibilidad con el WASM y el ESM bundle (vision_bundle.mjs).
+ * Modelo de Face Landmarker servido por Vout (`public/models`, en git). Es el
+ * mismo fichero que Google publica como `float16/latest` (v1, mayo de 2023).
+ * `VITE_MEDIAPIPE_MODEL_PATH` permite cambiarlo.
  */
-export const MEDIAPIPE_VERSION = '0.10.3';
-
-/**
- * URL base del paquete en CDN. Se usa para construir las URLs del ESM bundle
- * y del directorio WASM. Centralizada aquí para que un cambio de versión
- * propague automáticamente a ambos.
- */
-export const MEDIAPIPE_CDN_BASE = `https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${MEDIAPIPE_VERSION}`;
-
-/**
- * Ruta CDN al directorio WASM. FilesetResolver.forVisionTasks() usa esta URL
- * para cargar los binarios WASM y su glue code JS.
- */
-export const WASM_CDN_PATH = `${MEDIAPIPE_CDN_BASE}/wasm`;
+export const LOCAL_MODEL_PATH = '/models/face_landmarker.task';
 
 export const DEFAULT_DETECTION_CONFIG = {
     numFaces: 1,

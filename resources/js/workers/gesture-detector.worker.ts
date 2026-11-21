@@ -2,44 +2,55 @@
  * Web Worker de detección de gestos.
  *
  * Ejecuta MediaPipe FaceLandmarker fuera del hilo principal para no
- * bloquear el renderizado de los juegos.
- * Protocolo de mensajes tipado: ver lib/mediapipe/types.ts.
+ * bloquear el renderizado de los juegos. Protocolo tipado en
+ * `lib/mediapipe/types.ts`: por cada `FRAME` responde exactamente una vez,
+ * con `RESULT` o `FRAME_DROPPED`, y el hilo principal no envía el siguiente
+ * hasta recibir esa respuesta (`frame-pump.ts`). Así nunca hay cola.
  *
- * MediaPipe se carga desde CDN (no desde node_modules) para evitar problemas
- * de resolución de módulos en el contexto del Web Worker. En dev mode el worker
- * corre desde un Blob URL y las dependencias de node_modules transformadas por
- * Vite tienen imports internos que no se resuelven correctamente cross-origin.
- * Cargar desde CDN (igual que el ejemplo oficial de Google) elimina esta clase
- * de errores por completo.
+ * MediaPipe (bundle, WASM y modelo) lo sirve Vout: el hilo principal manda las
+ * URLs en `INIT` (`runtime-assets.ts`). El bundle se importa en tiempo de
+ * ejecución desde esa URL, no se empaqueta con el worker: en desarrollo el
+ * worker corre desde un Blob URL y los módulos de node_modules transformados
+ * por Vite no se resuelven bien desde ahí.
  *
  * @see https://ai.google.dev/mediapipe/solutions/vision/face_landmarker
  */
 
-// Type-only import — se elimina en compilación. Nos da autocompletado y
-// type-safety sin crear una dependencia runtime sobre node_modules.
-import type { FaceLandmarker as FaceLandmarkerInstance } from '@mediapipe/tasks-vision';
+// Solo tipos: se elimina al compilar.
+import type * as Vision from '@mediapipe/tasks-vision';
+import type {
+    FaceLandmarker as FaceLandmarkerInstance,
+    FaceLandmarkerResult,
+} from '@mediapipe/tasks-vision';
 
 import {
     CALIBRATION_FRAME_COUNT,
     DEFAULT_DETECTION_CONFIG,
     FACE_LOST_RELEASE_MS,
     HEAD_POSE_GESTURE_GATE,
-    MEDIAPIPE_CDN_BASE,
+    MAX_CONSECUTIVE_INFERENCE_ERRORS,
     USED_BLENDSHAPE_KEYS,
 } from '@/lib/mediapipe/constants';
 import {
     classifyGestures,
+    drainGestureRiseSamples,
     releaseActiveGestures,
     resetGestureTracking,
 } from '@/lib/mediapipe/gesture-classifier';
 import { extractHeadPose } from '@/lib/mediapipe/head-pose';
-import { PerformanceAdapter } from '@/lib/mediapipe/performance-adapter';
 import type {
+    EngineInfo,
+    GestureEvent,
+    HeadPose,
+    MediaPipeRuntimeAssets,
     NeutralBaseline,
+    WasmFilesetUrls,
     WorkerConfig,
     WorkerInMessage,
     WorkerOutMessage,
 } from '@/lib/mediapipe/types';
+
+type VisionModule = typeof Vision;
 
 // ---------------------------------------------------------------------------
 // Handlers globales — capturan errores que escapan de try/catch
@@ -73,21 +84,17 @@ let landmarker: FaceLandmarkerInstance | null = null;
 let paused = false;
 let config: WorkerConfig = {
     sensitivity: 5,
-    targetFps: 30,
     enableBlendshapes: false,
 };
 let baseline: NeutralBaseline | null = null;
 
-const perf = new PerformanceAdapter();
-
-// Acumulador de calibración
 let calibrationSamples: Record<string, number>[] = [];
 let isCalibrating = false;
 
-let frameCounter = 0;
-
 /** Timestamp del primer fotograma seguido sin cara, o null si se ve la cara. */
 let faceLostSince: number | null = null;
+
+let consecutiveInferenceErrors = 0;
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -98,15 +105,18 @@ function post(msg: WorkerOutMessage): void {
 }
 
 /**
+ * Hora en milisegundos de época con precisión de `performance.now()`. Worker
+ * y página tienen orígenes de reloj distintos: así sus marcas se comparan.
+ */
+function epochNow(): number {
+    return performance.timeOrigin + performance.now();
+}
+
+/**
  * Convierte las categorías crudas de MediaPipe en un diccionario `{nombre: score}`.
  *
- * @param blendshapes Array devuelto por `detectForVideo().faceBlendshapes`.
- * @param includeAll  Si `true`, devuelve las 52 categorías (modo Vision Lab).
- *                    Si `false`, devuelve sólo las claves que el classifier
- *                    realmente consume (ver `USED_BLENDSHAPE_KEYS`). Sesión 3.4 §4.2
- *                    — reduce ~80% el tamaño del record por frame y el coste
- *                    de serialización del postMessage `BLENDSHAPES`, y el
- *                    recálculo del baseline en calibración.
+ * @param includeAll Si `true`, las 52 categorías (Vision Lab). Si no, solo las
+ *                   que consume el clasificador (`USED_BLENDSHAPE_KEYS`).
  */
 function blendshapeMapFromResult(
     blendshapes: { categories: { categoryName: string; score: number }[] }[],
@@ -124,32 +134,66 @@ function blendshapeMapFromResult(
 }
 
 /**
- * Carga MediaPipe Tasks Vision desde CDN.
- *
- * Usa import() dinámico con la URL del ESM bundle (vision_bundle.mjs). El
- * comentario @vite-ignore evita que Vite/Rollup intente resolver o bundlear
- * esta URL — debe mantenerse como import dinámico en runtime tanto en dev
- * como en prod.
- *
- * Patrón idéntico al ejemplo oficial de Google MediaPipe:
- * `import { FaceLandmarker, FilesetResolver } from '.../vision_bundle.mjs'`
+ * Importa el bundle de MediaPipe desde la URL que sirve Vout. `@vite-ignore`
+ * evita que Vite intente resolverlo: es una URL en tiempo de ejecución.
  */
-async function loadMediaPipeFromCDN() {
-    const cdnUrl = `${MEDIAPIPE_CDN_BASE}/vision_bundle.mjs`;
-    console.log('[GestureWorker] Importing MediaPipe from CDN:', cdnUrl);
-
-    const vision = await import(/* @vite-ignore */ cdnUrl);
+async function loadVisionModule(url: string): Promise<VisionModule> {
+    const vision = (await import(/* @vite-ignore */ url)) as VisionModule;
 
     if (!vision.FaceLandmarker || !vision.FilesetResolver) {
         throw new Error(
-            'MediaPipe CDN module did not export FaceLandmarker or FilesetResolver',
+            'MediaPipe bundle did not export FaceLandmarker or FilesetResolver',
         );
     }
 
-    return {
-        FaceLandmarker: vision.FaceLandmarker,
-        FilesetResolver: vision.FilesetResolver,
-    };
+    return vision;
+}
+
+function createLandmarker(
+    vision: VisionModule,
+    fileset: WasmFilesetUrls,
+    modelUrl: string,
+    delegate: EngineInfo['delegate'],
+): Promise<FaceLandmarkerInstance> {
+    return vision.FaceLandmarker.createFromOptions(fileset, {
+        baseOptions: { modelAssetPath: modelUrl, delegate },
+        runningMode: 'VIDEO',
+        numFaces: DEFAULT_DETECTION_CONFIG.numFaces,
+        minFaceDetectionConfidence:
+            DEFAULT_DETECTION_CONFIG.minFaceDetectionConfidence,
+        minFacePresenceConfidence:
+            DEFAULT_DETECTION_CONFIG.minFacePresenceConfidence,
+        outputFaceBlendshapes: DEFAULT_DETECTION_CONFIG.outputFaceBlendshapes,
+        outputFacialTransformationMatrixes:
+            DEFAULT_DETECTION_CONFIG.outputFacialTransformationMatrixes,
+    });
+}
+
+/**
+ * GPU que ve WebGL desde el worker. Solo informativo: "SwiftShader" indica
+ * que no hay GPU real y la "GPU" de MediaPipe se emula por software.
+ */
+function detectWebGlRenderer(): string | null {
+    try {
+        const gl = new OffscreenCanvas(1, 1).getContext('webgl2');
+
+        if (gl === null) {
+            return null;
+        }
+
+        const info = gl.getExtension('WEBGL_debug_renderer_info');
+        const renderer = String(
+            gl.getParameter(
+                info === null ? gl.RENDERER : info.UNMASKED_RENDERER_WEBGL,
+            ),
+        );
+
+        gl.getExtension('WEBGL_lose_context')?.loseContext();
+
+        return renderer;
+    } catch {
+        return null;
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -157,100 +201,63 @@ async function loadMediaPipeFromCDN() {
 // ---------------------------------------------------------------------------
 
 async function handleInit(
-    modelPath: string,
-    wasmPath: string,
+    assets: MediaPipeRuntimeAssets,
+    mediapipeVersion: string,
     cfg: WorkerConfig,
 ): Promise<void> {
     config = cfg;
-    console.log(
-        '[GestureWorker] handleInit — model:',
-        modelPath,
-        'wasm:',
-        wasmPath,
-    );
 
     try {
-        const { FaceLandmarker, FilesetResolver } =
-            await loadMediaPipeFromCDN();
-        console.log(
-            '[GestureWorker] MediaPipe imported. Resolving WASM fileset...',
-        );
+        const vision = await loadVisionModule(assets.visionBundleUrl);
+        const simd = await vision.FilesetResolver.isSimdSupported();
+        const fileset = simd ? assets.wasm.simd : assets.wasm.nosimd;
 
-        const vision = await FilesetResolver.forVisionTasks(wasmPath);
-        console.log(
-            '[GestureWorker] WASM fileset resolved. Creating FaceLandmarker (GPU)...',
-        );
-
-        landmarker = await FaceLandmarker.createFromOptions(vision, {
-            baseOptions: {
-                modelAssetPath: modelPath,
-                delegate: 'GPU',
-            },
-            runningMode: 'VIDEO',
-            numFaces: DEFAULT_DETECTION_CONFIG.numFaces,
-            minFaceDetectionConfidence:
-                DEFAULT_DETECTION_CONFIG.minFaceDetectionConfidence,
-            minFacePresenceConfidence:
-                DEFAULT_DETECTION_CONFIG.minFacePresenceConfidence,
-            outputFaceBlendshapes:
-                DEFAULT_DETECTION_CONFIG.outputFaceBlendshapes,
-            outputFacialTransformationMatrixes:
-                DEFAULT_DETECTION_CONFIG.outputFacialTransformationMatrixes,
-        });
-
-        // Nota (Sesión 3.4 §4.4): el primer `detectForVideo` incluye la
-        // compilación del shader GPU (≈200-500ms) que queda fuera de la ventana
-        // deslizante del PerformanceAdapter porque arranca con muestras limpias.
-        // No hay que alarmarse si el primer `inferenceMs` es un outlier alto.
-        console.log(
-            '[GestureWorker] FaceLandmarker created (delegate=GPU). Sending READY.',
-        );
-        post({ type: 'READY' });
-    } catch (gpuErr) {
-        // El delegado GPU puede fallar en algunos dispositivos — reintentar con CPU.
-        console.warn(
-            '[GestureWorker] GPU init failed:',
-            gpuErr,
-            '— retrying with CPU...',
-        );
+        let delegate: EngineInfo['delegate'] = 'GPU';
 
         try {
-            const { FaceLandmarker, FilesetResolver } =
-                await loadMediaPipeFromCDN();
-            const vision = await FilesetResolver.forVisionTasks(wasmPath);
-
-            landmarker = await FaceLandmarker.createFromOptions(vision, {
-                baseOptions: {
-                    modelAssetPath: modelPath,
-                    delegate: 'CPU',
-                },
-                runningMode: 'VIDEO',
-                numFaces: DEFAULT_DETECTION_CONFIG.numFaces,
-                minFaceDetectionConfidence:
-                    DEFAULT_DETECTION_CONFIG.minFaceDetectionConfidence,
-                minFacePresenceConfidence:
-                    DEFAULT_DETECTION_CONFIG.minFacePresenceConfidence,
-                outputFaceBlendshapes:
-                    DEFAULT_DETECTION_CONFIG.outputFaceBlendshapes,
-                outputFacialTransformationMatrixes:
-                    DEFAULT_DETECTION_CONFIG.outputFacialTransformationMatrixes,
-            });
-
-            console.log(
-                '[GestureWorker] FaceLandmarker created (delegate=CPU fallback). Sending READY.',
+            landmarker = await createLandmarker(
+                vision,
+                fileset,
+                assets.modelUrl,
+                'GPU',
             );
-            post({ type: 'READY' });
-        } catch (cpuErr) {
-            console.error('[GestureWorker] CPU init also failed:', cpuErr);
-            post({
-                type: 'ERROR',
-                code: 'INIT_FAILED',
-                message:
-                    cpuErr instanceof Error
-                        ? cpuErr.message
-                        : 'Failed to initialise FaceLandmarker',
-            });
+        } catch (gpuErr) {
+            // El delegado GPU puede fallar en algunos dispositivos.
+            console.warn(
+                '[GestureWorker] GPU init failed, retrying with CPU:',
+                gpuErr,
+            );
+            delegate = 'CPU';
+            landmarker = await createLandmarker(
+                vision,
+                fileset,
+                assets.modelUrl,
+                'CPU',
+            );
         }
+
+        // El primer `detectForVideo` compila los shaders (≈200-500 ms en GPU).
+        // Ese primer fotograma es el calentamiento: el hilo principal no da
+        // el motor por arrancado hasta recibir su RESULT.
+        post({
+            type: 'READY',
+            info: {
+                mediapipeVersion,
+                delegate,
+                simd,
+                renderer: detectWebGlRenderer(),
+            },
+        });
+    } catch (err) {
+        console.error('[GestureWorker] Init failed:', err);
+        post({
+            type: 'ERROR',
+            code: 'INIT_FAILED',
+            message:
+                err instanceof Error
+                    ? err.message
+                    : 'Failed to initialise FaceLandmarker',
+        });
     }
 }
 
@@ -258,71 +265,112 @@ async function handleInit(
 // FRAME — Procesar un frame de vídeo
 // ---------------------------------------------------------------------------
 
-function handleFrame(bitmap: ImageBitmap, timestamp: number): void {
+type FrameAnalysis = {
+    gestures: GestureEvent[];
+    headPose: HeadPose | null;
+    blendshapes: Record<string, number> | null;
+};
+
+function handleFrame(
+    frameId: number,
+    bitmap: ImageBitmap,
+    timestamp: number,
+): void {
+    const receivedAt = epochNow();
+
     if (!landmarker || paused) {
         bitmap.close();
+        post({
+            type: 'FRAME_DROPPED',
+            frameId,
+            reason: landmarker ? 'paused' : 'not_ready',
+        });
         return;
     }
 
-    // try/finally garantiza que bitmap.close() se ejecute incluso si
-    // detectForVideo lanza una excepción (evita resource leak).
-    let result;
-    let inferenceMs: number;
+    let result: FaceLandmarkerResult;
+    const inferenceStart = epochNow();
 
     try {
-        const t0 = performance.now();
         result = landmarker.detectForVideo(bitmap, timestamp);
-        inferenceMs = performance.now() - t0;
+        consecutiveInferenceErrors = 0;
+    } catch (err) {
+        consecutiveInferenceErrors++;
+        console.warn('[GestureWorker] detectForVideo failed:', err);
+        post({ type: 'FRAME_DROPPED', frameId, reason: 'error' });
+
+        if (consecutiveInferenceErrors === MAX_CONSECUTIVE_INFERENCE_ERRORS) {
+            post({
+                type: 'ERROR',
+                code: 'INFERENCE_FAILED',
+                message:
+                    err instanceof Error
+                        ? err.message
+                        : 'Face detection failed',
+            });
+        }
+        return;
     } finally {
         bitmap.close();
     }
 
-    // Sin cara detectada. Se responde igualmente con un RESULT vacío: el
-    // hook espera el primer RESULT para dar el motor por arrancado, y si el
-    // único fotograma de calentamiento no tiene cara (cámara aún oscura,
-    // usuario fuera de plano, cámara que no apunta a nadie) se quedaba
-    // esperando para siempre en "cargando".
-    //
-    // Si la cara lleva `FACE_LOST_RELEASE_MS` sin verse, los gestos que
-    // estuvieran activos se dan por terminados: sin cara no hay señal que
-    // medir y un gesto sostenido no debe quedarse "pulsado" en el juego.
+    const inferenceEnd = epochNow();
+    const analysis = analyse(result, timestamp);
+
+    post({
+        type: 'RESULT',
+        frameId,
+        ...analysis,
+        gestureRiseMs: drainGestureRiseSamples(),
+        timing: {
+            receivedAt,
+            inferenceStart,
+            inferenceEnd,
+            postedAt: epochNow(),
+        },
+    });
+}
+
+/** Gestos, pose y blendshapes de un fotograma analizado. */
+function analyse(
+    result: FaceLandmarkerResult,
+    timestamp: number,
+): FrameAnalysis {
+    // Sin cara. Si lleva `FACE_LOST_RELEASE_MS` sin verse, los gestos activos
+    // se dan por terminados: un gesto sostenido no debe quedarse "pulsado".
     if (!result.faceLandmarks || result.faceLandmarks.length === 0) {
         faceLostSince ??= timestamp;
 
-        post({
-            type: 'RESULT',
+        return {
             gestures:
                 timestamp - faceLostSince >= FACE_LOST_RELEASE_MS
                     ? releaseActiveGestures(faceLostSince)
                     : [],
             headPose: null,
-        });
-
-        return;
+            blendshapes: null,
+        };
     }
 
     faceLostSince = null;
 
-    // -- Blendshapes --
-    // En modo Vision Lab necesitamos las 52 categorías para el panel de debug.
-    // En modo juego basta con las 11 que consume `classifyGestures` — ver
-    // `USED_BLENDSHAPE_KEYS` en constants.ts (Sesión 3.4 §4.2).
+    // En Vision Lab, los 52 blendshapes; en juego, solo los que usa el
+    // clasificador (Sesión 3.4 §4.2).
     const bsMap = blendshapeMapFromResult(
         result.faceBlendshapes ?? [],
         config.enableBlendshapes,
     );
 
-    // Modo calibración: acumular muestras.
+    // Calibración: se acumulan muestras sin clasificar ni mover el cursor.
     if (isCalibrating) {
         calibrationSamples.push(bsMap);
         if (calibrationSamples.length >= CALIBRATION_FRAME_COUNT) {
             finishCalibration();
         }
-        return;
+
+        return { gestures: [], headPose: null, blendshapes: null };
     }
 
-    // -- Pose de cabeza (extraer ANTES de clasificar gestos) --
-    let headPose = null;
+    let headPose: HeadPose | null = null;
     if (
         result.facialTransformationMatrixes &&
         result.facialTransformationMatrixes.length > 0
@@ -331,11 +379,9 @@ function handleFrame(bitmap: ImageBitmap, timestamp: number): void {
         headPose = extractHeadPose(matrix, timestamp);
     }
 
-    // -- Clasificación de gestos --
-    // Sesión 3.4 §6.5 — Suprimir clasificación cuando la cabeza está muy
-    // rotada. En posiciones extremas la red neuronal distorsiona los
-    // blendshapes frontales (ej. mirar arriba → falso BROW_RAISE, mirar
-    // abajo → falso MOUTH_OPEN). El head tracking sigue funcionando.
+    // Sesión 3.4 §6.5 — con la cabeza muy girada los blendshapes frontales se
+    // distorsionan (mirar arriba → falso BROW_RAISE). Se suprimen los gestos;
+    // el head tracking sigue.
     const headExtremeRotation =
         headPose != null &&
         (Math.abs(headPose.pitch) > HEAD_POSE_GESTURE_GATE ||
@@ -344,30 +390,11 @@ function handleFrame(bitmap: ImageBitmap, timestamp: number): void {
         ? []
         : classifyGestures(bsMap, config.sensitivity, baseline, timestamp);
 
-    // -- Enviar resultados --
-    if (gestures.length > 0 || headPose) {
-        post({ type: 'RESULT', gestures, headPose });
-    }
-
-    // Enviar blendshapes crudos si el modo Vision Lab está activo.
-    if (config.enableBlendshapes) {
-        post({ type: 'BLENDSHAPES', values: bsMap });
-    }
-
-    // -- Métricas de rendimiento (cada 20 frames ≈ 333ms a 60fps) --
-    // Sesión 3.4 — cambio de 60 → 20 frames para reaccionar rápido a
-    // cambios de carga (degradación o recuperación). El mensaje es pequeño
-    // y no está en la ruta caliente de inferencia.
-    frameCounter++;
-    if (frameCounter % 20 === 0) {
-        const metrics = perf.record(inferenceMs);
-        post({ type: 'PERFORMANCE', metrics });
-    } else {
-        perf.record(inferenceMs);
-    }
-
-    // -- Telemetría pura (cada frame) --
-    post({ type: 'TELEMETRY', inferenceMs, frameTimestamp: timestamp });
+    return {
+        gestures,
+        headPose,
+        blendshapes: config.enableBlendshapes ? bsMap : null,
+    };
 }
 
 // ---------------------------------------------------------------------------
@@ -408,11 +435,11 @@ self.onmessage = (e: MessageEvent<WorkerInMessage>) => {
 
     switch (msg.type) {
         case 'INIT':
-            handleInit(msg.modelPath, msg.wasmPath, msg.config);
+            void handleInit(msg.assets, msg.mediapipeVersion, msg.config);
             break;
 
         case 'FRAME':
-            handleFrame(msg.bitmap, msg.timestamp);
+            handleFrame(msg.frameId, msg.bitmap, msg.timestamp);
             break;
 
         case 'SET_CONFIG':
@@ -432,7 +459,6 @@ self.onmessage = (e: MessageEvent<WorkerInMessage>) => {
 
         case 'RESUME':
             paused = false;
-            perf.reset();
             break;
 
         case 'DESTROY':

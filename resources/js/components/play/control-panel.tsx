@@ -57,9 +57,11 @@ import appearance from '@/routes/appearance';
 // Props
 // ---------------------------------------------------------------------------
 
-/** Aviso sobre la cámara, ya traducido: un fallo o un cambio automático. */
+/** Aviso sobre la cámara, ya traducido: un fallo, un cambio automático o una cámara lenta. */
 export type CameraNotice = {
     tone: 'error' | 'info';
+    /** Qué aviso es (`denied`, `skipped`, `low_fps`…). */
+    code: string;
     text: string;
 };
 
@@ -548,6 +550,7 @@ function CameraNoticeAlert({ notice }: { notice: CameraNotice | null }) {
         <Alert
             variant={isError ? 'destructive' : 'default'}
             className="px-3 py-2.5"
+            data-camera-notice={notice.code}
         >
             {isError ? <AlertTriangle /> : <Info />}
             <AlertDescription className="text-xs">

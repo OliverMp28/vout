@@ -74,13 +74,53 @@ export type NeutralBaseline = {
 // Performance
 // ---------------------------------------------------------------------------
 
+/** Métricas del motor que ve la interfaz, sobre una ventana de ~2 s. */
 export type PerformanceMetrics = {
+    /** Fotogramas analizados por segundo. */
     fps: number;
+    /** Media de `detectForVideo`, en ms. */
     inferenceMs: number;
-    targetFps: number;
+    /** Imágenes por segundo que entrega la cámara, o null si aún no se sabe. */
+    cameraFps: number | null;
+    /** True mientras la cámara va tan lenta que conviene avisar al usuario. */
+    cameraSlow: boolean;
 };
 
-export type DeviceTier = 'high' | 'mid' | 'low';
+/** Con qué se ejecuta el motor. Lo informa el worker al arrancar. */
+export type EngineInfo = {
+    /** Versión de @mediapipe/tasks-vision. */
+    mediapipeVersion: string;
+    /** Delegado con el que se creó el landmarker. */
+    delegate: 'GPU' | 'CPU';
+    /** Si se cargó el WASM con SIMD. */
+    simd: boolean;
+    /**
+     * GPU que ve WebGL en el worker, o null si no hay WebGL. "SwiftShader"
+     * significa que no hay GPU real y se dibuja por software.
+     */
+    renderer: string | null;
+};
+
+// ---------------------------------------------------------------------------
+// Runtime de MediaPipe
+// ---------------------------------------------------------------------------
+
+/** URLs absolutas del cargador y el binario WASM de MediaPipe. */
+export type WasmFilesetUrls = {
+    wasmLoaderPath: string;
+    wasmBinaryPath: string;
+};
+
+/**
+ * Todo lo que el worker necesita descargar, servido por Vout (ver
+ * `runtime-assets.ts`). Son URLs absolutas: el worker corre desde un Blob URL
+ * y no puede resolver rutas relativas.
+ */
+export type MediaPipeRuntimeAssets = {
+    visionBundleUrl: string;
+    wasm: { simd: WasmFilesetUrls; nosimd: WasmFilesetUrls };
+    modelUrl: string;
+};
 
 // ---------------------------------------------------------------------------
 // Worker configuration
@@ -88,7 +128,7 @@ export type DeviceTier = 'high' | 'mid' | 'low';
 
 export type WorkerConfig = {
     sensitivity: number;
-    targetFps: number;
+    /** Devolver los 52 blendshapes en cada RESULT (Vision Lab). */
     enableBlendshapes: boolean;
 };
 
@@ -96,14 +136,40 @@ export type WorkerConfig = {
 // Worker ↔ Main thread protocol (discriminated unions)
 // ---------------------------------------------------------------------------
 
+/**
+ * Tiempos de un fotograma dentro del worker, en milisegundos de época con
+ * precisión de `performance.now()` (`performance.timeOrigin + now()`). Worker
+ * y página tienen orígenes de reloj distintos; así se pueden comparar.
+ */
+export type FrameTiming = {
+    receivedAt: number;
+    inferenceStart: number;
+    inferenceEnd: number;
+    postedAt: number;
+};
+
+/** Por qué el worker no analizó un fotograma. */
+export type FrameDropReason = 'not_ready' | 'paused' | 'error';
+
+/**
+ * Protocolo: por cada `FRAME` el worker responde **exactamente una vez**, con
+ * `RESULT` o `FRAME_DROPPED` y el mismo `frameId`. El hilo principal no envía
+ * otro fotograma hasta recibir esa respuesta (`frame-pump.ts`).
+ */
 export type WorkerInMessage =
     | {
           type: 'INIT';
-          modelPath: string;
-          wasmPath: string;
+          assets: MediaPipeRuntimeAssets;
+          mediapipeVersion: string;
           config: WorkerConfig;
       }
-    | { type: 'FRAME'; bitmap: ImageBitmap; timestamp: number }
+    | {
+          type: 'FRAME';
+          frameId: number;
+          bitmap: ImageBitmap;
+          /** Marca del fotograma en el `performance.now()` de la página. */
+          timestamp: number;
+      }
     | { type: 'SET_CONFIG'; config: Partial<WorkerConfig> }
     | { type: 'CALIBRATE_NEUTRAL' }
     | { type: 'PAUSE' }
@@ -111,12 +177,20 @@ export type WorkerInMessage =
     | { type: 'DESTROY' };
 
 export type WorkerOutMessage =
-    | { type: 'READY' }
-    | { type: 'RESULT'; gestures: GestureEvent[]; headPose: HeadPose | null }
-    | { type: 'BLENDSHAPES'; values: Record<string, number> }
-    | { type: 'PERFORMANCE'; metrics: PerformanceMetrics }
+    | { type: 'READY'; info: EngineInfo }
+    | {
+          type: 'RESULT';
+          frameId: number;
+          gestures: GestureEvent[];
+          headPose: HeadPose | null;
+          /** Los 52 blendshapes, solo con `enableBlendshapes`. */
+          blendshapes: Record<string, number> | null;
+          /** Ver `drainGestureRiseSamples`. */
+          gestureRiseMs: number[];
+          timing: FrameTiming;
+      }
+    | { type: 'FRAME_DROPPED'; frameId: number; reason: FrameDropReason }
     | { type: 'CALIBRATED'; baseline: NeutralBaseline }
-    | { type: 'TELEMETRY'; inferenceMs: number; frameTimestamp: number }
     | { type: 'ERROR'; code: string; message: string };
 
 // ---------------------------------------------------------------------------

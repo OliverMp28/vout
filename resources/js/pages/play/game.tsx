@@ -29,6 +29,8 @@ import { useMascotContext } from '@/hooks/use-mascot-context';
 import { usePlayOrchestrator } from '@/hooks/use-play-orchestrator';
 import { useTranslation } from '@/hooks/use-translation';
 import AppLayout from '@/layouts/app-layout';
+import { describeDiagnostics } from '@/lib/mediapipe/diagnostics';
+import type { TelemetrySnapshot } from '@/lib/mediapipe/telemetry';
 import type { GestureConfigData } from '@/lib/mediapipe/types';
 import { cn } from '@/lib/utils';
 import type { Auth } from '@/types/auth';
@@ -48,6 +50,12 @@ type PlayGameProps = {
     };
     activeGestureConfig: GestureConfigData | null;
     session: GameSessionPayload;
+};
+
+/** Lo que muestra el overlay de telemetría (Ctrl+M). */
+type TelemetryView = {
+    stats: TelemetrySnapshot;
+    info: [string, string][];
 };
 
 // ---------------------------------------------------------------------------
@@ -70,7 +78,9 @@ export default function PlayGame({
     // Solo lo que NO pertenece al orquestador (estado de layout puro).
     const [panelOpen, setPanelOpen] = useState(false);
     const [showTelemetry, setShowTelemetry] = useState(false);
-    const [telemetrySnap, setTelemetrySnap] = useState<any>(null);
+    const [telemetryView, setTelemetryView] = useState<TelemetryView | null>(
+        null,
+    );
 
     // ── Hotkey para telemetría (Ctrl+M) ────────────────────────────────────
     useEffect(() => {
@@ -123,13 +133,18 @@ export default function PlayGame({
     });
 
     // ── Loop de telemetría in-game ─────────────────────────────────────────
+    const engineTelemetry = engine.telemetry;
+    const getEngineDiagnostics = engine.getDiagnostics;
     useEffect(() => {
         if (!showTelemetry || engine.status !== 'running') return;
         const interval = setInterval(() => {
-            setTelemetrySnap(engine.telemetry.snapshot());
+            setTelemetryView({
+                stats: engineTelemetry.snapshot(),
+                info: describeDiagnostics(getEngineDiagnostics()),
+            });
         }, 500);
         return () => clearInterval(interval);
-    }, [showTelemetry, engine.status, engine.telemetry]);
+    }, [showTelemetry, engine.status, engineTelemetry, getEngineDiagnostics]);
 
     // ── Mensajes contextuales para Vou (S7) ────────────────────────────────
     // Mientras el motor de gestos está activo, sugerimos una celebración
@@ -153,17 +168,33 @@ export default function PlayGame({
 
     // ── Aviso de cámara ────────────────────────────────────────────────────
     // Un problema con la cámara no bloquea el juego (se puede jugar con
-    // teclado), así que se explica en el panel y no en un overlay.
+    // teclado), así que se explica en el panel y no en un overlay. Por
+    // prioridad: un fallo, una cámara descartada y, por último, una cámara
+    // tan lenta (suele ser falta de luz) que retrasa los gestos.
+    const slowCameraFps = engine.performance?.cameraSlow
+        ? engine.performance.cameraFps
+        : null;
     const cameraNotice: CameraNotice | null = camera.issue
-        ? { tone: 'error', text: t(`play.camera.${camera.issue}`) }
+        ? {
+              tone: 'error',
+              code: camera.issue,
+              text: t(`play.camera.${camera.issue}`),
+          }
         : camera.skippedCamera
           ? {
                 tone: 'info',
+                code: 'skipped',
                 text: t('play.camera.skipped', {
                     camera: camera.skippedCamera,
                 }),
             }
-          : null;
+          : slowCameraFps !== null
+            ? {
+                  tone: 'info',
+                  code: 'low_fps',
+                  text: t('play.camera.low_fps', { fps: slowCameraFps }),
+              }
+            : null;
 
     // ── Panel — el mismo contenido se usa en desktop y en el Sheet móvil ──
     const panelContent = (
@@ -224,6 +255,7 @@ export default function PlayGame({
                 {/* ── Contenedor del iframe ───────────────────────────────── */}
                 <div
                     id="game-frame"
+                    data-engine-status={engine.status}
                     className={cn(
                         'group relative aspect-video w-full overflow-hidden rounded-2xl border bg-black transition-all duration-500',
                         engine.status === 'running'
@@ -276,7 +308,7 @@ export default function PlayGame({
                     )}
 
                     {/* Overlay debug de Telemetría */}
-                    {showTelemetry && telemetrySnap && (
+                    {showTelemetry && telemetryView && (
                         <div className="pointer-events-none absolute top-4 left-4 z-50 rounded-lg border border-white/10 bg-black/80 p-3 text-white shadow-xl backdrop-blur-md">
                             <div className="mb-2 flex items-center justify-between border-b border-white/20 pb-1 text-xs font-bold">
                                 <span>Telemetry</span>
@@ -284,13 +316,33 @@ export default function PlayGame({
                                     Ctrl+M to hide
                                 </span>
                             </div>
+                            <dl className="mb-2 grid grid-cols-[auto_1fr] gap-x-3 border-b border-white/20 pb-1 font-mono text-[10px]">
+                                {telemetryView.info.map(([name, value]) => (
+                                    <div
+                                        key={name}
+                                        className="contents"
+                                        data-telemetry-info={name}
+                                        data-value={value}
+                                    >
+                                        <dt className="opacity-70">{name}</dt>
+                                        <dd
+                                            className="max-w-56 truncate"
+                                            title={value}
+                                        >
+                                            {value}
+                                        </dd>
+                                    </div>
+                                ))}
+                            </dl>
                             <div className="space-y-1 font-mono text-[10px]">
-                                {Object.entries(telemetrySnap)
+                                {Object.entries(telemetryView.stats)
                                     .sort()
-                                    .map(([key, stats]: any) => (
+                                    .map(([key, stats]) => (
                                         <div
                                             key={key}
                                             className="flex justify-between gap-6"
+                                            data-telemetry-metric={key}
+                                            data-p50={stats.p50}
                                         >
                                             <span className="opacity-70">
                                                 {key}
@@ -321,19 +373,20 @@ export default function PlayGame({
                 </div>
 
                 {/* ── Panel desktop (oculto en < lg) ─────────────────────── */}
-                {/* El `key={lastGesture}` remonta el wrapper al llegar un gesto, */}
-                {/* lo que reinicia la animación `gesture-pulse` (feedback visual). */}
                 <aside
                     aria-label={t('play.panel.title')}
                     className="hidden lg:block"
                 >
-                    <div
-                        key={lastGesture ?? 'idle'}
-                        className={cn(
-                            'h-full rounded-2xl border border-border/60 bg-card p-5 shadow-lg shadow-black/5 dark:shadow-black/20',
-                            lastGesture && 'motion-safe:animate-gesture-pulse',
+                    <div className="relative h-full rounded-2xl border border-border/60 bg-card p-5 shadow-lg shadow-black/5 dark:shadow-black/20">
+                        {/* Pulso al detectar un gesto: solo se remonta esta capa
+                            (reinicia la animación), no el panel entero. */}
+                        {lastGesture && (
+                            <span
+                                key={lastGesture}
+                                aria-hidden="true"
+                                className="motion-safe:animate-gesture-pulse pointer-events-none absolute inset-0 rounded-2xl"
+                            />
                         )}
-                    >
                         {panelContent}
                     </div>
                 </aside>

@@ -39,6 +39,7 @@ import type {
     GestureActionMapping,
     HeadTrackingMode,
 } from '@/lib/mediapipe/action-types';
+import { describeDiagnostics } from '@/lib/mediapipe/diagnostics';
 import type { TelemetrySnapshot } from '@/lib/mediapipe/telemetry';
 import { GestureType } from '@/lib/mediapipe/types';
 import type { GestureEvent } from '@/lib/mediapipe/types';
@@ -155,6 +156,8 @@ export default function VisionLab() {
         onGesture: handleGesture,
         onHeadMove: dispatcher.onHeadMove,
         enableBlendshapes: true,
+        // Vision Lab pinta la pose, el cursor y los blendshapes en vivo.
+        liveState: true,
     });
 
     // Stable refs for cleanup without causing effect re-runs.
@@ -185,7 +188,9 @@ export default function VisionLab() {
     }, [engine.status, engine.telemetry]);
 
     const handleExportTelemetry = useCallback(() => {
-        const csv = engine.telemetry.export();
+        const csv = engine.telemetry.export(
+            describeDiagnostics(engine.getDiagnostics()),
+        );
         const blob = new Blob([csv], { type: 'text/csv' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -193,7 +198,7 @@ export default function VisionLab() {
         a.download = `vout_telemetry_${Date.now()}.csv`;
         a.click();
         URL.revokeObjectURL(url);
-    }, [engine.telemetry]);
+    }, [engine]);
 
     const handleStart = useCallback(async () => {
         const stream = await camera.requestCamera();
@@ -231,7 +236,10 @@ export default function VisionLab() {
         <AppLayout>
             <Head title="Vision Lab" />
 
-            <div className="mx-auto max-w-7xl space-y-6 p-4 md:p-6">
+            <div
+                className="mx-auto max-w-7xl space-y-6 p-4 md:p-6"
+                data-engine-status={engine.status}
+            >
                 {/* Header */}
                 <div className="flex flex-wrap items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
@@ -588,16 +596,30 @@ export default function VisionLab() {
                                         </div>
                                         <div>
                                             <div className="text-[10px] text-muted-foreground uppercase">
-                                                Target
+                                                Camera
                                             </div>
                                             <div className="font-mono text-lg tabular-nums">
-                                                {engine.performance.targetFps}
+                                                {engine.performance.cameraFps ??
+                                                    '—'}
                                             </div>
                                         </div>
                                     </div>
                                 ) : (
                                     <p className="py-2 text-center text-xs text-muted-foreground">
                                         Waiting for data...
+                                    </p>
+                                )}
+                                {engine.info && (
+                                    <p
+                                        id="vision-engine-info"
+                                        className="mt-3 truncate border-t border-border/30 pt-2 text-center font-mono text-[10px] text-muted-foreground"
+                                        title={
+                                            engine.info.renderer ?? undefined
+                                        }
+                                    >
+                                        MediaPipe {engine.info.mediapipeVersion}{' '}
+                                        · {engine.info.delegate} ·{' '}
+                                        {engine.info.renderer ?? 'no WebGL'}
                                     </p>
                                 )}
                             </div>

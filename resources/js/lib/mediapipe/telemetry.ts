@@ -91,16 +91,27 @@ export class TelemetryCollector {
 
     /**
      * Construye un string en formato CSV a partir de la ventana de captura.
+     * Si se pasa `info`, añade al final una tabla con el contexto (versión de
+     * MediaPipe, delegado, GPU…).
      * Cuidado: Como cada buffer puede tener diferentes muestras recolectadas a distintos
      * timestamps, este exportador exportará p50, p95, avg, etc. en su lugar.
      */
-    export(): string {
+    export(info: [string, string][] = []): string {
         const snap = this.snapshot();
         let csv = 'Metric,p50,p95,avg,min,max,count\n';
 
         for (const key of Object.keys(snap).sort()) {
             const data = snap[key];
             csv += `${key},${data.p50.toFixed(2)},${data.p95.toFixed(2)},${data.avg.toFixed(2)},${data.min.toFixed(2)},${data.max.toFixed(2)},${data.count}\n`;
+        }
+
+        // Tabla aparte con el contexto de la medición (versión, GPU…).
+        if (info.length > 0) {
+            csv += '\nInfo,Value\n';
+
+            for (const [name, value] of info) {
+                csv += `${name},"${value.replaceAll('"', '""')}"\n`;
+            }
         }
 
         return csv;

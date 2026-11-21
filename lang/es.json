@@ -381,6 +381,7 @@
     "play.panel.camera_hint": "Cámara que usa el control facial. Tu elección se mantiene hasta que cierres la pestaña.",
     "play.camera.connecting": "Conectando con la cámara…",
     "play.camera.denied": "El navegador no tiene permiso para usar la cámara. Concédelo en los ajustes del sitio y vuelve a intentarlo.",
+    "play.camera.low_fps": "Tu cámara va a :fps fps. Con más luz los gestos responderán antes.",
     "play.camera.no_image": "La cámara no envía imagen. Comprueba que no la esté usando otra aplicación y vuelve a intentarlo.",
     "play.camera.unavailable": "No se ha podido abrir ninguna cámara. Comprueba que esté conectada y vuelve a intentarlo.",
     "play.camera.skipped": "«:camera» no enviaba imagen, así que se está usando otra cámara.",

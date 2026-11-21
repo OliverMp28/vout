@@ -111,7 +111,10 @@
         "paths": {
             "@/*": ["./resources/js/*"]
         },
-        "jsx": "react-jsx"
+        "jsx": "react-jsx",
+        /* Solo los tipos globales que usa el código del navegador: así los de
+           bun (tests en tests/js) no se cuelan aquí. */
+        "types": ["node"]
     },
     "include": [
         "resources/js/**/*.ts",

@@ -45,6 +45,9 @@ jobs:
       - name: Install Node Dependencies
         run: bun install --frozen-lockfile
 
+      - name: JS Unit Tests
+        run: bun run test:js
+
       - name: Install Dependencies
         run: composer install --no-interaction --prefer-dist --optimize-autoloader
 
