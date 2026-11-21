@@ -35,6 +35,9 @@ export default [
             import: importPlugin,
         },
         settings: {
+            // Los archivos de Wayfinder (@/actions, @/routes) se generan y no
+            // están en git: sin esto, en CI no se resuelven y el orden cambia.
+            'import/internal-regex': '^@/',
             'import/resolver': {
                 typescript: {
                     alwaysTryTypes: true,
