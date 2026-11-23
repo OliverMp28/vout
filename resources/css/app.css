@@ -121,12 +121,14 @@
     --vou-pink: oklch(0.78 0.19 340);
 
     /*
-     * Malla facial sobre la imagen de la cámara (la dibuja el worker:
-     * face-mesh-drawing.ts). Igual en claro y oscuro: va sobre el vídeo, no
-     * sobre la interfaz.
+     * Máscara facial sobre la imagen de la cámara (la dibuja el worker:
+     * face-mesh-drawing.ts): la malla tenue, el perfil (óvalo y labios) claro
+     * y los rasgos (ojos, cejas e iris) con el acento. Igual en claro y
+     * oscuro: va sobre el vídeo, no sobre la interfaz.
      */
-    --face-mesh: oklch(0.98 0.01 285 / 0.3);
-    --face-mesh-contour: oklch(0.8 0.15 285 / 0.95);
+    --face-mesh: oklch(0.9 0.01 285 / 0.45);
+    --face-mesh-outline: oklch(0.95 0.01 285 / 0.85);
+    --face-mesh-feature: oklch(0.72 0.17 285);
 }
 
 /*

@@ -4,6 +4,7 @@ import {
     MESH_LAYERS,
     coverFit,
     drawFaceMesh,
+    uniqueConnections,
 } from '@/lib/mediapipe/face-mesh-drawing';
 import type { MeshConnections } from '@/lib/mediapipe/face-mesh-drawing';
 import { PreviewRenderer } from '@/lib/mediapipe/preview-renderer';
@@ -24,11 +25,11 @@ const CONNECTIONS: MeshConnections = {
         { start: 1, end: 2 },
         { start: 2, end: 3 },
     ],
-    contours: [{ start: 0, end: 2 }],
-    irises: [{ start: 1, end: 3 }],
+    outline: [{ start: 0, end: 2 }],
+    features: [{ start: 1, end: 3 }],
 };
 
-const COLORS = { mesh: 'white', contour: 'violet' };
+const COLORS = { mesh: 'gray', outline: 'white', feature: 'violet' };
 const FULL_CANVAS = { x: 0, y: 0, width: 100, height: 100 };
 
 describe('coverFit', () => {
@@ -69,11 +70,33 @@ describe('coverFit', () => {
     });
 });
 
+describe('uniqueConnections', () => {
+    test('cada arista una vez, aunque venga en los dos sentidos', () => {
+        expect(
+            uniqueConnections([
+                { start: 0, end: 1 },
+                { start: 1, end: 0 },
+                { start: 1, end: 2 },
+                { start: 0, end: 1 },
+                { start: 477, end: 3 },
+            ]),
+        ).toEqual([
+            { start: 0, end: 1 },
+            { start: 1, end: 2 },
+            { start: 3, end: 477 },
+        ]);
+    });
+});
+
 describe('drawFaceMesh', () => {
     test('cada nivel dibuja sus capas', () => {
         expect(MESH_LAYERS.off).toEqual([]);
-        expect(MESH_LAYERS.contours).toEqual(['contours', 'irises']);
-        expect(MESH_LAYERS.full).toEqual(['tesselation', 'contours', 'irises']);
+        expect(MESH_LAYERS.contours).toEqual(['outline', 'features']);
+        expect(MESH_LAYERS.full).toEqual([
+            'tesselation',
+            'outline',
+            'features',
+        ]);
     });
 
     test('un solo trazo por capa, con todas sus líneas', () => {
@@ -84,9 +107,10 @@ describe('drawFaceMesh', () => {
             pixelRatio: 2,
         });
 
+        // Malla tenue debajo; perfil y rasgos, cada uno con su color, encima.
         expect(context.strokes).toEqual([
-            { color: 'white', width: 1.5, segments: 3 },
-            { color: 'violet', width: 3.5, segments: 1 },
+            { color: 'gray', width: 1.2, segments: 3 },
+            { color: 'white', width: 2.5, segments: 1 },
             { color: 'violet', width: 2.5, segments: 1 },
         ]);
     });
@@ -110,7 +134,7 @@ describe('drawFaceMesh', () => {
         drawFaceMesh(
             context,
             POINTS,
-            { tesselation: [], contours: [{ start: 0, end: 2 }], irises: [] },
+            { tesselation: [], outline: [{ start: 0, end: 2 }], features: [] },
             'contours',
             { x: 10, y: -20, width: 200, height: 100 },
             { colors: COLORS, pixelRatio: 1 },
@@ -132,14 +156,14 @@ describe('drawFaceMesh', () => {
         drawFaceMesh(
             context,
             POINTS,
-            { tesselation: [], contours: [{ start: 0, end: 99 }], irises: [] },
+            { tesselation: [], outline: [{ start: 0, end: 99 }], features: [] },
             'contours',
             FULL_CANVAS,
             { colors: COLORS, pixelRatio: 1 },
         );
 
         expect(context.strokes).toEqual([
-            { color: 'violet', width: 1.75, segments: 0 },
+            { color: 'white', width: 1.25, segments: 0 },
         ]);
     });
 });
@@ -258,7 +282,7 @@ describe('PreviewRenderer', () => {
         instance.render(frame());
 
         expect([canvas.width, canvas.height]).toEqual([300, 200]);
-        expect(canvas.context.strokes[0].width).toBe(1.75);
+        expect(canvas.context.strokes[0].width).toBe(1.25);
     });
 
     test('devuelve lo que tardó en dibujar', () => {

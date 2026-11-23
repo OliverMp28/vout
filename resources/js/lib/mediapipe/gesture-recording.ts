@@ -57,6 +57,13 @@ export const RECORDING_SCRIPT: RecordingStep[] = [
         expected: [GestureType.MouthOpen],
     },
     {
+        id: 'lips_apart',
+        instruction:
+            'Mirando al frente, separa un poco los labios (sin abrir la boca del todo) y júntalos, 4 veces.',
+        durationMs: GESTURE_STEP_MS,
+        expected: [GestureType.MouthOpen],
+    },
+    {
         id: 'brows_front',
         instruction: 'Mirando al frente, levanta las cejas 4 veces.',
         durationMs: GESTURE_STEP_MS,
@@ -91,6 +98,12 @@ export const RECORDING_SCRIPT: RecordingStep[] = [
     {
         id: 'smile',
         instruction: 'Mirando al frente, sonríe 4 veces.',
+        durationMs: GESTURE_STEP_MS,
+        expected: [GestureType.Smile],
+    },
+    {
+        id: 'smile_teeth',
+        instruction: 'Sonríe enseñando los dientes 4 veces.',
         durationMs: GESTURE_STEP_MS,
         expected: [GestureType.Smile],
     },

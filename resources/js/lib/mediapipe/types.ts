@@ -192,7 +192,8 @@ export type PreferredDelegate = EngineInfo['delegate'];
  * Cuánta malla se dibuja sobre la cara:
  * - `off`      → nada.
  * - `contours` → ojos, cejas, labios, óvalo e iris: pocas líneas.
- * - `full`     → la malla completa (más de 2.500 segmentos) y los contornos.
+ * - `full`     → la máscara: la malla de toda la cara (1.322 aristas) y los
+ *                contornos encima.
  */
 export type MeshLevel = 'off' | 'contours' | 'full';
 
@@ -207,8 +208,12 @@ export type PreviewMode = 'overlay' | 'synced';
 
 /** Colores CSS ya resueltos (el worker no ve las variables de la página). */
 export type PreviewColors = {
+    /** La malla de triángulos. */
     mesh: string;
-    contour: string;
+    /** Óvalo de la cara y labios. */
+    outline: string;
+    /** Ojos, cejas e iris. */
+    feature: string;
 };
 
 export type PreviewOptions = {

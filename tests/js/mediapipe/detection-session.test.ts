@@ -10,14 +10,21 @@ import {
     blendshapeMapFromResult,
 } from '@/lib/mediapipe/detection-session';
 import type { LandmarkerResultLike } from '@/lib/mediapipe/detection-session';
+import { LIPS_APART_KEY } from '@/lib/mediapipe/face-measures';
+import type { FacePoint } from '@/lib/mediapipe/face-measures';
 import { USED_BLENDSHAPE_KEYS } from '@/lib/mediapipe/gesture-rules';
 import { GestureType } from '@/lib/mediapipe/types';
+
+import { faceWithLipGap } from './support/face-points';
 
 /** Matriz de transformación sin giro (cabeza de frente). */
 const FRONTAL = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
 
 /** Un resultado de MediaPipe con cara y estos blendshapes (el resto a 0). */
-function face(scores: Record<string, number> = {}): LandmarkerResultLike {
+function face(
+    scores: Record<string, number> = {},
+    points: FacePoint[] = [{ x: 0.5, y: 0.5 }],
+): LandmarkerResultLike {
     const names = new Set([
         ...USED_BLENDSHAPE_KEYS,
         'cheekPuff',
@@ -25,7 +32,7 @@ function face(scores: Record<string, number> = {}): LandmarkerResultLike {
     ]);
 
     return {
-        faceLandmarks: [[{ x: 0.5, y: 0.5 }]],
+        faceLandmarks: [points],
         faceBlendshapes: [
             {
                 categories: [...names].map((categoryName) => ({
@@ -222,5 +229,62 @@ describe('DetectionSession', () => {
         expect(
             second.analyse(NO_FACE, 3000 + FACE_LOST_RELEASE_MS).gestures,
         ).toEqual([]);
+    });
+
+    test('mide la separación de los labios con los puntos de la cara', () => {
+        const analysis = session(true).analyse(
+            face({}, faceWithLipGap(0.03)),
+            0,
+            { width: 320, height: 240 },
+        );
+
+        expect(analysis.blendshapes?.[LIPS_APART_KEY]).toBeCloseTo(0.3, 5);
+    });
+
+    test('los labios separados abren la boca aunque la mandíbula no baje', () => {
+        const analysis = session().analyse(
+            face({ jawOpen: 0 }, faceWithLipGap(0.05)),
+            0,
+        );
+
+        expect(phases(analysis.gestures)).toEqual([
+            `${GestureType.MouthOpen}:start`,
+        ]);
+    });
+
+    test('con los labios apenas juntos no cuenta', () => {
+        const analysis = session().analyse(
+            face({ jawOpen: 0 }, faceWithLipGap(0.01)),
+            0,
+        );
+
+        expect(analysis.gestures).toEqual([]);
+    });
+
+    test('una sonrisa enseñando los dientes no es abrir la boca', () => {
+        const analysis = session().analyse(
+            face(
+                { mouthSmileLeft: 0.8, mouthSmileRight: 0.8 },
+                faceWithLipGap(0.05),
+            ),
+            0,
+        );
+
+        expect(phases(analysis.gestures)).toEqual([
+            `${GestureType.Smile}:start`,
+        ]);
+    });
+
+    test('una "o" al hablar (morritos con los labios separados) no es abrir la boca', () => {
+        const analysis = session().analyse(
+            face({ mouthPucker: 0.7 }, faceWithLipGap(0.05)),
+            0,
+        );
+
+        expect(
+            analysis.gestures.some(
+                (event) => event.gesture === GestureType.MouthOpen,
+            ),
+        ).toBe(false);
     });
 });

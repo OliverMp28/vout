@@ -41,7 +41,11 @@ import {
     MAX_CONSECUTIVE_INFERENCE_ERRORS,
 } from '@/lib/mediapipe/constants';
 import { DetectionSession } from '@/lib/mediapipe/detection-session';
-import type { MeshConnections } from '@/lib/mediapipe/face-mesh-drawing';
+import { uniqueConnections } from '@/lib/mediapipe/face-mesh-drawing';
+import type {
+    MeshConnection,
+    MeshConnections,
+} from '@/lib/mediapipe/face-mesh-drawing';
 import { PreviewRenderer } from '@/lib/mediapipe/preview-renderer';
 import type {
     EngineInfo,
@@ -163,17 +167,28 @@ function createLandmarker(
     });
 }
 
-/** Las líneas de la malla, tal como las publica el bundle. */
+/** Las líneas de la máscara, por capas, a partir de las que publica el bundle. */
 function meshConnections(vision: VisionModule): MeshConnections {
     const { FaceLandmarker } = vision;
+    const pick = (...groups: (MeshConnection[] | undefined)[]) =>
+        groups.flatMap((group) => group ?? []);
 
     return {
-        tesselation: FaceLandmarker.FACE_LANDMARKS_TESSELATION ?? [],
-        contours: FaceLandmarker.FACE_LANDMARKS_CONTOURS ?? [],
-        irises: [
-            ...(FaceLandmarker.FACE_LANDMARKS_LEFT_IRIS ?? []),
-            ...(FaceLandmarker.FACE_LANDMARKS_RIGHT_IRIS ?? []),
-        ],
+        tesselation: uniqueConnections(
+            pick(FaceLandmarker.FACE_LANDMARKS_TESSELATION),
+        ),
+        outline: pick(
+            FaceLandmarker.FACE_LANDMARKS_FACE_OVAL,
+            FaceLandmarker.FACE_LANDMARKS_LIPS,
+        ),
+        features: pick(
+            FaceLandmarker.FACE_LANDMARKS_LEFT_EYE,
+            FaceLandmarker.FACE_LANDMARKS_LEFT_EYEBROW,
+            FaceLandmarker.FACE_LANDMARKS_RIGHT_EYE,
+            FaceLandmarker.FACE_LANDMARKS_RIGHT_EYEBROW,
+            FaceLandmarker.FACE_LANDMARKS_LEFT_IRIS,
+            FaceLandmarker.FACE_LANDMARKS_RIGHT_IRIS,
+        ),
     };
 }
 
@@ -378,7 +393,14 @@ function handleFrame(
         }
 
         const inferenceEnd = epochNow();
-        const { calibration, ...analysis } = current.analyse(result, timestamp);
+        const { calibration, ...analysis } = current.analyse(
+            result,
+            timestamp,
+            {
+                width: bitmap.width,
+                height: bitmap.height,
+            },
+        );
 
         if (calibration?.status === 'done') {
             post({

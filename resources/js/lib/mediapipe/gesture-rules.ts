@@ -19,10 +19,17 @@
  *     levantada): con la boca abierta, se disparaban antes que la boca. Al
  *     girar la cabeza, el ojo más lejano parece más cerrado. La boca, en
  *     cambio, se mide bien en cualquier postura.
+ *   - `jawOpen` no ve los labios entreabiertos con la mandíbula casi quieta:
+ *     la boca también cuenta la separación de los labios medida con los
+ *     puntos (`face-measures.ts`). Al abrir la boca a propósito no se sonríe
+ *     ni se ponen morritos (0 en la grabación); con una sonrisa enseñando los
+ *     dientes o con las "o" al hablar (morritos de 0.5-0.8), los labios se
+ *     separan sin querer abrir la boca.
  *
  * Worker-safe: sin DOM ni React.
  */
 
+import { LIPS_APART_KEY } from './face-measures';
 import { GestureType } from './types';
 import type { HeadPose, NeutralPose } from './types';
 
@@ -92,6 +99,14 @@ export const WINK_MIN_ASYMMETRY = 0.15;
  */
 export const PUCKER_MAX_JAW_OPEN = 0.05;
 
+/**
+ * Sonrisa y morritos por encima de los cuales unos labios separados no son
+ * abrir la boca: se enseñan los dientes al sonreír o se hace una "o" al
+ * hablar. Abriendo la boca a propósito los dos están en 0.
+ */
+export const MOUTH_OPEN_MAX_SMILE = 0.3;
+export const MOUTH_OPEN_MAX_PUCKER = 0.35;
+
 /** Tolerancia de postura de los gestos sin una medida propia. */
 const DEFAULT_POSE_TOLERANCE: PoseTolerance = {
     turn: 0.45,
@@ -106,6 +121,9 @@ const DEFAULT_POSE_TOLERANCE: PoseTolerance = {
 const eyeAsymmetry = (signal: SignalReader): number =>
     signal('eyeBlinkLeft') - signal('eyeBlinkRight');
 
+const smile = (signal: SignalReader): number =>
+    Math.max(signal('mouthSmileLeft'), signal('mouthSmileRight'));
+
 export const GESTURE_RULES: Readonly<Record<GestureType, GestureRule>> = {
     [GestureType.BrowRaise]: {
         keys: ['browInnerUp', 'browOuterUpLeft', 'browOuterUpRight'],
@@ -115,11 +133,16 @@ export const GESTURE_RULES: Readonly<Record<GestureType, GestureRule>> = {
         poseTolerance: { turn: 0.45, up: 0.25, down: 0.45 },
     },
     [GestureType.MouthOpen]: {
-        keys: ['jawOpen'],
+        // La mandíbula, o los labios separados aunque la mandíbula no baje.
+        keys: ['jawOpen', LIPS_APART_KEY],
         combine: 'max',
         thresholdScale: 0.7,
         // La apertura medida mirando a las esquinas es la misma que de frente.
         poseTolerance: { turn: 0.7, up: 0.7, down: 0.7 },
+        canStart: (signal) =>
+            smile(signal) < MOUTH_OPEN_MAX_SMILE &&
+            signal('mouthPucker') < MOUTH_OPEN_MAX_PUCKER,
+        contextKeys: ['mouthSmileLeft', 'mouthSmileRight', 'mouthPucker'],
     },
     [GestureType.BlinkLeft]: {
         keys: ['eyeBlinkLeft'],

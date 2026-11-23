@@ -241,13 +241,13 @@ export default function PlayGame({
             previewEnabled={previewEnabled}
             onTogglePreview={handleTogglePreview}
             preview={
-                // La pinta el worker (imagen y contornos del mismo
-                // fotograma): no hace falta un segundo <video> y el hilo del
-                // juego no dibuja nada.
+                // La pinta el worker (imagen y máscara del mismo fotograma):
+                // no hace falta un segundo <video> y el hilo del juego no
+                // dibuja nada.
                 <FaceMeshView
                     engine={engine}
                     mode="synced"
-                    mesh="contours"
+                    mesh="full"
                     className="aspect-[4/3] w-full rounded-xl border border-border/60 bg-black shadow-sm"
                 >
                     <Camera

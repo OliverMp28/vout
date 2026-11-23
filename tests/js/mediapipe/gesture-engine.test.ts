@@ -95,7 +95,7 @@ const SIZE: PreviewSize = { width: 640, height: 480, pixelRatio: 2 };
 const PREVIEW: PreviewOptions = {
     mode: 'synced',
     mesh: 'contours',
-    colors: { mesh: 'white', contour: 'violet' },
+    colors: { mesh: 'gray', outline: 'white', feature: 'violet' },
 };
 
 function setup(

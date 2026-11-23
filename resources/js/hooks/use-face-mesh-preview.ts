@@ -6,8 +6,9 @@
  * de pantalla, en un panel con `display: none`, en la otra copia del panel de
  * juego) no se cede ningún lienzo y el worker no dibuja nada.
  *
- * Los colores salen de los tokens `--face-mesh` y `--face-mesh-contour` de
- * `app.css`: el worker no ve las variables CSS de la página.
+ * Los colores salen de los tokens `--face-mesh`, `--face-mesh-outline` y
+ * `--face-mesh-feature` de `app.css`: el worker no ve las variables CSS de la
+ * página.
  */
 
 import { useEffect, useRef } from 'react';
@@ -45,7 +46,8 @@ function resolveOptions(
         mesh,
         colors: {
             mesh: style.getPropertyValue('--face-mesh').trim(),
-            contour: style.getPropertyValue('--face-mesh-contour').trim(),
+            outline: style.getPropertyValue('--face-mesh-outline').trim(),
+            feature: style.getPropertyValue('--face-mesh-feature').trim(),
         },
     };
 }

@@ -36,8 +36,8 @@ export type PreviewFrame = {
 
 const NO_CONNECTIONS: MeshConnections = {
     tesselation: [],
-    contours: [],
-    irises: [],
+    outline: [],
+    features: [],
 };
 
 export class PreviewRenderer {

@@ -130,7 +130,7 @@ export function GestureRecordingPanel({
                         onClick={recorder.start}
                         disabled={!canRecord}
                     >
-                        Empezar (~2,5 min)
+                        Empezar (~3 min)
                     </Button>
                 ) : (
                     <Button

@@ -7,10 +7,13 @@
  * ejecución (`FaceLandmarker.FACE_LANDMARKS_*`) y el contexto 2D se inyecta,
  * así que se prueba con uno falso.
  *
- * Cada capa (malla, contornos, iris) se dibuja con **un solo trazo**: todas
- * sus líneas van en el mismo camino. La malla completa tiene más de 2.500
- * segmentos y trazarlos uno a uno (como hace `DrawingUtils`) cuesta varias
- * veces más.
+ * Tres capas, como la máscara del portal antiguo: la malla (los triángulos
+ * de toda la cara, tenue), el perfil (óvalo y labios) y los rasgos (ojos,
+ * cejas e iris, con el color de acento). Cada capa se dibuja con **un solo
+ * trazo**: todas sus líneas van en el mismo camino. La malla de MediaPipe
+ * trae 2.556 conexiones pero solo 1.322 aristas distintas (cada una aparece
+ * en dos triángulos): `uniqueConnections` las deja en la mitad. Trazarlas una
+ * a una, como `DrawingUtils`, costaría varias veces más.
  */
 
 import type { MeshLevel, PreviewColors } from './types';
@@ -21,9 +24,12 @@ export type MeshPoint = { x: number; y: number };
 export type MeshConnection = { start: number; end: number };
 
 export type MeshConnections = {
+    /** Los triángulos de toda la cara. */
     tesselation: MeshConnection[];
-    contours: MeshConnection[];
-    irises: MeshConnection[];
+    /** Óvalo de la cara y labios. */
+    outline: MeshConnection[];
+    /** Ojos, cejas e iris. */
+    features: MeshConnection[];
 };
 
 export type MeshLayer = keyof MeshConnections;
@@ -31,16 +37,48 @@ export type MeshLayer = keyof MeshConnections;
 /** Qué capas lleva cada nivel, de abajo arriba. */
 export const MESH_LAYERS: Record<MeshLevel, MeshLayer[]> = {
     off: [],
-    contours: ['contours', 'irises'],
-    full: ['tesselation', 'contours', 'irises'],
+    contours: ['outline', 'features'],
+    full: ['tesselation', 'outline', 'features'],
 };
 
 /** Grosor de cada capa, en píxeles CSS. */
 const LAYER_LINE_WIDTH: Record<MeshLayer, number> = {
-    tesselation: 0.75,
-    contours: 1.75,
-    irises: 1.25,
+    tesselation: 0.6,
+    outline: 1.25,
+    features: 1.25,
 };
+
+/** Color de cada capa. */
+const LAYER_COLOR: Record<MeshLayer, keyof PreviewColors> = {
+    tesselation: 'mesh',
+    outline: 'outline',
+    features: 'feature',
+};
+
+/**
+ * Quita las aristas repetidas (la misma en los dos sentidos cuenta una vez).
+ * Se hace una vez, al cargar el motor.
+ */
+export function uniqueConnections(
+    connections: readonly MeshConnection[],
+): MeshConnection[] {
+    const seen = new Set<number>();
+    const unique: MeshConnection[] = [];
+
+    for (const connection of connections) {
+        const low = Math.min(connection.start, connection.end);
+        const high = Math.max(connection.start, connection.end);
+        // 478 puntos: un número por pareja basta como clave.
+        const key = low * 1024 + high;
+
+        if (!seen.has(key)) {
+            seen.add(key);
+            unique.push({ start: low, end: high });
+        }
+    }
+
+    return unique;
+}
 
 /** Lo que este módulo usa de un contexto 2D (de un lienzo o de un fake). */
 export type Canvas2DLike = {
@@ -142,8 +180,7 @@ export function drawFaceMesh(
             continue;
         }
 
-        context.strokeStyle =
-            layer === 'tesselation' ? style.colors.mesh : style.colors.contour;
+        context.strokeStyle = style.colors[LAYER_COLOR[layer]];
         context.lineWidth = LAYER_LINE_WIDTH[layer] * style.pixelRatio;
         context.beginPath();
         addConnectionsToPath(context, points, connections[layer], fit);

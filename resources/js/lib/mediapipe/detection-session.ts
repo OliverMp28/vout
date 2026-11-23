@@ -13,6 +13,8 @@
  */
 
 import { FACE_LOST_RELEASE_MS } from './constants';
+import { LIPS_APART_KEY, measureLipsApart } from './face-measures';
+import type { FacePoint, ImageSize } from './face-measures';
 import { GestureClassifier } from './gesture-classifier';
 import { USED_BLENDSHAPE_KEYS } from './gesture-rules';
 import { extractHeadPose } from './head-pose';
@@ -27,7 +29,7 @@ import type {
 
 /** Lo que la sesión usa del resultado de `FaceLandmarker.detectForVideo`. */
 export type LandmarkerResultLike = {
-    faceLandmarks?: { x: number; y: number }[][];
+    faceLandmarks?: FacePoint[][];
     faceBlendshapes?: {
         categories: { categoryName: string; score: number }[];
     }[];
@@ -38,6 +40,9 @@ export type LandmarkerResultLike = {
 export type CalibrationOutcome =
     | { status: 'done'; baseline: NeutralBaseline }
     | { status: 'failed'; reason: CalibrationFailureReason };
+
+/** Tamaño por defecto de la imagen analizada (la de captura, 4:3). */
+const DEFAULT_IMAGE: ImageSize = { width: 320, height: 240 };
 
 export type FrameAnalysis = {
     gestures: GestureEvent[];
@@ -126,20 +131,35 @@ export class DetectionSession {
         return this.classifier.drainRiseSamples();
     }
 
-    /** Gestos, pose y blendshapes de un fotograma analizado. */
-    analyse(result: LandmarkerResultLike, timestamp: number): FrameAnalysis {
-        const hasFace =
-            result.faceLandmarks !== undefined &&
-            result.faceLandmarks.length > 0;
+    /**
+     * Gestos, pose y blendshapes de un fotograma analizado.
+     *
+     * @param image Tamaño de la imagen analizada (para las medidas con puntos).
+     */
+    analyse(
+        result: LandmarkerResultLike,
+        timestamp: number,
+        image: ImageSize = DEFAULT_IMAGE,
+    ): FrameAnalysis {
+        const points = result.faceLandmarks?.[0];
+        const hasFace = points !== undefined;
 
         // En Vision Lab, los 52 blendshapes; en juego, solo los que usa el
-        // clasificador (Sesión 3.4 §4.2).
+        // clasificador (Sesión 3.4 §4.2). Más las medidas con puntos.
         const blendshapes = hasFace
             ? blendshapeMapFromResult(
                   result.faceBlendshapes ?? [],
                   this.config.enableBlendshapes,
               )
             : null;
+
+        if (blendshapes !== null && points !== undefined) {
+            const lipsApart = measureLipsApart(points, image);
+
+            if (lipsApart !== null) {
+                blendshapes[LIPS_APART_KEY] = lipsApart;
+            }
+        }
 
         const matrix = hasFace
             ? result.facialTransformationMatrixes?.[0]?.data
