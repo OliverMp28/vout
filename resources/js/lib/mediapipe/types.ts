@@ -64,7 +64,6 @@ export type { HeadTrackPosition } from './head-tracker';
 // Calibration
 // ---------------------------------------------------------------------------
 
-/** Average blendshape values captured while the user holds a neutral face. */
 /**
  * Postura de la cabeza en la cara neutra: el "frente" del usuario, que no
  * siempre es el de la cámara (una cámara encima de la pantalla ve la cabeza
@@ -75,6 +74,7 @@ export type NeutralPose = {
     roll: number;
 };
 
+/** Average blendshape values captured while the user holds a neutral face. */
 export type NeutralBaseline = {
     capturedAt: number;
     blendshapes: Record<string, number>;
@@ -119,6 +119,17 @@ export type PerformanceMetrics = {
     cameraSlow: boolean;
 };
 
+/**
+ * Lo que tardó el worker en preparar el motor, en ms: importar el bundle de
+ * MediaPipe, crear el landmarker (WASM, modelo y GPU) y el primer análisis
+ * de calentamiento (compila los shaders del detector).
+ */
+export type StartupTimings = {
+    bundleMs: number;
+    landmarkerMs: number;
+    warmupMs: number;
+};
+
 /** Con qué se ejecuta el motor. Lo informa el worker al arrancar. */
 export type EngineInfo = {
     /** Versión de @mediapipe/tasks-vision. */
@@ -132,6 +143,7 @@ export type EngineInfo = {
      * significa que no hay GPU real y se dibuja por software.
      */
     renderer: string | null;
+    startup: StartupTimings;
 };
 
 // ---------------------------------------------------------------------------
@@ -173,6 +185,47 @@ export type WorkerConfig = {
 export type PreferredDelegate = EngineInfo['delegate'];
 
 // ---------------------------------------------------------------------------
+// Vista de la cámara con la malla (la dibuja el worker)
+// ---------------------------------------------------------------------------
+
+/**
+ * Cuánta malla se dibuja sobre la cara:
+ * - `off`      → nada.
+ * - `contours` → ojos, cejas, labios, óvalo e iris: pocas líneas.
+ * - `full`     → la malla completa (más de 2.500 segmentos) y los contornos.
+ */
+export type MeshLevel = 'off' | 'contours' | 'full';
+
+/**
+ * - `overlay` → lienzo transparente sobre un `<video>` visible: el vídeo va
+ *   a los fps de la cámara y la malla, al ritmo de la inferencia (un poco
+ *   por detrás).
+ * - `synced`  → el worker pinta la imagen analizada y su malla: van juntas,
+ *   al ritmo de la inferencia, y no hace falta un `<video>` visible.
+ */
+export type PreviewMode = 'overlay' | 'synced';
+
+/** Colores CSS ya resueltos (el worker no ve las variables de la página). */
+export type PreviewColors = {
+    mesh: string;
+    contour: string;
+};
+
+export type PreviewOptions = {
+    mode: PreviewMode;
+    mesh: MeshLevel;
+    colors: PreviewColors;
+};
+
+/** Tamaño del lienzo en píxeles del dispositivo. */
+export type PreviewSize = {
+    width: number;
+    height: number;
+    /** Píxeles del dispositivo por píxel CSS (grosor de las líneas). */
+    pixelRatio: number;
+};
+
+// ---------------------------------------------------------------------------
 // Worker ↔ Main thread protocol (discriminated unions)
 // ---------------------------------------------------------------------------
 
@@ -200,13 +253,26 @@ export type AnalyzedFrame = {
     gestures: GestureEvent[];
 };
 
-/** Por qué el worker no analizó un fotograma. */
-export type FrameDropReason = 'not_ready' | 'paused' | 'error';
+/**
+ * Por qué el worker no analizó un fotograma. `no_session`: llegó después de
+ * cerrar la sesión (o antes de abrirla).
+ */
+export type FrameDropReason = 'not_ready' | 'paused' | 'error' | 'no_session';
 
 /**
- * Protocolo: por cada `FRAME` el worker responde **exactamente una vez**, con
- * `RESULT` o `FRAME_DROPPED` y el mismo `frameId`. El hilo principal no envía
- * otro fotograma hasta recibir esa respuesta (`frame-pump.ts`).
+ * Protocolo. Un worker es **el motor cargado** (bundle, WASM, modelo y GPU) y
+ * puede servir varias **sesiones** seguidas: cada activación del control
+ * facial abre una (`SESSION_START`) con su clasificador, su calibración y su
+ * configuración, y la cierra al parar (`SESSION_END`). Así reactivar no
+ * recarga el modelo pero sí empieza de cero. Ver `engine-runtime.ts`.
+ *
+ * Por cada `FRAME` el worker responde **exactamente una vez**, con `RESULT` o
+ * `FRAME_DROPPED` y el mismo `frameId`. El hilo principal no envía otro
+ * fotograma hasta recibir esa respuesta (`frame-pump.ts`).
+ *
+ * `SET_CONFIG`, `CALIBRATE_NEUTRAL`, `PAUSE` y `RESUME` actúan sobre la
+ * sesión abierta. Las respuestas de una sesión llevan su `sessionId`: el hilo
+ * principal descarta las de una sesión anterior que lleguen tarde.
  */
 export type WorkerInMessage =
     | {
@@ -214,8 +280,9 @@ export type WorkerInMessage =
           assets: MediaPipeRuntimeAssets;
           mediapipeVersion: string;
           delegate: PreferredDelegate;
-          config: WorkerConfig;
       }
+    | { type: 'SESSION_START'; sessionId: number; config: WorkerConfig }
+    | { type: 'SESSION_END'; sessionId: number }
     | {
           type: 'FRAME';
           frameId: number;
@@ -227,12 +294,23 @@ export type WorkerInMessage =
     | { type: 'CALIBRATE_NEUTRAL' }
     | { type: 'PAUSE' }
     | { type: 'RESUME' }
+    | {
+          type: 'ATTACH_PREVIEW';
+          /** Transferido: desde aquí solo lo toca el worker. */
+          canvas: OffscreenCanvas;
+          size: PreviewSize;
+          options: PreviewOptions;
+      }
+    | { type: 'RESIZE_PREVIEW'; size: PreviewSize }
+    | { type: 'SET_PREVIEW'; options: PreviewOptions }
+    | { type: 'DETACH_PREVIEW' }
     | { type: 'DESTROY' };
 
-export type WorkerOutMessage =
-    | { type: 'READY'; info: EngineInfo }
+/** Respuestas que pertenecen a una sesión (ver `WorkerInMessage`). */
+export type SessionOutMessage =
     | {
           type: 'RESULT';
+          sessionId: number;
           frameId: number;
           /** Marca del fotograma (la del `FRAME`). */
           timestamp: number;
@@ -243,10 +321,29 @@ export type WorkerOutMessage =
           /** Ver `GestureClassifier.drainRiseSamples`. */
           gestureRiseMs: number[];
           timing: FrameTiming;
+          /**
+           * Lo que tardó en dibujarse la vista de la cámara del fotograma
+           * anterior (se dibuja después de responder), o null si no se dibujó.
+           */
+          previewMs: number | null;
       }
-    | { type: 'FRAME_DROPPED'; frameId: number; reason: FrameDropReason }
-    | { type: 'CALIBRATED'; baseline: NeutralBaseline }
-    | { type: 'CALIBRATION_FAILED'; reason: CalibrationFailureReason }
+    | {
+          type: 'FRAME_DROPPED';
+          /** Null si no había sesión abierta. */
+          sessionId: number | null;
+          frameId: number;
+          reason: FrameDropReason;
+      }
+    | { type: 'CALIBRATED'; sessionId: number; baseline: NeutralBaseline }
+    | {
+          type: 'CALIBRATION_FAILED';
+          sessionId: number;
+          reason: CalibrationFailureReason;
+      };
+
+export type WorkerOutMessage =
+    | { type: 'READY'; info: EngineInfo }
+    | SessionOutMessage
     | { type: 'ERROR'; code: string; message: string };
 
 // ---------------------------------------------------------------------------

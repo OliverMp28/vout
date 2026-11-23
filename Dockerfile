@@ -33,7 +33,8 @@ COPY --from=oven/bun:1-alpine /usr/local/bin/bun /usr/local/bin/bun
 RUN apk add --no-cache libstdc++ libgcc
 
 ARG VITE_APP_NAME=Vout
-ARG VITE_MEDIAPIPE_MODEL_PATH=/models/face_landmarker.task
+# Vacío: el modelo de public/models se publica con hash en public/build/assets.
+ARG VITE_MEDIAPIPE_MODEL_PATH=
 ENV VITE_APP_NAME=${VITE_APP_NAME} \
     VITE_MEDIAPIPE_MODEL_PATH=${VITE_MEDIAPIPE_MODEL_PATH}
 

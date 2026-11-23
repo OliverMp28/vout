@@ -15,6 +15,7 @@ import { GestureMappingEditor } from '@/components/vision/gesture-mapping-editor
 import { useTranslation } from '@/hooks/use-translation';
 import AppLayout from '@/layouts/app-layout';
 import SettingsLayout from '@/layouts/settings/layout';
+import { sharedRuntimeHost } from '@/lib/mediapipe/shared-runtime';
 import type { GestureConfigData } from '@/lib/mediapipe/types';
 import { edit as editAppearance } from '@/routes/appearance';
 import { show as legalShow } from '@/routes/legal';
@@ -44,6 +45,13 @@ export default function Appearance({ activeGestureConfig }: AppearanceProps) {
         e.preventDefault();
         patch('/settings/appearance', {
             preserveScroll: true,
+            onSuccess: () => {
+                // Si apaga el control facial, el motor que quedara cargado
+                // (de una partida reciente) se libera ya, sin esperar.
+                if (!data.gestures_enabled) {
+                    sharedRuntimeHost.disposeIdle();
+                }
+            },
         });
     };
 

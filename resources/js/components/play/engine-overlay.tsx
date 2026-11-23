@@ -11,13 +11,19 @@
  * Es totalmente accesible: usa `role="status"` y `aria-live="polite"` para
  * anunciar cambios de estado a lectores de pantalla sin interrumpir la
  * navegación.
+ *
+ * La tarjeta de carga del motor espera `LOADING_NOTICE_DELAY_MS` antes de
+ * aparecer: con el motor ya preparado (precarga) arranca en unas decenas de
+ * ms y solo parpadearía sobre el juego.
  */
 
 import { AlertTriangle, Loader2, RefreshCw } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
+import { useDelayedFlag } from '@/hooks/use-delayed-flag';
 import { useTranslation } from '@/hooks/use-translation';
 import type { HandshakeStatus } from '@/lib/iframe/types';
+import { LOADING_NOTICE_DELAY_MS } from '@/lib/mediapipe/constants';
 import type { EngineStatus } from '@/lib/mediapipe/types';
 import { cn } from '@/lib/utils';
 
@@ -71,8 +77,12 @@ export function EngineOverlay({
 }: EngineOverlayProps) {
     const { t } = useTranslation();
     const kind = resolveCardKind(engineStatus, handshakeStatus);
+    const showLoading = useDelayedFlag(
+        kind === 'loading',
+        LOADING_NOTICE_DELAY_MS,
+    );
 
-    if (kind === 'hidden') {
+    if (kind === 'hidden' || (kind === 'loading' && !showLoading)) {
         return null;
     }
 

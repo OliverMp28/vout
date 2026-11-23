@@ -126,6 +126,41 @@ export const METRICS_EMIT_INTERVAL_MS = 500;
 /** Si el motor no avisa de que está listo en este tiempo, se da por fallido. */
 export const ENGINE_INIT_TIMEOUT_MS = 30_000;
 
+// ---------------------------------------------------------------------------
+// Motor cargado y precarga (`engine-runtime.ts`, `preload-policy.ts`)
+// ---------------------------------------------------------------------------
+
+/**
+ * Tiempo que el motor cargado (sin cámara) sigue en memoria cuando ninguna
+ * página lo usa ni lo retiene. Cubre ir del juego al catálogo y volver a
+ * otro juego sin recargar el modelo; pasado ese tiempo se libera la memoria
+ * (WASM, modelo y contexto de la GPU).
+ */
+export const RUNTIME_KEEP_WARM_MS = 5 * 60_000;
+
+/**
+ * Las precargas esperan a que el navegador esté libre
+ * (`requestIdleCallback`), como mucho este tiempo.
+ */
+export const WARMUP_IDLE_TIMEOUT_MS = 2000;
+
+/**
+ * El aviso "Cargando…" sobre el juego solo aparece si el motor tarda más que
+ * esto en arrancar. Con el motor ya cargado arranca en unas decenas de ms y
+ * el aviso solo parpadearía.
+ */
+export const LOADING_NOTICE_DELAY_MS = 300;
+
+// ---------------------------------------------------------------------------
+// Vista de la cámara
+// ---------------------------------------------------------------------------
+
+/**
+ * Lado mayor del lienzo de la vista de la cámara, en píxeles del dispositivo.
+ * Acota lo que cuesta dibujar en pantallas grandes o con mucha densidad.
+ */
+export const PREVIEW_MAX_SIZE = 1280;
+
 /**
  * Fallos seguidos de `detectForVideo` tras los que el motor deja de intentarlo
  * y avisa del error. Uno suelto se ignora (se descarta ese fotograma).
@@ -200,12 +235,10 @@ export const CAPTURE_WIDTH = 320;
 // Modelo
 // ---------------------------------------------------------------------------
 
-/**
- * Modelo de Face Landmarker servido por Vout (`public/models`, en git). Es el
- * mismo fichero que Google publica como `float16/latest` (v1, mayo de 2023).
- * `VITE_MEDIAPIPE_MODEL_PATH` permite cambiarlo.
+/*
+ * El modelo de Face Landmarker (`public/models/face_landmarker.task`, en git)
+ * se publica con hash junto al WASM: ver `runtime-assets.ts`.
  */
-export const LOCAL_MODEL_PATH = '/models/face_landmarker.task';
 
 export const DEFAULT_DETECTION_CONFIG = {
     numFaces: 1,

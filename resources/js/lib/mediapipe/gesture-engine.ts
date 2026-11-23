@@ -1,6 +1,8 @@
 /**
- * Motor de gestos sin React: ciclo de vida del worker de detección, envío de
- * fotogramas con control de flujo, cursor por cabeza, métricas y telemetría.
+ * Motor de gestos sin React: una **sesión** de detección (una activación del
+ * control facial) sobre un motor cargado prestado, con envío de fotogramas
+ * con control de flujo, cursor por cabeza, vista de la cámara, métricas y
+ * telemetría.
  *
  * `hooks/use-gesture-engine.ts` es un adaptador fino que traduce sus eventos
  * a estado de React. Aquí no hay estado de React a propósito: los callbacks
@@ -10,18 +12,23 @@
  *
  * Flujo:
  *
- *   start() ─► worker INIT ─► READY ─► cámara (VideoFrameSource) ─► FramePump
- *     ─► FRAME ─► RESULT / FRAME_DROPPED ─► siguiente FRAME …
+ *   start() ─► RuntimeHost.acquire() ─► (READY) ─► SESSION_START
+ *     ─► cámara (VideoFrameSource) ─► FramePump ─► FRAME
+ *     ─► RESULT / FRAME_DROPPED ─► siguiente FRAME …
+ *   stop()  ─► SESSION_END ─► el motor vuelve al host, en caliente
  *
- * El primer RESULT confirma que los shaders están compilados: ahí el estado
- * pasa de `loading` a `running`.
+ * Si el motor ya estaba cargado (`reuse: 'warm'`), la sesión empieza al
+ * momento. El primer RESULT confirma que todo funciona: ahí el estado pasa de
+ * `loading` a `running`. Un motor con error se descarta; si era uno
+ * reutilizado y falla antes del primer RESULT (la GPU perdió el contexto
+ * mientras esperaba, por ejemplo), se carga otro una vez sin avisar.
  *
- * Todo lo que toca el navegador (worker, reloj, captura, cámara, tareas
- * largas) se puede inyectar, para probarlo sin navegador.
+ * Todo lo que toca el navegador (host del motor, reloj, captura, cámara,
+ * tareas largas, lienzo de la vista) se puede inyectar, para probarlo sin
+ * navegador.
  */
 
 import {
-    ENGINE_INIT_TIMEOUT_MS,
     FRAME_RESPONSE_TIMEOUT_MS,
     LOW_CAMERA_FPS,
     LOW_CAMERA_FPS_RECOVER,
@@ -31,10 +38,10 @@ import {
     VIDEO_FRAME_CALLBACK_SILENCE_MS,
 } from './constants';
 import { EngineMetrics, sameMetrics } from './engine-metrics';
+import type { RuntimeHost, RuntimeLease, RuntimeReuse } from './engine-runtime';
 import { captureVideoFrame } from './frame-capture';
 import { FramePump } from './frame-pump';
 import type { FramePumpStats, FrameStamp } from './frame-pump';
-import type { GestureWorkerHandle } from './gesture-worker-factory';
 import { HeadTracker } from './head-tracker';
 import type { HeadTrackerConfig, HeadTrackPosition } from './head-tracker';
 import { realScheduler } from './scheduler';
@@ -47,13 +54,14 @@ import type {
     EngineStatus,
     GestureEvent,
     HeadPose,
-    MediaPipeRuntimeAssets,
     NeutralBaseline,
     PerformanceMetrics,
     PreferredDelegate,
+    PreviewOptions,
+    PreviewSize,
+    SessionOutMessage,
     WorkerConfig,
     WorkerInMessage,
-    WorkerOutMessage,
 } from './types';
 import { VideoFrameSource } from './video-frame-source';
 import type {
@@ -87,17 +95,31 @@ export type FrameSourceLike = {
     stop(): void;
 };
 
+/**
+ * Dónde se dibuja la vista de la cámara (en el navegador,
+ * `preview-surface.ts`). Un lienzo solo se puede ceder al worker una vez: cada
+ * sesión pide uno nuevo.
+ */
+export type PreviewSurfaceLike = {
+    /** Pone un lienzo nuevo en su sitio y lo cede, o null si no se puede. */
+    createCanvas(): { canvas: OffscreenCanvas; size: PreviewSize } | null;
+    /** Quita el lienzo de la página. */
+    removeCanvas(): void;
+    /** Avisa cuando cambia el tamaño del lienzo. Devuelve cómo dejar de oír. */
+    onResize(listener: (size: PreviewSize) => void): () => void;
+};
+
 export type GestureEngineDiagnostics = {
     info: EngineInfo | null;
+    /** Si la sesión encontró el motor ya cargado, o null sin sesión. */
+    runtime: RuntimeReuse | null;
     frameSource: FrameSourceMode;
     frames: FramePumpStats;
 };
 
 export type GestureEngineOptions = {
-    createWorker: () => GestureWorkerHandle;
-    /** Se resuelven al arrancar (necesitan `document.baseURI`). */
-    resolveAssets: () => MediaPipeRuntimeAssets;
-    mediapipeVersion: string;
+    /** De dónde sale el motor cargado (`shared-runtime.ts` en la app). */
+    runtimeHost: RuntimeHost;
     /** El `<video>` con la cámara. Se consulta en cada imagen. */
     getVideo: () => HTMLVideoElement | null;
     events: GestureEngineEvents;
@@ -144,12 +166,31 @@ export const TELEMETRY_KEYS = {
     mainHandlerMs: 'mainHandlerMs',
     mainLongTaskMs: 'mainLongTaskMs',
     gestureRiseMs: 'gestureRiseMs',
+    engineStartMs: 'engineStartMs',
+    cameraOpenMs: 'cameraOpenMs',
+    previewMs: 'previewMs',
 } as const;
 
 const NO_FRAMES: FramePumpStats = {
     sent: 0,
     completed: 0,
     skipped: 0,
+};
+
+/**
+ * Las sesiones se numeran para toda la página: varios controladores pueden
+ * usar el mismo motor, uno detrás de otro, y una respuesta tardía de la
+ * sesión anterior no debe confundirse con la nueva.
+ */
+let nextSessionId = 1;
+
+type PreviewAttachment = {
+    surface: PreviewSurfaceLike;
+    options: PreviewOptions;
+    /** El worker tiene ahora un lienzo de esta vista. */
+    attached: boolean;
+    /** Deja de oír los cambios de tamaño del lienzo cedido. */
+    stopResize: (() => void) | null;
 };
 
 // ---------------------------------------------------------------------------
@@ -176,13 +217,22 @@ export class GestureEngineController {
     private calibration: CalibrationState = { status: 'idle' };
     private lastMetrics: PerformanceMetrics | null = null;
 
-    private handle: GestureWorkerHandle | null = null;
+    /** El motor prestado mientras hay una activación en marcha. */
+    private lease: RuntimeLease | null = null;
+    /** La sesión abierta en el worker, o null mientras el motor se prepara. */
+    private sessionId: number | null = null;
+    /** Ya se cargó un motor nuevo tras fallar uno reutilizado. */
+    private retriedWithFreshRuntime = false;
+    /** Cuándo se pidió arrancar (para `engineStartMs`). */
+    private startedAt: number | null = null;
+    /** Calibración pedida antes de que la sesión empezara. */
+    private calibrationPending = false;
+
     private pump: FramePump<ImageBitmap> | null = null;
     private frameSource: FrameSourceLike | null = null;
     private stopObservingLongTasks: (() => void) | null = null;
-
-    private initTimer: TimerHandle | null = null;
     private metricsTimer: TimerHandle | null = null;
+    private preview: PreviewAttachment | null = null;
 
     private lastRawHead = { horizontal: 0, vertical: 0 };
     private lastCameraFrameAt: number | null = null;
@@ -202,86 +252,50 @@ export class GestureEngineController {
         return this.currentStatus;
     }
 
-    /** Arranca el worker y, cuando esté listo, la cámara. No-op si ya corre. */
+    /**
+     * Pide el motor y, cuando esté listo, abre la sesión y mira la cámara.
+     * No-op si ya hay una activación en marcha.
+     */
     start(): void {
-        if (this.handle !== null) {
+        if (this.lease !== null) {
             return;
         }
 
         this.emitError(null);
         this.setStatus('loading');
-
-        const handle = this.options.createWorker();
-        const worker = handle.worker;
-
-        this.handle = handle;
-
-        worker.onmessage = (event) => {
-            if (this.handle === handle) {
-                this.handleMessage(event.data);
-            }
-        };
-        worker.onerror = (event) => {
-            if (this.handle === handle) {
-                console.error(
-                    '[GestureEngine] Worker uncaught error:',
-                    event.message,
-                );
-                this.fail(
-                    event.message || 'Worker encountered an unexpected error',
-                );
-            }
-        };
-
-        this.post({
-            type: 'INIT',
-            assets: this.options.resolveAssets(),
-            mediapipeVersion: this.options.mediapipeVersion,
-            delegate: this.options.delegate ?? 'GPU',
-            config: { ...this.config },
-        });
-
-        this.initTimer = this.scheduler.setTimeout(() => {
-            this.initTimer = null;
-
-            if (this.handle === handle && this.info === null) {
-                console.error(
-                    '[GestureEngine] Init timeout — READY not received within',
-                    ENGINE_INIT_TIMEOUT_MS,
-                    'ms',
-                );
-                this.fail(
-                    'Gesture engine timed out during initialization. Check browser console for details.',
-                );
-            }
-        }, ENGINE_INIT_TIMEOUT_MS);
+        this.startedAt = this.scheduler.now();
+        this.retriedWithFreshRuntime = false;
+        this.acquireRuntime();
     }
 
-    /** Detiene todo y vuelve a `idle`. */
+    /**
+     * Cierra la sesión (cámara, gestos, calibración y vista) y vuelve a
+     * `idle`. El motor queda cargado en el host para la siguiente.
+     */
     stop(): void {
-        this.teardown();
+        this.teardown(false);
         this.headTracker.reset();
         this.emitError(null);
         this.setStatus('idle');
     }
 
     pause(): void {
-        if (this.handle === null) {
+        if (this.lease === null) {
             return;
         }
 
         this.frameSource?.stop();
         this.pump?.pause();
-        this.post({ type: 'PAUSE' });
+        this.postToSession({ type: 'PAUSE' });
         this.setStatus('paused');
     }
 
     resume(): void {
-        if (this.handle === null) {
+        if (this.lease === null) {
             return;
         }
 
-        this.post({ type: 'RESUME' });
+        this.postToSession({ type: 'RESUME' });
         this.setStatus(this.firstResultReceived ? 'running' : 'loading');
         this.pump?.start();
         this.frameSource?.start();
@@ -324,63 +338,141 @@ export class GestureEngineController {
         this.headTracker.setConfig(config);
     }
 
+    /**
+     * Dibuja la vista de la cámara en `surface` mientras haya sesión (el
+     * worker pinta en un lienzo cedido). Solo hay una vista: la última que
+     * llega sustituye a la anterior.
+     *
+     * @returns La función que la quita.
+     */
+    attachPreview(
+        surface: PreviewSurfaceLike,
+        options: PreviewOptions,
+    ): () => void {
+        this.detachPreviewFromWorker();
+
+        const attachment: PreviewAttachment = {
+            surface,
+            options,
+            attached: false,
+            stopResize: null,
+        };
+
+        this.preview = attachment;
+        this.attachPreviewToWorker();
+
+        return () => {
+            if (this.preview !== attachment) {
+                return;
+            }
+
+            this.detachPreviewFromWorker();
+            this.preview = null;
+        };
+    }
+
+    /** Cambia el modo o la malla de la vista actual. */
+    updatePreview(options: PreviewOptions): void {
+        if (this.preview === null) {
+            return;
+        }
+
+        this.preview.options = options;
+
+        if (this.preview.attached) {
+            this.postToSession({ type: 'SET_PREVIEW', options });
+        }
+    }
+
     getDiagnostics(): GestureEngineDiagnostics {
         return {
             info: this.info,
+            runtime: this.lease?.reuse ?? null,
             frameSource: this.frameSource?.mode ?? 'idle',
             frames: this.pump?.stats ?? { ...NO_FRAMES },
         };
     }
 
     // -----------------------------------------------------------------------
-    // Mensajes del worker
+    // Motor y sesión
     // -----------------------------------------------------------------------
 
-    private handleMessage(message: WorkerOutMessage): void {
-        switch (message.type) {
-            case 'READY':
-                this.handleReady(message.info);
-                break;
+    private acquireRuntime(): void {
+        const lease = this.options.runtimeHost.acquire(
+            this.options.delegate ?? 'GPU',
+        );
 
-            case 'RESULT':
-                this.handleResult(message);
-                break;
+        this.lease = lease;
 
-            case 'FRAME_DROPPED':
-                this.pump?.complete(message.frameId);
-                break;
+        lease.runtime.setListener({
+            onReady: (info) => {
+                if (this.lease === lease) {
+                    this.beginSession(info);
+                }
+            },
+            onMessage: (message) => {
+                if (this.lease === lease) {
+                    this.handleSessionMessage(message);
+                }
+            },
+            onDead: (reason) => {
+                if (this.lease === lease) {
+                    this.handleRuntimeDeath(reason);
+                }
+            },
+        });
 
-            case 'CALIBRATED':
-                this.setCalibration({
-                    status: 'calibrated',
-                    automatic: this.isAutomaticCalibration(),
-                });
-                this.options.events.onCalibrated?.(message.baseline);
-                break;
+        const { info } = lease.runtime;
 
-            case 'CALIBRATION_FAILED':
-                this.setCalibration({
-                    status: 'failed',
-                    automatic: this.isAutomaticCalibration(),
-                    reason: message.reason,
-                });
-                break;
-
-            case 'ERROR':
-                this.fail(message.message);
-                break;
+        if (lease.runtime.state === 'ready' && info !== null) {
+            this.beginSession(info);
         }
     }
 
-    private handleReady(info: EngineInfo): void {
-        this.clearTimer('initTimer');
+    private handleRuntimeDeath(reason: string): void {
+        // Un motor que esperaba en caliente puede haber perdido la GPU (el
+        // equipo se suspendió, por ejemplo). Uno nuevo suele bastar.
+        if (
+            !this.firstResultReceived &&
+            this.lease?.reuse !== 'cold' &&
+            !this.retriedWithFreshRuntime
+        ) {
+            console.warn(
+                '[GestureEngine] Reused engine failed before its first result; loading a fresh one:',
+                reason,
+            );
+            this.retriedWithFreshRuntime = true;
+            this.teardown(true);
+            this.acquireRuntime();
+
+            return;
+        }
+
+        this.fail(reason);
+    }
+
+    /** El motor está listo: se abre la sesión y se empieza a mirar la cámara. */
+    private beginSession(info: EngineInfo): void {
+        const lease = this.lease;
+
+        if (lease === null || this.sessionId !== null) {
+            return;
+        }
+
+        const sessionId = nextSessionId++;
+
+        this.sessionId = sessionId;
         this.info = info;
         this.options.events.onInfo?.(info);
 
-        const worker = this.handle?.worker;
+        lease.runtime.post({
+            type: 'SESSION_START',
+            sessionId,
+            config: { ...this.config },
+        });
 
-        if (worker === undefined) {
-            return;
+        if (this.currentStatus === 'paused') {
+            lease.runtime.post({ type: 'PAUSE' });
         }
 
         const captureFrame = this.options.captureFrame ?? captureVideoFrame;
@@ -388,7 +480,7 @@ export class GestureEngineController {
         this.pump = new FramePump<ImageBitmap>({
             capture: () => captureFrame(this.options.getVideo()),
             send: (frameId, bitmap, timestamp) =>
-                worker.postMessage(
+                lease.runtime.post(
                     { type: 'FRAME', frameId, bitmap, timestamp },
                     [bitmap],
                 ),
@@ -423,9 +515,17 @@ export class GestureEngineController {
             ),
         );
 
-        if (this.options.autoCalibrate) {
-            this.startCalibration(true);
+        // La automática al arrancar, o una que se pidió mientras cargaba.
+        if (this.options.autoCalibrate && !this.calibrationPending) {
+            this.setCalibration({ status: 'calibrating', automatic: true });
         }
+
+        if (this.options.autoCalibrate || this.calibrationPending) {
+            this.calibrationPending = false;
+            this.postToSession({ type: 'CALIBRATE_NEUTRAL' });
+        }
+
+        this.attachPreviewToWorker();
 
         if (this.currentStatus !== 'paused') {
             this.pump.start();
@@ -433,6 +533,43 @@ export class GestureEngineController {
         }
 
         this.scheduleMetrics();
+    }
+
+    // -----------------------------------------------------------------------
+    // Mensajes de la sesión
+    // -----------------------------------------------------------------------
+
+    private handleSessionMessage(message: SessionOutMessage): void {
+        // Una respuesta tardía de una sesión anterior no cuenta.
+        if (this.sessionId === null || message.sessionId !== this.sessionId) {
+            return;
+        }
+
+        switch (message.type) {
+            case 'RESULT':
+                this.handleResult(message);
+                break;
+
+            case 'FRAME_DROPPED':
+                this.pump?.complete(message.frameId);
+                break;
+
+            case 'CALIBRATED':
+                this.setCalibration({
+                    status: 'calibrated',
+                    automatic: this.isAutomaticCalibration(),
+                });
+                this.options.events.onCalibrated?.(message.baseline);
+                break;
+
+            case 'CALIBRATION_FAILED':
+                this.setCalibration({
+                    status: 'failed',
+                    automatic: this.isAutomaticCalibration(),
+                    reason: message.reason,
+                });
+                break;
+        }
     }
 
     private handleCameraFrame(stamp: FrameStamp): void {
@@ -452,12 +589,19 @@ export class GestureEngineController {
     }
 
     private handleResult(
-        message: Extract<WorkerOutMessage, { type: 'RESULT' }>,
+        message: Extract<SessionOutMessage, { type: 'RESULT' }>,
     ): void {
         const receivedAt = this.scheduler.now();
 
         if (!this.firstResultReceived) {
             this.firstResultReceived = true;
+
+            if (this.startedAt !== null) {
+                this.options.telemetry.push(
+                    TELEMETRY_KEYS.engineStartMs,
+                    receivedAt - this.startedAt,
+                );
+            }
 
             if (this.currentStatus === 'loading') {
                 this.setStatus('running');
@@ -512,7 +656,7 @@ export class GestureEngineController {
 
     /** Latencia por etapas del fotograma que acaba de volver. */
     private recordTimings(
-        message: Extract<WorkerOutMessage, { type: 'RESULT' }>,
+        message: Extract<SessionOutMessage, { type: 'RESULT' }>,
         receivedAt: number,
     ): void {
         const { telemetry } = this.options;
@@ -525,6 +669,10 @@ export class GestureEngineController {
 
         for (const riseMs of message.gestureRiseMs) {
             telemetry.push(TELEMETRY_KEYS.gestureRiseMs, riseMs);
+        }
+
+        if (message.previewMs !== null) {
+            telemetry.push(TELEMETRY_KEYS.previewMs, message.previewMs);
         }
 
         if (this.lastResultAt !== null && receivedAt > this.lastResultAt) {
@@ -577,18 +725,75 @@ export class GestureEngineController {
     }
 
     // -----------------------------------------------------------------------
+    // Vista de la cámara
+    // -----------------------------------------------------------------------
+
+    /** Cede al worker un lienzo nuevo de la vista, si hay vista y sesión. */
+    private attachPreviewToWorker(): void {
+        const { preview, lease } = this;
+
+        if (
+            preview === null ||
+            preview.attached ||
+            lease === null ||
+            this.sessionId === null
+        ) {
+            return;
+        }
+
+        const target = preview.surface.createCanvas();
+
+        if (target === null) {
+            return;
+        }
+
+        lease.runtime.post(
+            {
+                type: 'ATTACH_PREVIEW',
+                canvas: target.canvas,
+                size: target.size,
+                options: preview.options,
+            },
+            [target.canvas],
+        );
+
+        preview.attached = true;
+        preview.stopResize = preview.surface.onResize((size) =>
+            this.postToSession({ type: 'RESIZE_PREVIEW', size }),
+        );
+    }
+
+    /** El worker suelta el lienzo y se quita de la página. */
+    private detachPreviewFromWorker(): void {
+        const { preview } = this;
+
+        if (preview === null || !preview.attached) {
+            return;
+        }
+
+        preview.stopResize?.();
+        preview.stopResize = null;
+        preview.attached = false;
+        this.lease?.runtime.post({ type: 'DETACH_PREVIEW' });
+        preview.surface.removeCanvas();
+    }
+
+    // -----------------------------------------------------------------------
     // Ciclo de vida
     // -----------------------------------------------------------------------
 
     private fail(message: string): void {
-        this.teardown();
+        this.teardown(true);
         this.emitError(message);
         this.setStatus('error');
     }
 
-    private teardown(): void {
-        this.clearTimer('initTimer');
-        this.clearTimer('metricsTimer');
+    /**
+     * Cierra la sesión y devuelve el motor: en caliente, o descartado si
+     * falló (`discard`).
+     */
+    private teardown(discard: boolean): void {
+        this.clearMetricsTimer();
 
         this.frameSource?.stop();
         this.frameSource = null;
@@ -596,18 +801,25 @@ export class GestureEngineController {
         this.pump = null;
         this.stopObservingLongTasks?.();
         this.stopObservingLongTasks = null;
+        this.detachPreviewFromWorker();
 
-        const handle = this.handle;
+        const lease = this.lease;
 
-        this.handle = null;
+        this.lease = null;
 
-        if (handle !== null) {
-            handle.worker.onmessage = null;
-            handle.worker.onerror = null;
-            handle.worker.postMessage({ type: 'DESTROY' });
-            handle.worker.terminate();
-            handle.dispose();
+        if (lease !== null) {
+            if (this.sessionId !== null) {
+                lease.runtime.post({
+                    type: 'SESSION_END',
+                    sessionId: this.sessionId,
+                });
+            }
+
+            lease.release({ discard });
         }
+
+        this.sessionId = null;
+        this.calibrationPending = false;
 
         this.info = null;
         this.options.events.onInfo?.(null);
@@ -627,7 +839,7 @@ export class GestureEngineController {
         this.metricsTimer = this.scheduler.setTimeout(() => {
             this.metricsTimer = null;
 
-            if (this.handle === null) {
+            if (this.lease === null) {
                 return;
             }
 
@@ -652,12 +864,20 @@ export class GestureEngineController {
     }
 
     private startCalibration(automatic: boolean): void {
-        if (this.handle === null) {
+        if (this.lease === null) {
             return;
         }
 
-        this.post({ type: 'CALIBRATE_NEUTRAL' });
         this.setCalibration({ status: 'calibrating', automatic });
+
+        if (this.sessionId === null) {
+            // El motor aún carga: se calibra en cuanto empiece la sesión.
+            this.calibrationPending = true;
+
+            return;
+        }
+
+        this.postToSession({ type: 'CALIBRATE_NEUTRAL' });
     }
 
     private isAutomaticCalibration(): boolean {
@@ -669,13 +889,17 @@ export class GestureEngineController {
         this.options.events.onCalibrationChange?.(state);
     }
 
+    /** La sesión siguiente la recibe entera en `SESSION_START`. */
     private updateConfig(partial: Partial<WorkerConfig>): void {
         this.config = { ...this.config, ...partial };
-        this.post({ type: 'SET_CONFIG', config: partial });
+        this.postToSession({ type: 'SET_CONFIG', config: partial });
     }
 
-    private post(message: WorkerInMessage): void {
-        this.handle?.worker.postMessage(message);
+    /** Solo con la sesión abierta: antes, el worker no tiene a quién aplicarlo. */
+    private postToSession(message: WorkerInMessage): void {
+        if (this.sessionId !== null) {
+            this.lease?.runtime.post(message);
+        }
     }
 
     private setStatus(status: EngineStatus): void {
@@ -691,12 +915,10 @@ export class GestureEngineController {
         this.options.events.onError?.(message);
     }
 
-    private clearTimer(name: 'initTimer' | 'metricsTimer'): void {
-        const timer = this[name];
-
-        if (timer !== null) {
-            this.scheduler.clearTimeout(timer);
-            this[name] = null;
+    private clearMetricsTimer(): void {
+        if (this.metricsTimer !== null) {
+            this.scheduler.clearTimeout(this.metricsTimer);
+            this.metricsTimer = null;
         }
     }
 }

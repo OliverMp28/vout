@@ -12,21 +12,34 @@
  * `requestAnimationFrame`. La página de juego no lo usa: repintarla 30-60
  * veces por segundo competía con el juego por el hilo principal (el iframe
  * es del mismo *site* y comparte proceso).
+ *
+ * El motor cargado lo presta el host de la aplicación
+ * (`lib/mediapipe/shared-runtime.ts`): `stopDetection` cierra la sesión pero
+ * el motor queda en caliente, y `prewarm` lo prepara antes de activar. La
+ * página que lo usa lo retiene mientras está montada (`keepWarm`, o desde su
+ * primer arranque): así no caduca mientras se puede volver a activar.
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+    useCallback,
+    useEffect,
+    useMemo,
+    useRef,
+    useState,
+    useSyncExternalStore,
+} from 'react';
 
+import type { RuntimeState } from '@/lib/mediapipe/engine-runtime';
 import { GestureEngineController } from '@/lib/mediapipe/gesture-engine';
-import type { GestureEngineDiagnostics } from '@/lib/mediapipe/gesture-engine';
-import { createGestureWorker } from '@/lib/mediapipe/gesture-worker-factory';
+import type {
+    GestureEngineDiagnostics,
+    PreviewSurfaceLike,
+} from '@/lib/mediapipe/gesture-engine';
 import type {
     HeadTrackerConfig,
     HeadTrackPosition,
 } from '@/lib/mediapipe/head-tracker';
-import {
-    MEDIAPIPE_VERSION,
-    resolveRuntimeAssets,
-} from '@/lib/mediapipe/runtime-assets';
+import { sharedRuntimeHost } from '@/lib/mediapipe/shared-runtime';
 import { TelemetryCollector } from '@/lib/mediapipe/telemetry';
 import type {
     AnalyzedFrame,
@@ -38,6 +51,7 @@ import type {
     NeutralBaseline,
     PerformanceMetrics,
     PreferredDelegate,
+    PreviewOptions,
 } from '@/lib/mediapipe/types';
 
 // ---------------------------------------------------------------------------
@@ -90,9 +104,15 @@ type UseGestureEngineOptions = {
      * null y los callbacks siguen llegando igual.
      */
     liveState?: boolean;
+    /**
+     * Retener el motor cargado mientras el componente esté montado, aunque
+     * aún no se haya activado (la página precarga: ver `preload-policy.ts`).
+     * Sin esto se retiene desde el primer arranque.
+     */
+    keepWarm?: boolean;
 };
 
-type UseGestureEngineReturn = {
+export type UseGestureEngineReturn = {
     status: EngineStatus;
     startDetection: (video: HTMLVideoElement) => void;
     stopDetection: () => void;
@@ -118,6 +138,28 @@ type UseGestureEngineReturn = {
     telemetry: TelemetryCollector;
     /** Estado interno para la telemetría (modo de la cámara, fotogramas). */
     getDiagnostics: () => GestureEngineDiagnostics;
+    /**
+     * Prepara el motor sin cámara para que activar sea inmediato. No hace
+     * nada si ya está cargado o cargándose.
+     */
+    prewarm: () => void;
+    /**
+     * Dibuja la vista de la cámara con la malla en `surface` mientras haya
+     * una sesión (también en las siguientes). Devuelve cómo quitarla.
+     */
+    attachPreview: (
+        surface: PreviewSurfaceLike,
+        options: PreviewOptions,
+    ) => () => void;
+    /** Cambia el modo o la malla de la vista actual. */
+    updatePreview: (options: PreviewOptions) => void;
+};
+
+type PreviewRegistration = {
+    surface: PreviewSurfaceLike;
+    options: PreviewOptions;
+    /** Quita la vista del controlador actual. */
+    detach: (() => void) | null;
 };
 
 type LiveState = {
@@ -147,6 +189,7 @@ export function useGestureEngine(
         delegate = 'GPU',
         onFrame,
         liveState = false,
+        keepWarm = false,
     } = options;
 
     const [status, setStatus] = useState<EngineStatus>('idle');
@@ -166,9 +209,14 @@ export function useGestureEngine(
         number
     > | null>(null);
 
+    const [startedOnce, setStartedOnce] = useState(false);
+
     const telemetry = useMemo(() => new TelemetryCollector(), []);
     const controllerRef = useRef<GestureEngineController | null>(null);
     const internalVideoRef = useRef<HTMLVideoElement | null>(null);
+    // La vista de la cámara se registra antes de arrancar y pasa a cada
+    // controlador nuevo.
+    const previewRef = useRef<PreviewRegistration | null>(null);
 
     // Valores que cambian sin que deba recrearse nada: se leen en callbacks.
     const latestRef = useRef({
@@ -252,9 +300,7 @@ export function useGestureEngine(
         const latest = latestRef.current;
 
         return new GestureEngineController({
-            createWorker: createGestureWorker,
-            resolveAssets: () => resolveRuntimeAssets(),
-            mediapipeVersion: MEDIAPIPE_VERSION,
+            runtimeHost: sharedRuntimeHost,
             getVideo: () =>
                 externalVideoRef?.current ?? internalVideoRef.current,
             telemetry,
@@ -314,8 +360,21 @@ export function useGestureEngine(
 
             internalVideoRef.current = video;
             controllerRef.current?.stop();
-            controllerRef.current = createController();
-            controllerRef.current.start();
+
+            const controller = createController();
+            const preview = previewRef.current;
+
+            controllerRef.current = controller;
+
+            if (preview !== null) {
+                preview.detach = controller.attachPreview(
+                    preview.surface,
+                    preview.options,
+                );
+            }
+
+            controller.start();
+            setStartedOnce(true);
         },
         [createController],
     );
@@ -352,11 +411,64 @@ export function useGestureEngine(
         (): GestureEngineDiagnostics =>
             controllerRef.current?.getDiagnostics() ?? {
                 info: null,
+                runtime: null,
                 frameSource: 'idle',
                 frames: { sent: 0, completed: 0, skipped: 0 },
             },
         [],
     );
+
+    const prewarm = useCallback(() => {
+        sharedRuntimeHost.prewarm(latestRef.current.delegate);
+    }, []);
+
+    const attachPreview = useCallback(
+        (surface: PreviewSurfaceLike, previewOptions: PreviewOptions) => {
+            previewRef.current?.detach?.();
+
+            const registration: PreviewRegistration = {
+                surface,
+                options: previewOptions,
+                detach:
+                    controllerRef.current?.attachPreview(
+                        surface,
+                        previewOptions,
+                    ) ?? null,
+            };
+
+            previewRef.current = registration;
+
+            return () => {
+                if (previewRef.current !== registration) {
+                    return;
+                }
+
+                registration.detach?.();
+                previewRef.current = null;
+            };
+        },
+        [],
+    );
+
+    const updatePreview = useCallback((previewOptions: PreviewOptions) => {
+        if (previewRef.current !== null) {
+            previewRef.current.options = previewOptions;
+        }
+
+        controllerRef.current?.updatePreview(previewOptions);
+    }, []);
+
+    // Mientras la página puede volver a activar el control facial, el motor
+    // cargado no caduca. Al salir de ella, el host lo mantiene un rato más.
+    const retainRuntime = keepWarm || startedOnce;
+
+    useEffect(() => {
+        if (!retainRuntime) {
+            return;
+        }
+
+        return sharedRuntimeHost.retain();
+    }, [retainRuntime]);
 
     // Sincronizar configuración con el motor cuando cambia.
     useEffect(() => {
@@ -403,5 +515,20 @@ export function useGestureEngine(
         info,
         telemetry,
         getDiagnostics,
+        prewarm,
+        attachPreview,
+        updatePreview,
     };
+}
+
+/**
+ * Estado del motor cargado de la aplicación (`none` si no hay ninguno): si
+ * está preparándose, listo para la próxima activación o muerto.
+ */
+export function useWarmEngineState(): RuntimeState | 'none' {
+    return useSyncExternalStore(
+        (listener) => sharedRuntimeHost.subscribe(listener),
+        () => sharedRuntimeHost.warmState,
+        () => 'none',
+    );
 }

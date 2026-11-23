@@ -27,6 +27,7 @@ import {
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
 import { CameraPreview } from '@/components/vision/camera-preview';
+import { FaceMeshView } from '@/components/vision/face-mesh-view';
 import {
     GestureRecordingPanel,
     useGestureRecorder,
@@ -50,7 +51,9 @@ import { GestureType } from '@/lib/mediapipe/types';
 import type {
     CalibrationState,
     GestureEvent,
+    MeshLevel,
     PreferredDelegate,
+    PreviewMode,
 } from '@/lib/mediapipe/types';
 import { cn } from '@/lib/utils';
 
@@ -121,6 +124,11 @@ export default function VisionLab() {
         useState<TelemetrySnapshot | null>(null);
     // GPU o CPU: en algunas GPU integradas la CPU con SIMD rinde igual o más.
     const [delegate, setDelegate] = useState<PreferredDelegate>('GPU');
+    // Vista de la cámara: para comparar la malla sobre el vídeo (fluido, la
+    // malla algo por detrás) con la imagen que pinta el worker (todo junto,
+    // al ritmo de la inferencia).
+    const [meshLevel, setMeshLevel] = useState<MeshLevel>('full');
+    const [previewMode, setPreviewMode] = useState<PreviewMode>('overlay');
 
     // Contexto que acompaña a la grabación guiada (se lee al terminarla).
     const recordingMetaRef = useRef<RecordingMeta>({
@@ -246,6 +254,9 @@ export default function VisionLab() {
     }, [engine]);
 
     const handleStart = useCallback(async () => {
+        // El motor (con el delegado elegido) se prepara mientras se abre la
+        // cámara.
+        engine.prewarm();
         const stream = await camera.requestCamera();
         if (stream && videoRef.current) {
             engine.startDetection(videoRef.current);
@@ -424,11 +435,82 @@ export default function VisionLab() {
                             <Eye className="size-4" />
                             Camera Feed
                         </h2>
+                        <div className="flex flex-wrap items-center gap-3">
+                            <div className="flex items-center gap-2">
+                                <Label
+                                    htmlFor="vision-mesh-level"
+                                    className="text-xs"
+                                >
+                                    Mesh
+                                </Label>
+                                <Select
+                                    value={meshLevel}
+                                    onValueChange={(value) =>
+                                        setMeshLevel(value as MeshLevel)
+                                    }
+                                >
+                                    <SelectTrigger
+                                        id="vision-mesh-level"
+                                        className="h-8 w-28 text-xs"
+                                    >
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="off">Off</SelectItem>
+                                        <SelectItem value="contours">
+                                            Contours
+                                        </SelectItem>
+                                        <SelectItem value="full">
+                                            Full mesh
+                                        </SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <Label
+                                    htmlFor="vision-preview-mode"
+                                    className="text-xs"
+                                >
+                                    View
+                                </Label>
+                                <Select
+                                    value={previewMode}
+                                    onValueChange={(value) =>
+                                        setPreviewMode(value as PreviewMode)
+                                    }
+                                >
+                                    <SelectTrigger
+                                        id="vision-preview-mode"
+                                        className="h-8 w-44 text-xs"
+                                    >
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="overlay">
+                                            Overlay (video + mesh)
+                                        </SelectItem>
+                                        <SelectItem value="synced">
+                                            Synced (worker image)
+                                        </SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
                         <div className="relative">
                             <CameraPreview
                                 ref={videoRef}
                                 active={camera.status === 'active'}
-                            />
+                            >
+                                <FaceMeshView
+                                    engine={engine}
+                                    mode={previewMode}
+                                    mesh={meshLevel}
+                                    className={cn(
+                                        'absolute inset-0',
+                                        previewMode === 'synced' && 'bg-black',
+                                    )}
+                                />
+                            </CameraPreview>
 
                             {/* Virtual cursor overlay */}
                             {engine.headTrackPosition &&

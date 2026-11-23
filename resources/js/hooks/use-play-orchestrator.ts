@@ -10,6 +10,8 @@
  * - Exponer handlers estables para los controles de UI.
  * - Gestionar el ciclo de vida completo: liberar teclas en blur/visibilitychange,
  *   detener motor y cámara al desmontar.
+ * - Preparar el motor antes de activar cuando el usuario usa el control facial
+ *   (`preload-policy.ts`): una vez cargado el juego, sin cámara.
  */
 
 import { router } from '@inertiajs/react';
@@ -18,6 +20,10 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useActionDispatcher } from '@/hooks/use-action-dispatcher';
 import { useCamera } from '@/hooks/use-camera';
 import type { CameraIssue } from '@/hooks/use-camera';
+import {
+    useEngineWarmup,
+    usePreloadDecision,
+} from '@/hooks/use-engine-preload';
 import { useGameSession } from '@/hooks/use-game-session';
 import type { GameSessionPayload } from '@/hooks/use-game-session';
 import { useGestureEngine } from '@/hooks/use-gesture-engine';
@@ -32,6 +38,7 @@ import type {
     HeadTrackingMode,
 } from '@/lib/mediapipe/action-types';
 import type { CameraDevice } from '@/lib/mediapipe/camera-devices';
+import { TELEMETRY_KEYS } from '@/lib/mediapipe/gesture-engine';
 import type { HeadTrackPosition } from '@/lib/mediapipe/head-tracker';
 import type {
     GestureConfigData,
@@ -97,6 +104,11 @@ export type UsePlayOrchestratorReturn = {
 
     // ── Handlers de UI ────────────────────────────────────────────────────
     handleToggleEngine: () => void;
+    /**
+     * El usuario se acerca a "Activar" (ratón encima o foco): se empieza a
+     * preparar el motor para que al pulsar ya esté (o casi).
+     */
+    handleEngineIntent: () => void;
     handleRetryGame: () => void;
     /** Cambia de cámara; si no se consigue abrir ninguna, detiene el motor. */
     handleSelectCamera: (deviceId: string) => void;
@@ -284,6 +296,13 @@ export function usePlayOrchestrator({
     );
 
     // ── Motor y cámara ────────────────────────────────────────────────────
+    // Para quien usa el control facial, el motor se prepara en cuanto el
+    // juego ha cargado (no compite con él) y sigue cargado mientras se esté
+    // en la página: activar solo tiene que abrir la cámara.
+    const preloadDecision = usePreloadDecision('play', {
+        hasProfile: hasGestureConfig,
+    });
+
     const engine = useGestureEngine({
         sensitivity,
         videoRef,
@@ -293,7 +312,17 @@ export function usePlayOrchestrator({
         // La cara neutra se toma sola al arrancar, en cuanto el usuario mira
         // de frente y relajado; el panel permite repetirla.
         autoCalibrate: true,
+        keepWarm: preloadDecision === 'warm',
     });
+
+    const engineTelemetry = engine.telemetry;
+    const enginePrewarm = engine.prewarm;
+
+    useEngineWarmup(
+        preloadDecision,
+        handshake.status === 'authenticated',
+        enginePrewarm,
+    );
 
     const camera = useCamera({ videoRef });
 
@@ -311,12 +340,23 @@ export function usePlayOrchestrator({
         // La apertura puede tardar (espera a la primera imagen): un segundo
         // clic mientras tanto no debe lanzar otra.
         if (camera.status === 'requesting') return;
+        // El motor se prepara mientras se abre la cámara, no después.
+        engine.prewarm();
+        const requestedAt = performance.now();
         const stream = await camera.requestCamera();
         if (stream && videoRef.current) {
+            engineTelemetry.push(
+                TELEMETRY_KEYS.cameraOpenMs,
+                performance.now() - requestedAt,
+            );
             engine.startDetection(videoRef.current);
             setDispatchEnabled(true);
         }
-    }, [camera, engine, videoRef]);
+    }, [camera, engine, engineTelemetry, videoRef]);
+
+    const handleEngineIntent = useCallback(() => {
+        if (hasGestureConfig) enginePrewarm();
+    }, [hasGestureConfig, enginePrewarm]);
 
     const handleStopEngine = useCallback(() => {
         engine.stopDetection();
@@ -450,6 +490,7 @@ export function usePlayOrchestrator({
         },
 
         handleToggleEngine,
+        handleEngineIntent,
         handleRetryGame,
         handleSelectCamera,
         recenterCursor,

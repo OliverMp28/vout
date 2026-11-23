@@ -1,5 +1,5 @@
 import { CameraOff } from 'lucide-react';
-import type { RefObject } from 'react';
+import type { ReactNode, RefObject } from 'react';
 
 import { useTranslation } from '@/hooks/use-translation';
 import { cn } from '@/lib/utils';
@@ -12,6 +12,8 @@ type CameraPreviewProps = {
     /** Variante compacta para el wizard inline. */
     compact?: boolean;
     className?: string;
+    /** Capas sobre el vídeo mientras la cámara está activa (la malla facial). */
+    children?: ReactNode;
 };
 
 /**
@@ -24,6 +26,7 @@ function CameraPreview({
     active,
     compact = false,
     className,
+    children,
 }: CameraPreviewProps) {
     const { t } = useTranslation();
 
@@ -47,6 +50,8 @@ function CameraPreview({
                     active ? 'scale-x-[-1]' : 'hidden',
                 )}
             />
+
+            {active && children}
 
             {!active && (
                 <div className="flex h-full w-full flex-col items-center justify-center gap-2 text-muted-foreground">

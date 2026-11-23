@@ -2,6 +2,10 @@ import { Link } from '@inertiajs/react';
 import { ArrowRight, Gamepad2, Play, Trophy } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import {
+    usePreloadDecision,
+    useRuntimePrefetch,
+} from '@/hooks/use-engine-preload';
 import { useTranslation } from '@/hooks/use-translation';
 import { formatRelativeTime } from '@/lib/format-relative-time';
 import { cn } from '@/lib/utils';
@@ -15,6 +19,11 @@ type Props = {
 
 export function ContinuePlayingCard({ game }: Props) {
     const { t, locale } = useTranslation();
+    const preloadDecision = usePreloadDecision('game-entry');
+
+    // "Seguir jugando" lleva directo al juego: quien usa el control facial
+    // descarga ya los ficheros del motor (solo red, a baja prioridad).
+    useRuntimePrefetch(game === null ? 'none' : preloadDecision);
 
     if (game === null) {
         return <ContinuePlayingEmpty />;

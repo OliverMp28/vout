@@ -9,80 +9,21 @@ import type {
     FrameSourceLike,
     GestureEngineEvents,
     GestureEngineOptions,
+    PreviewSurfaceLike,
 } from '@/lib/mediapipe/gesture-engine';
-import type { GestureWorkerLike } from '@/lib/mediapipe/gesture-worker-factory';
 import { TelemetryCollector } from '@/lib/mediapipe/telemetry';
 import { GestureType } from '@/lib/mediapipe/types';
 import type {
     EngineStatus,
-    MediaPipeRuntimeAssets,
-    WorkerInMessage,
-    WorkerOutMessage,
+    PreviewOptions,
+    PreviewSize,
+    SessionOutMessage,
 } from '@/lib/mediapipe/types';
 
+import { READY, TEST_ASSETS, createTestHost } from '../support/fake-worker';
 import { ManualScheduler, flushPromises } from '../support/manual-scheduler';
 
 const TIME_ORIGIN = 1_000_000;
-
-const ASSETS: MediaPipeRuntimeAssets = {
-    visionBundleUrl: 'http://vout.test/build/assets/vision_bundle.js',
-    wasm: {
-        simd: {
-            wasmLoaderPath: 'http://vout.test/simd.js',
-            wasmBinaryPath: 'http://vout.test/simd.wasm',
-        },
-        nosimd: {
-            wasmLoaderPath: 'http://vout.test/nosimd.js',
-            wasmBinaryPath: 'http://vout.test/nosimd.wasm',
-        },
-    },
-    modelUrl: 'http://vout.test/models/face_landmarker.task',
-};
-
-const READY: WorkerOutMessage = {
-    type: 'READY',
-    info: {
-        mediapipeVersion: '0.10.35',
-        delegate: 'GPU',
-        simd: true,
-        renderer: 'Test GPU',
-    },
-};
-
-class FakeWorker implements GestureWorkerLike {
-    onmessage: GestureWorkerLike['onmessage'] = null;
-    onerror: GestureWorkerLike['onerror'] = null;
-    posted: { message: WorkerInMessage; transfer?: Transferable[] }[] = [];
-    terminated = false;
-
-    postMessage(message: WorkerInMessage, transfer?: Transferable[]): void {
-        this.posted.push({ message, transfer });
-    }
-
-    terminate(): void {
-        this.terminated = true;
-    }
-
-    /** El worker responde con `message`. */
-    reply(message: WorkerOutMessage): void {
-        this.onmessage?.({ data: message } as MessageEvent<WorkerOutMessage>);
-    }
-
-    types(): string[] {
-        return this.posted.map((entry) => entry.message.type);
-    }
-
-    frames(): Extract<WorkerInMessage, { type: 'FRAME' }>[] {
-        return this.posted
-            .map((entry) => entry.message)
-            .filter(
-                (
-                    message,
-                ): message is Extract<WorkerInMessage, { type: 'FRAME' }> =>
-                    message.type === 'FRAME',
-            );
-    }
-}
 
 class FakeFrameSource implements FrameSourceLike {
     mode: FrameSourceLike['mode'] = 'idle';
@@ -105,27 +46,71 @@ class FakeFrameSource implements FrameSourceLike {
     }
 }
 
+/** Lienzo de la vista falso: cuenta los que crea y los que quita. */
+class FakePreviewSurface implements PreviewSurfaceLike {
+    created: OffscreenCanvas[] = [];
+    removed = 0;
+    private resizeListener: ((size: PreviewSize) => void) | null = null;
+
+    constructor(private readonly size: PreviewSize | null = SIZE) {}
+
+    createCanvas() {
+        if (this.size === null) {
+            return null;
+        }
+
+        const canvas = {
+            id: this.created.length,
+        } as unknown as OffscreenCanvas;
+
+        this.created.push(canvas);
+
+        return { canvas, size: this.size };
+    }
+
+    removeCanvas(): void {
+        this.removed++;
+    }
+
+    onResize(listener: (size: PreviewSize) => void): () => void {
+        this.resizeListener = listener;
+
+        return () => {
+            this.resizeListener = null;
+        };
+    }
+
+    /** El contenedor cambia de tamaño. */
+    resize(size: PreviewSize): void {
+        this.resizeListener?.(size);
+    }
+
+    get listening(): boolean {
+        return this.resizeListener !== null;
+    }
+}
+
+const SIZE: PreviewSize = { width: 640, height: 480, pixelRatio: 2 };
+
+const PREVIEW: PreviewOptions = {
+    mode: 'synced',
+    mesh: 'contours',
+    colors: { mesh: 'white', contour: 'violet' },
+};
+
 function setup(
     events: GestureEngineEvents = {},
     overrides: Partial<GestureEngineOptions> = {},
 ) {
     const scheduler = new ManualScheduler();
     const telemetry = new TelemetryCollector();
-    const workers: FakeWorker[] = [];
+    const fixture = createTestHost(scheduler);
     const sources: FakeFrameSource[] = [];
     const statuses: EngineStatus[] = [];
     const errors: (string | null)[] = [];
-    let disposed = 0;
 
     const engine = new GestureEngineController({
-        createWorker: () => {
-            const worker = new FakeWorker();
-            workers.push(worker);
-
-            return { worker, dispose: () => disposed++ };
-        },
-        resolveAssets: () => ASSETS,
-        mediapipeVersion: '0.10.35',
+        runtimeHost: fixture.host,
         getVideo: () => ({}) as HTMLVideoElement,
         telemetry,
         config: { sensitivity: 5, enableBlendshapes: false },
@@ -148,18 +133,19 @@ function setup(
         },
     });
 
-    const worker = () => workers[workers.length - 1];
+    const worker = fixture.worker;
     const source = () => sources[sources.length - 1];
 
     /** Respuesta del worker al último FRAME, con tiempos coherentes. */
     const replyToLastFrame = (
-        overrides: Partial<Extract<WorkerOutMessage, { type: 'RESULT' }>> = {},
+        overrides: Partial<Extract<SessionOutMessage, { type: 'RESULT' }>> = {},
     ) => {
         const frame = worker().frames().at(-1)!;
         const now = TIME_ORIGIN + scheduler.now();
 
         worker().reply({
             type: 'RESULT',
+            sessionId: worker().sessionId(),
             frameId: frame.frameId,
             timestamp: 0,
             gestures: [],
@@ -172,6 +158,7 @@ function setup(
                 inferenceEnd: now - 4,
                 postedAt: now - 3,
             },
+            previewMs: null,
             ...overrides,
         });
     };
@@ -189,13 +176,14 @@ function setup(
         telemetry,
         statuses,
         errors,
+        host: fixture.host,
         worker,
+        workers: fixture.workers,
         source,
-        workers,
         replyToLastFrame,
         startAndBecomeReady,
         get disposed() {
-            return disposed;
+            return fixture.disposed;
         },
     };
 }
@@ -206,7 +194,7 @@ describe('GestureEngineController', () => {
         spyOn(console, 'error').mockImplementation(() => {});
     });
 
-    test('arranca el worker con las URLs locales, la versión y la configuración', () => {
+    test('carga el motor con las URLs locales y abre la sesión con la configuración', () => {
         const { engine, worker, statuses } = setup();
 
         engine.start();
@@ -214,11 +202,21 @@ describe('GestureEngineController', () => {
         expect(statuses).toEqual(['loading']);
         expect(worker().posted[0].message).toEqual({
             type: 'INIT',
-            assets: ASSETS,
+            assets: TEST_ASSETS,
             mediapipeVersion: '0.10.35',
             delegate: 'GPU',
-            config: { sensitivity: 5, enableBlendshapes: false },
         });
+        expect(worker().types()).not.toContain('SESSION_START');
+
+        worker().reply(READY);
+
+        expect(worker().messages('SESSION_START')).toEqual([
+            {
+                type: 'SESSION_START',
+                sessionId: worker().sessionId(),
+                config: { sensitivity: 5, enableBlendshapes: false },
+            },
+        ]);
     });
 
     test('con READY empieza a mirar la cámara y envía fotogramas transferidos', async () => {
@@ -299,6 +297,7 @@ describe('GestureEngineController', () => {
         source().emit();
         worker().reply({
             type: 'FRAME_DROPPED',
+            sessionId: worker().sessionId(),
             frameId: worker().frames()[0].frameId,
             reason: 'error',
         });
@@ -320,6 +319,7 @@ describe('GestureEngineController', () => {
 
         worker().reply({
             type: 'RESULT',
+            sessionId: worker().sessionId(),
             frameId: frame.frameId,
             timestamp: 0,
             gestures: [],
@@ -332,6 +332,7 @@ describe('GestureEngineController', () => {
                 inferenceEnd: TIME_ORIGIN + 45,
                 postedAt: now - 1,
             },
+            previewMs: null,
         });
 
         // Segundo, con hora de captura de la cámara (20 ms antes).
@@ -344,6 +345,7 @@ describe('GestureEngineController', () => {
         scheduler.advance(40);
         worker().reply({
             type: 'RESULT',
+            sessionId: worker().sessionId(),
             frameId: second.frameId,
             timestamp: 60,
             gestures: [],
@@ -356,6 +358,7 @@ describe('GestureEngineController', () => {
                 inferenceEnd: TIME_ORIGIN + 95,
                 postedAt: TIME_ORIGIN + 99,
             },
+            previewMs: null,
         });
 
         const stats = telemetry.snapshot();
@@ -369,6 +372,11 @@ describe('GestureEngineController', () => {
         expect(stats[TELEMETRY_KEYS.cameraToResultMs].max).toBe(60);
         expect(stats[TELEMETRY_KEYS.processedFps].max).toBe(20);
         expect(stats[TELEMETRY_KEYS.mainHandlerMs]).toBeDefined();
+        // De start() (t=0) al primer resultado (t=50).
+        expect(stats[TELEMETRY_KEYS.engineStartMs]).toMatchObject({
+            count: 1,
+            max: 50,
+        });
     });
 
     test('un resultado que no es del fotograma en vuelo entrega sus gestos igualmente', async () => {
@@ -470,26 +478,141 @@ describe('GestureEngineController', () => {
         expect(errors.at(-1)).toBe('kaput');
     });
 
-    test('stop cierra el worker, la cámara y las métricas', async () => {
+    test('stop cierra la sesión, la cámara y las métricas, pero deja el motor cargado', async () => {
         const metrics: unknown[] = [];
         const setupResult = setup({
             onMetrics: (value) => metrics.push(value),
         });
-        const { engine, worker, source, startAndBecomeReady } = setupResult;
+        const { engine, host, worker, source, startAndBecomeReady } =
+            setupResult;
 
         await startAndBecomeReady();
+        const sessionId = worker().sessionId();
         engine.stop();
 
-        expect(worker().types().at(-1)).toBe('DESTROY');
-        expect(worker().terminated).toBe(true);
-        expect(setupResult.disposed).toBe(1);
+        expect(worker().posted.at(-1)?.message).toEqual({
+            type: 'SESSION_END',
+            sessionId,
+        });
+        expect(worker().terminated).toBe(false);
+        expect(setupResult.disposed).toBe(0);
+        expect(host.warmState).toBe('ready');
         expect(source().mode).toBe('idle');
         expect(engine.status).toBe('idle');
         expect(metrics.at(-1)).toBeNull();
+    });
 
-        // Un mensaje tardío del worker ya cerrado no hace nada.
-        worker().reply(READY);
-        expect(engine.status).toBe('idle');
+    test('reactivar reutiliza el motor cargado con una sesión nueva', async () => {
+        const {
+            engine,
+            statuses,
+            worker,
+            workers,
+            replyToLastFrame,
+            startAndBecomeReady,
+            source,
+        } = setup();
+
+        await startAndBecomeReady();
+        replyToLastFrame();
+        const firstSession = worker().sessionId();
+        engine.stop();
+
+        engine.start();
+
+        // Sin INIT ni esperar a READY: la sesión empieza al momento.
+        expect(workers).toHaveLength(1);
+        expect(worker().messages('INIT')).toHaveLength(1);
+        expect(worker().sessionId()).toBeGreaterThan(firstSession);
+        expect(engine.getDiagnostics().runtime).toBe('warm');
+        expect(engine.status).toBe('loading');
+
+        source().emit();
+        await flushPromises();
+        replyToLastFrame();
+
+        expect(statuses.slice(-2)).toEqual(['loading', 'running']);
+    });
+
+    test('una respuesta tardía de la sesión anterior no dispara gestos', async () => {
+        const gestures: string[] = [];
+        const { engine, worker, replyToLastFrame, startAndBecomeReady } = setup(
+            { onGesture: (event) => gestures.push(event.phase) },
+        );
+
+        await startAndBecomeReady();
+        const oldSession = worker().sessionId();
+        engine.stop();
+        engine.start();
+
+        replyToLastFrame({
+            sessionId: oldSession,
+            gestures: [
+                {
+                    gesture: GestureType.MouthOpen,
+                    confidence: 0.9,
+                    timestamp: 0,
+                    phase: 'start',
+                },
+            ],
+        });
+        worker().reply({
+            type: 'CALIBRATED',
+            sessionId: oldSession,
+            baseline: { capturedAt: 1, blendshapes: {} },
+        });
+
+        expect(gestures).toEqual([]);
+        expect(engine.status).toBe('loading');
+        expect(engine.calibrationState).toEqual({ status: 'idle' });
+    });
+
+    test('si un motor reutilizado falla antes del primer resultado, carga otro sin avisar', () => {
+        const { engine, host, workers, errors, worker, statuses } = setup();
+
+        host.prewarm();
+        workers[0].reply(READY);
+        engine.start();
+
+        workers[0].reply({
+            type: 'ERROR',
+            code: 'INFERENCE_FAILED',
+            message: 'context lost',
+        });
+
+        expect(workers).toHaveLength(2);
+        expect(workers[0].terminated).toBe(true);
+        expect(engine.status).toBe('loading');
+        expect(errors.filter((error) => error !== null)).toEqual([]);
+        expect(engine.getDiagnostics().runtime).toBe('cold');
+
+        // El nuevo también falla: ahora sí es un error.
+        worker().reply({ type: 'ERROR', code: 'INIT_FAILED', message: 'boom' });
+
+        expect(statuses.at(-1)).toBe('error');
+        expect(errors.at(-1)).toBe('boom');
+    });
+
+    test('si un motor reutilizado falla después de funcionar, es un error', async () => {
+        const { engine, host, workers, errors, replyToLastFrame, source } =
+            setup();
+
+        host.prewarm();
+        workers[0].reply(READY);
+        engine.start();
+        source().emit();
+        await flushPromises();
+        replyToLastFrame();
+
+        workers[0].reply({
+            type: 'ERROR',
+            code: 'INFERENCE_FAILED',
+            message: 'gpu gone',
+        });
+
+        expect(workers).toHaveLength(1);
+        expect(engine.status).toBe('error');
+        expect(errors.at(-1)).toBe('gpu gone');
     });
 
     test('pausa y reanuda', async () => {
@@ -523,6 +646,7 @@ describe('GestureEngineController', () => {
         worker().reply(READY);
 
         expect(engine.status).toBe('paused');
+        expect(worker().types().slice(-2)).toEqual(['SESSION_START', 'PAUSE']);
         expect(workers[0].frames()).toHaveLength(0);
 
         engine.resume();
@@ -534,6 +658,7 @@ describe('GestureEngineController', () => {
         const { engine, worker } = setup();
 
         engine.start();
+        worker().reply(READY);
         engine.setSensitivity(8);
         engine.setEnableBlendshapes(true);
 
@@ -547,7 +672,23 @@ describe('GestureEngineController', () => {
         ]);
     });
 
-    test('CALIBRATED llega al callback', () => {
+    test('lo que se cambia mientras el motor carga llega con la sesión', () => {
+        const { engine, worker } = setup();
+
+        engine.start();
+        engine.setSensitivity(8);
+
+        expect(worker().types()).not.toContain('SET_CONFIG');
+
+        worker().reply(READY);
+
+        expect(worker().messages('SESSION_START')[0].config).toEqual({
+            sensitivity: 8,
+            enableBlendshapes: false,
+        });
+    });
+
+    test('una calibración pedida mientras carga se hace al abrir la sesión', () => {
         const baselines: number[] = [];
         const { engine, worker } = setup({
             onCalibrated: (baseline) => baselines.push(baseline.capturedAt),
@@ -555,13 +696,31 @@ describe('GestureEngineController', () => {
 
         engine.start();
         engine.calibrateNeutral();
+
+        expect(engine.calibrationState).toEqual({
+            status: 'calibrating',
+            automatic: false,
+        });
+        expect(worker().types()).not.toContain('CALIBRATE_NEUTRAL');
+
+        worker().reply(READY);
+
+        expect(worker().types().slice(-2)).toEqual([
+            'SESSION_START',
+            'CALIBRATE_NEUTRAL',
+        ]);
+
         worker().reply({
             type: 'CALIBRATED',
+            sessionId: worker().sessionId(),
             baseline: { capturedAt: 7, blendshapes: {} },
         });
 
-        expect(worker().types()).toContain('CALIBRATE_NEUTRAL');
         expect(baselines).toEqual([7]);
+        expect(engine.calibrationState).toEqual({
+            status: 'calibrated',
+            automatic: false,
+        });
     });
 
     test('los diagnósticos dicen con qué corre el motor', async () => {
@@ -572,7 +731,8 @@ describe('GestureEngineController', () => {
         await startAndBecomeReady();
 
         expect(engine.getDiagnostics()).toEqual({
-            info: READY.type === 'READY' ? READY.info : null,
+            info: READY.info,
+            runtime: 'cold',
             frameSource: 'video-frame-callback',
             frames: { sent: 1, completed: 0, skipped: 0 },
         });
@@ -663,6 +823,7 @@ describe('GestureEngineController', () => {
         worker().reply(READY);
         worker().reply({
             type: 'CALIBRATION_FAILED',
+            sessionId: worker().sessionId(),
             reason: 'not_frontal',
         });
 
@@ -675,6 +836,7 @@ describe('GestureEngineController', () => {
         engine.calibrateNeutral();
         worker().reply({
             type: 'CALIBRATED',
+            sessionId: worker().sessionId(),
             baseline: { capturedAt: 9, blendshapes: {} },
         });
 
@@ -724,5 +886,139 @@ describe('GestureEngineController', () => {
                 gestures: [],
             },
         ]);
+    });
+});
+
+describe('GestureEngineController — vista de la cámara', () => {
+    test('se cede un lienzo al worker al abrir la sesión y se suelta al parar', () => {
+        const { engine, worker } = setup();
+        const surface = new FakePreviewSurface();
+
+        engine.attachPreview(surface, PREVIEW);
+        engine.start();
+
+        // Sin sesión no hay a quién cederlo.
+        expect(surface.created).toHaveLength(0);
+
+        worker().reply(READY);
+
+        const attach = worker().posted.find(
+            (entry) => entry.message.type === 'ATTACH_PREVIEW',
+        );
+
+        expect(attach?.message).toEqual({
+            type: 'ATTACH_PREVIEW',
+            canvas: surface.created[0],
+            size: SIZE,
+            options: PREVIEW,
+        });
+        expect(attach?.transfer).toEqual([surface.created[0]]);
+        expect(worker().types().indexOf('ATTACH_PREVIEW')).toBeGreaterThan(
+            worker().types().indexOf('SESSION_START'),
+        );
+
+        engine.stop();
+
+        expect(worker().types().slice(-2)).toEqual([
+            'DETACH_PREVIEW',
+            'SESSION_END',
+        ]);
+        expect(surface.removed).toBe(1);
+        expect(surface.listening).toBe(false);
+    });
+
+    test('cada sesión pide un lienzo nuevo (uno cedido no se puede recuperar)', () => {
+        const { engine, worker } = setup();
+        const surface = new FakePreviewSurface();
+
+        engine.attachPreview(surface, PREVIEW);
+        engine.start();
+        worker().reply(READY);
+        engine.stop();
+        engine.start();
+
+        expect(surface.created).toHaveLength(2);
+        expect(worker().messages('ATTACH_PREVIEW')).toHaveLength(2);
+    });
+
+    test('los cambios de tamaño y de opciones llegan al worker', () => {
+        const { engine, worker } = setup();
+        const surface = new FakePreviewSurface();
+        const resized = { width: 320, height: 240, pixelRatio: 1 };
+        const full: PreviewOptions = { ...PREVIEW, mesh: 'full' };
+
+        engine.attachPreview(surface, PREVIEW);
+        engine.start();
+        worker().reply(READY);
+        surface.resize(resized);
+        engine.updatePreview(full);
+
+        expect(
+            worker()
+                .posted.slice(-2)
+                .map((entry) => entry.message),
+        ).toEqual([
+            { type: 'RESIZE_PREVIEW', size: resized },
+            { type: 'SET_PREVIEW', options: full },
+        ]);
+    });
+
+    test('quitar la vista a mitad de sesión la suelta', () => {
+        const { engine, worker } = setup();
+        const surface = new FakePreviewSurface();
+
+        const detach = engine.attachPreview(surface, PREVIEW);
+        engine.start();
+        worker().reply(READY);
+        detach();
+        detach(); // Solo cuenta una vez.
+
+        expect(worker().messages('DETACH_PREVIEW')).toHaveLength(1);
+        expect(surface.removed).toBe(1);
+
+        engine.stop();
+
+        expect(worker().messages('DETACH_PREVIEW')).toHaveLength(1);
+    });
+
+    test('una vista nueva sustituye a la anterior', () => {
+        const { engine, worker } = setup();
+        const first = new FakePreviewSurface();
+        const second = new FakePreviewSurface();
+
+        const detachFirst = engine.attachPreview(first, PREVIEW);
+        engine.start();
+        worker().reply(READY);
+        engine.attachPreview(second, PREVIEW);
+
+        expect(first.removed).toBe(1);
+        expect(second.created).toHaveLength(1);
+
+        // Quitar la vieja ya no toca la nueva.
+        detachFirst();
+
+        expect(second.removed).toBe(0);
+    });
+
+    test('si no se puede crear el lienzo, no se cede nada', () => {
+        const { engine, worker } = setup();
+
+        engine.attachPreview(new FakePreviewSurface(null), PREVIEW);
+        engine.start();
+        worker().reply(READY);
+
+        expect(worker().types()).not.toContain('ATTACH_PREVIEW');
+    });
+
+    test('lo que tarda en dibujarse llega a la telemetría', async () => {
+        const { telemetry, replyToLastFrame, startAndBecomeReady } = setup();
+
+        await startAndBecomeReady();
+        replyToLastFrame({ previewMs: 1.5 });
+
+        expect(telemetry.snapshot()[TELEMETRY_KEYS.previewMs]).toMatchObject({
+            count: 1,
+            max: 1.5,
+        });
     });
 });

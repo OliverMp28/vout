@@ -14,7 +14,8 @@
  *    Panel completo: dispatch, sensibilidad, calibración, último gesto, FPS.
  *
  * Regla de UX: el control facial es ADITIVO, nunca restrictivo. Un usuario
- * que solo quiere jugar con teclado no ve sliders ni métricas de FPS.
+ * que solo quiere jugar con teclado no ve sliders ni métricas de FPS. La
+ * vista de la cámara también es opcional y está apagada por defecto.
  *
  * El componente es 100% controlado: todo el estado vive en `play/game.tsx`
  * vía `usePlayOrchestrator`. Esto evita drift entre la UI y el dispatcher.
@@ -36,6 +37,7 @@ import {
     Square,
 } from 'lucide-react';
 import { useState } from 'react';
+import type { ReactNode } from 'react';
 
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -97,6 +99,11 @@ type ControlPanelProps = {
 
     onSelectCamera: (deviceId: string) => void;
     onToggleEngine: () => void;
+    /**
+     * El usuario se acerca a "Activar" (ratón encima o foco): se puede ir
+     * preparando el motor.
+     */
+    onEngineIntent?: () => void;
     onToggleDispatch: (enabled: boolean) => void;
     onSensitivityChange: (value: number) => void;
     /** Recentra el cursor de la cabeza (no toca la calibración). */
@@ -105,6 +112,11 @@ type ControlPanelProps = {
     onCalibrate: () => void;
     /** Estado de la calibración de la cara neutra. */
     calibration: CalibrationState;
+    /** Si se muestra la vista de la cámara mientras el motor funciona. */
+    previewEnabled: boolean;
+    onTogglePreview: (enabled: boolean) => void;
+    /** La vista de la cámara (se muestra con `previewEnabled`). */
+    preview?: ReactNode;
 };
 
 // ---------------------------------------------------------------------------
@@ -187,9 +199,14 @@ function IdlePanel({
     cameraBusy,
     cameraNotice,
     onToggleEngine,
+    onEngineIntent,
 }: Pick<
     ControlPanelProps,
-    'engineStatus' | 'cameraBusy' | 'cameraNotice' | 'onToggleEngine'
+    | 'engineStatus'
+    | 'cameraBusy'
+    | 'cameraNotice'
+    | 'onToggleEngine'
+    | 'onEngineIntent'
 >) {
     const { t } = useTranslation();
     const engineBadge = ENGINE_BADGE[engineStatus];
@@ -219,6 +236,8 @@ function IdlePanel({
                     <Button
                         id="play-engine-toggle"
                         onClick={onToggleEngine}
+                        onPointerEnter={onEngineIntent}
+                        onFocus={onEngineIntent}
                         size="lg"
                         disabled={cameraBusy}
                         aria-busy={cameraBusy}
@@ -284,6 +303,9 @@ function RunningPanel({
     onRecenter,
     onCalibrate,
     calibration,
+    previewEnabled,
+    onTogglePreview,
+    preview,
 }: ControlPanelProps) {
     const { t } = useTranslation();
     const [advancedOpen, setAdvancedOpen] = useState(false);
@@ -335,6 +357,30 @@ function RunningPanel({
                         </>
                     )}
                 </Button>
+            </section>
+
+            {/* ── Vista de la cámara (opcional) ────────────────────────────── */}
+            <section className="space-y-3">
+                <div className="flex items-center justify-between gap-3">
+                    <div className="flex flex-col">
+                        <Label
+                            htmlFor="play-preview-toggle"
+                            className="text-sm font-medium"
+                        >
+                            {t('play.panel.preview')}
+                        </Label>
+                        <span className="text-xs text-muted-foreground">
+                            {t('play.panel.preview_hint')}
+                        </span>
+                    </div>
+                    <Switch
+                        id="play-preview-toggle"
+                        checked={previewEnabled}
+                        onCheckedChange={onTogglePreview}
+                        aria-label={t('play.panel.preview')}
+                    />
+                </div>
+                {previewEnabled && preview}
             </section>
 
             <Separator />

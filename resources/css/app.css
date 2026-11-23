@@ -119,6 +119,14 @@
     --vou-stroke: oklch(0.18 0.02 285);
     --vou-cyan: oklch(0.85 0.13 200);
     --vou-pink: oklch(0.78 0.19 340);
+
+    /*
+     * Malla facial sobre la imagen de la cámara (la dibuja el worker:
+     * face-mesh-drawing.ts). Igual en claro y oscuro: va sobre el vídeo, no
+     * sobre la interfaz.
+     */
+    --face-mesh: oklch(0.98 0.01 285 / 0.3);
+    --face-mesh-contour: oklch(0.8 0.15 285 / 0.95);
 }
 
 /*

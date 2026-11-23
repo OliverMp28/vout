@@ -15,6 +15,7 @@
  */
 
 import { Head, usePage } from '@inertiajs/react';
+import { Camera } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { ControlPanel } from '@/components/play/control-panel';
@@ -24,12 +25,18 @@ import type { CursorOverlayHandle } from '@/components/play/cursor-overlay';
 import { EngineOverlay } from '@/components/play/engine-overlay';
 import { NowPlayingHeader } from '@/components/play/now-playing-header';
 import { PresetSuggestionBanner } from '@/components/play/preset-suggestion-banner';
+import { FaceMeshView } from '@/components/vision/face-mesh-view';
 import type { GameSessionPayload } from '@/hooks/use-game-session';
+import { useWarmEngineState } from '@/hooks/use-gesture-engine';
 import { useMascotContext } from '@/hooks/use-mascot-context';
 import { usePlayOrchestrator } from '@/hooks/use-play-orchestrator';
 import { useTranslation } from '@/hooks/use-translation';
 import AppLayout from '@/layouts/app-layout';
 import { describeDiagnostics } from '@/lib/mediapipe/diagnostics';
+import {
+    getShowCameraInGame,
+    setShowCameraInGame,
+} from '@/lib/mediapipe/preview-preference';
 import type { TelemetrySnapshot } from '@/lib/mediapipe/telemetry';
 import type { GestureConfigData } from '@/lib/mediapipe/types';
 import { cn } from '@/lib/utils';
@@ -81,6 +88,13 @@ export default function PlayGame({
     const [telemetryView, setTelemetryView] = useState<TelemetryView | null>(
         null,
     );
+    // Ver la cámara mientras se juega: apagado por defecto, se recuerda
+    // mientras dure la pestaña.
+    const [previewEnabled, setPreviewEnabled] = useState(getShowCameraInGame);
+    const handleTogglePreview = useCallback((enabled: boolean) => {
+        setPreviewEnabled(enabled);
+        setShowCameraInGame(enabled);
+    }, []);
 
     // ── Hotkey para telemetría (Ctrl+M) ────────────────────────────────────
     useEffect(() => {
@@ -115,6 +129,7 @@ export default function PlayGame({
         handshake,
         camera,
         handleToggleEngine,
+        handleEngineIntent,
         handleRetryGame,
         handleSelectCamera,
         handleAcceptPreset,
@@ -131,6 +146,10 @@ export default function PlayGame({
         videoRef,
         onCursorMove: handleCursorMove,
     });
+
+    // Motor cargado (precarga): solo informativo, para depurar y para los
+    // tests de navegador.
+    const warmEngineState = useWarmEngineState();
 
     // ── Loop de telemetría in-game ─────────────────────────────────────────
     const engineTelemetry = engine.telemetry;
@@ -213,11 +232,30 @@ export default function PlayGame({
             cameraNotice={cameraNotice}
             onSelectCamera={handleSelectCamera}
             onToggleEngine={handleToggleEngine}
+            onEngineIntent={handleEngineIntent}
             onToggleDispatch={setDispatchEnabled}
             onSensitivityChange={setSensitivity}
             onRecenter={recenterCursor}
             onCalibrate={engine.calibrateNeutral}
             calibration={engine.calibration}
+            previewEnabled={previewEnabled}
+            onTogglePreview={handleTogglePreview}
+            preview={
+                // La pinta el worker (imagen y contornos del mismo
+                // fotograma): no hace falta un segundo <video> y el hilo del
+                // juego no dibuja nada.
+                <FaceMeshView
+                    engine={engine}
+                    mode="synced"
+                    mesh="contours"
+                    className="aspect-[4/3] w-full rounded-xl border border-border/60 bg-black shadow-sm"
+                >
+                    <Camera
+                        aria-hidden="true"
+                        className="absolute top-1/2 left-1/2 size-6 -translate-x-1/2 -translate-y-1/2 text-white/30"
+                    />
+                </FaceMeshView>
+            }
         />
     );
 
@@ -255,6 +293,8 @@ export default function PlayGame({
                 <div
                     id="game-frame"
                     data-engine-status={engine.status}
+                    data-engine-runtime={warmEngineState}
+                    data-handshake-status={handshake.status}
                     className={cn(
                         'group relative aspect-video w-full overflow-hidden rounded-2xl border bg-black transition-all duration-500',
                         engine.status === 'running'

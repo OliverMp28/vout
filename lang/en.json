@@ -378,6 +378,8 @@
     "play.panel.advanced": "Advanced",
     "play.panel.start": "Enable face control",
     "play.panel.stop": "Stop engine",
+    "play.panel.preview": "Show camera",
+    "play.panel.preview_hint": "Only on your screen: the image never leaves your device.",
     "play.panel.dispatch": "Control game with camera",
     "play.panel.dispatch_hint": "When enabled, your gestures and movements will be sent to the game.",
     "play.panel.sensitivity": "Sensitivity",

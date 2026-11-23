@@ -14,6 +14,10 @@ import { GameGrid } from '@/components/catalog/game-grid';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
+import {
+    usePreloadDecision,
+    useRuntimePrefetch,
+} from '@/hooks/use-engine-preload';
 import { useMascotContext } from '@/hooks/use-mascot-context';
 import { useTranslation } from '@/hooks/use-translation';
 import PortalLayout from '@/layouts/portal-layout';
@@ -33,6 +37,10 @@ export default function CatalogShow({
     const { auth } = usePage().props;
     const { t } = useTranslation();
     const isAuthenticated = !!auth?.user;
+
+    // Desde aquí se entra a jugar: quien usa el control facial descarga ya
+    // los ficheros del motor (solo red, a baja prioridad).
+    useRuntimePrefetch(usePreloadDecision('game-entry'));
 
     const [isFavorite, setIsFavorite] = useState(
         userInteraction?.is_favorite ?? false,

@@ -4,20 +4,32 @@
  */
 
 import type { GestureEngineDiagnostics } from './gesture-engine';
+import type { StartupTimings } from './types';
 
 /** Pares nombre → valor, en el orden en que se muestran. */
 export function describeDiagnostics(
     diagnostics: GestureEngineDiagnostics,
 ): [string, string][] {
-    const { info, frameSource, frames } = diagnostics;
+    const { info, runtime, frameSource, frames } = diagnostics;
 
     return [
         ['mediapipe', info?.mediapipeVersion ?? '—'],
         ['delegate', info?.delegate ?? '—'],
         ['simd', info === null ? '—' : info.simd ? 'yes' : 'no'],
         ['renderer', info?.renderer ?? '—'],
+        // `warm`: la activación encontró el motor ya cargado.
+        ['runtime', runtime ?? '—'],
+        ['startup', info === null ? '—' : describeStartup(info.startup)],
         ['frameSource', frameSource],
         ['framesSent', String(frames.sent)],
         ['framesSkipped', String(frames.skipped)],
     ];
+}
+
+/** Lo que tardó en cargarse el motor, por fases: `bundle · modelo · calentamiento`. */
+function describeStartup(startup: StartupTimings): string {
+    return [startup.bundleMs, startup.landmarkerMs, startup.warmupMs]
+        .map((ms) => String(Math.round(ms)))
+        .join(' · ')
+        .concat(' ms');
 }

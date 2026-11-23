@@ -378,6 +378,8 @@
     "play.panel.advanced": "Avanzado",
     "play.panel.start": "Activar control facial",
     "play.panel.stop": "Detener motor",
+    "play.panel.preview": "Ver la cámara",
+    "play.panel.preview_hint": "Solo se ve en tu pantalla: la imagen no sale de tu equipo.",
     "play.panel.dispatch": "Controlar juego con cámara",
     "play.panel.dispatch_hint": "Cuando esté activo, tus gestos y movimientos se enviarán al juego.",
     "play.panel.sensitivity": "Sensibilidad",

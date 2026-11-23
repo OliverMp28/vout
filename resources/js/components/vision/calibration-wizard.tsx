@@ -7,8 +7,13 @@ import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import { Slider } from '@/components/ui/slider';
 import { CameraPreview } from '@/components/vision/camera-preview';
+import { FaceMeshView } from '@/components/vision/face-mesh-view';
 import { GestureStatusIndicator } from '@/components/vision/gesture-status-indicator';
 import { useCamera } from '@/hooks/use-camera';
+import {
+    useEngineWarmup,
+    usePreloadDecision,
+} from '@/hooks/use-engine-preload';
 import { useGestureEngine } from '@/hooks/use-gesture-engine';
 import { useTranslation } from '@/hooks/use-translation';
 import { PRESET_PLATFORMER } from '@/lib/mediapipe/action-presets';
@@ -120,6 +125,17 @@ function CalibrationWizard({
         autoCalibrate: hasExistingProfile,
     });
 
+    // Configurando el control facial, lo siguiente es activar la cámara: el
+    // motor se va preparando (el modo resumen, sin cámara, no lo necesita).
+    const isSetupMode = !hasExistingProfile || reconfiguring;
+    const setupPreload = usePreloadDecision('setup', { intent: 'enabled' });
+
+    useEngineWarmup(
+        setupPreload,
+        isSetupMode && step === 'camera',
+        engine.prewarm,
+    );
+
     // Una captura que falla (no mirabas de frente, sonreías…) vuelve a
     // permitir el botón y explica el motivo.
     const calibrationFailure =
@@ -144,13 +160,15 @@ function CalibrationWizard({
     // -----------------------------------------------------------------------
 
     const handleEnableCamera = useCallback(async () => {
+        // El motor se prepara mientras se abre la cámara.
+        engine.prewarm();
         const stream = await camera.requestCamera();
         if (stream) {
             // Con perfil existente, saltar directamente a test (la cara neutra
             // se calibra sola al arrancar). Sin perfil, ir al paso de baseline.
             setStep(hasExistingProfile ? 'test' : 'baseline');
         }
-    }, [camera, hasExistingProfile]);
+    }, [camera, engine, hasExistingProfile]);
 
     // -----------------------------------------------------------------------
     // Paso 2: Línea base neutral
@@ -347,7 +365,15 @@ function CalibrationWizard({
                         ref={videoRef}
                         active={camera.status === 'active'}
                         compact
-                    />
+                    >
+                        {/* Ver que te detecta: la malla sobre tu cara. */}
+                        <FaceMeshView
+                            engine={engine}
+                            mode="overlay"
+                            mesh="full"
+                            className="absolute inset-0"
+                        />
+                    </CameraPreview>
 
                     <Button
                         onClick={handleCaptureBaseline}
@@ -403,7 +429,15 @@ function CalibrationWizard({
                             ref={videoRef}
                             active={camera.status === 'active'}
                             compact
-                        />
+                        >
+                            {/* Ver que te detecta: la malla sobre tu cara. */}
+                            <FaceMeshView
+                                engine={engine}
+                                mode="overlay"
+                                mesh="full"
+                                className="absolute inset-0"
+                            />
+                        </CameraPreview>
 
                         <div className="w-full space-y-3 sm:max-h-48 sm:overflow-y-auto sm:pr-1">
                             {GESTURE_TESTS.map(({ gesture, i18nKey }) => {
