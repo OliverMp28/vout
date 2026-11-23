@@ -63,16 +63,20 @@ beforeEach(function (): void {
  * Juego activo que embebe una página del propio servidor de test (sin salir a
  * internet) y un usuario con perfil de gestos, ya autenticado.
  *
- * @param  bool  $gesturesEnabled  El usuario tiene el control facial activado en Ajustes.
+ * @param  string|null  $usage  Perfil de uso del control facial en Ajustes (`off`, `occasional`, `primary`); null, sin ajustes guardados.
  * @param  bool  $announcesReady  El juego hace el handshake (si no, nunca termina de cargar).
+ * @param  string  $support  Si el juego admite el control facial (`none`, `compatible`, `designed`).
  */
-function engineTestGame(bool $gesturesEnabled = false, bool $announcesReady = false): Game
+function engineTestGame(?string $usage = null, bool $announcesReady = false, string $support = 'compatible'): Game
 {
     $user = User::factory()->create();
     GestureConfig::factory()->for($user)->create(['is_active' => true]);
 
-    if ($gesturesEnabled) {
-        UserSetting::factory()->withGestures()->for($user)->create(['show_mascot' => false]);
+    if ($usage !== null) {
+        UserSetting::factory()->for($user)->create([
+            'show_mascot' => false,
+            'facial_control_usage' => $usage,
+        ]);
     }
 
     test()->actingAs($user);
@@ -81,6 +85,7 @@ function engineTestGame(bool $gesturesEnabled = false, bool $announcesReady = fa
 
     return Game::factory()->create([
         'is_active' => true,
+        'facial_control_support' => $support,
         'embed_url' => 'http://localhost:'.$port.($announcesReady ? '/__engine-ready-game' : '/__engine-game'),
     ]);
 }
@@ -438,8 +443,8 @@ test('al arrancar calibra la cara sola y, si no la ve, explica por qué', functi
 // Precarga (motor cargado separado de la sesión)
 // -----------------------------------------------------------------------
 
-test('con el control facial activado, el motor se prepara al cargar el juego y reactivar no lo recarga', function (): void {
-    $game = engineTestGame(gesturesEnabled: true, announcesReady: true);
+test('quien usa la cámara a veces tiene el motor preparado al cargar el juego y reactivar no lo recarga', function (): void {
+    $game = engineTestGame(usage: 'occasional', announcesReady: true);
 
     $page = visit('/play/'.$game->slug);
 
@@ -473,8 +478,8 @@ test('con el control facial activado, el motor se prepara al cargar el juego y r
     $page->assertNoJavaScriptErrors();
 });
 
-test('sin el control facial activado en Ajustes no se prepara nada hasta pulsar', function (): void {
-    $game = engineTestGame(gesturesEnabled: false, announcesReady: true);
+test('quien no usa la cámara no prepara nada hasta pulsar', function (): void {
+    $game = engineTestGame(announcesReady: true);
 
     $page = visit('/play/'.$game->slug);
 
@@ -526,7 +531,7 @@ test('la vista de la cámara se enciende en el panel y la dibuja el worker', fun
 });
 
 test('en la ficha del juego, quien usa el control facial descarga ya los ficheros del motor', function (): void {
-    $game = engineTestGame(gesturesEnabled: true);
+    $game = engineTestGame(usage: 'occasional');
 
     $page = visit('/catalog/'.$game->slug);
 
@@ -542,7 +547,7 @@ test('en la ficha del juego, quien usa el control facial descarga ya los fichero
 });
 
 test('en la ficha del juego, sin el control facial no se descarga nada', function (): void {
-    $game = engineTestGame(gesturesEnabled: false);
+    $game = engineTestGame();
 
     $page = visit('/catalog/'.$game->slug);
 
@@ -553,9 +558,53 @@ test('en la ficha del juego, sin el control facial no se descarga nada', functio
     $page->assertNoJavaScriptErrors();
 });
 
+test('en la ficha de un juego que no admite el control facial no se descarga nada', function (): void {
+    $game = engineTestGame(usage: 'primary', support: 'none');
+
+    $page = visit('/catalog/'.$game->slug);
+
+    $page->script('new Promise((resolve) => setTimeout(resolve, 3000))');
+
+    expect(prefetchedRuntimeFiles($page))->toBe([]);
+
+    $page->assertNoJavaScriptErrors();
+});
+
+test('en la ficha del juego, quien juega con la cámara ya deja el motor preparado', function (): void {
+    $game = engineTestGame(usage: 'primary');
+
+    // Se entra a la ficha desde el catálogo (navegación de Inertia, la
+    // ventana es la misma): así el worker queda interceptado antes de que
+    // la ficha lo cree.
+    $page = visit('/catalog');
+
+    useSyntheticCamera($page, 30);
+    $page->click('a[href$="/catalog/'.$game->slug.'"]');
+
+    $prepared = $page->script(<<<'JS'
+        new Promise((resolve) => {
+            const deadline = Date.now() + 30000;
+
+            (function poll() {
+                if (window.__engineInit !== undefined || Date.now() > deadline) {
+                    return resolve(window.__engineInit !== undefined);
+                }
+
+                setTimeout(poll, 100);
+            })();
+        })
+    JS);
+
+    expect($prepared)->toBeTrue()
+        // Sin cámara: prepararlo no la abre.
+        ->and($page->script('document.querySelector("video")?.srcObject ?? null'))->toBeNull();
+
+    $page->assertNoJavaScriptErrors();
+});
+
 test('el asistente de calibración muestra la malla sobre el vídeo', function (): void {
     $user = User::factory()->create();
-    UserSetting::factory()->withGestures()->for($user)->create(['show_mascot' => false, 'locale' => 'es']);
+    UserSetting::factory()->occasionalCamera()->for($user)->create(['show_mascot' => false, 'locale' => 'es']);
     $this->actingAs($user);
 
     $page = visit('/settings/appearance');

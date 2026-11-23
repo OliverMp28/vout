@@ -96,7 +96,8 @@ class PrivacyController extends Controller
                 'locale',
                 'appearance',
                 'show_mascot',
-                'gestures_enabled',
+                'facial_control_usage',
+                'camera_autostart',
                 'dashboard_welcome_dismissed_at',
             ]),
             'gesture_configs' => $user->gestureConfigs->map(fn ($config) => [
@@ -109,7 +110,7 @@ class PrivacyController extends Controller
             ])->values(),
             'games_played' => $user->games->map(fn ($game) => [
                 'game_slug' => $game->slug,
-                'game_title' => $game->title,
+                'game_title' => $game->name,
                 'is_favorite' => (bool) $game->pivot->is_favorite,
                 'is_saved' => (bool) $game->pivot->is_saved,
                 'play_count' => (int) $game->pivot->play_count,

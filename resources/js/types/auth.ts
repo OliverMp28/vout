@@ -1,9 +1,21 @@
+/**
+ * Cómo usa el usuario el control facial (espejo de `App\Enums\FacialControlUsage`):
+ * - `off`        → no usa la cámara.
+ * - `occasional` → la usa a veces.
+ * - `primary`    → juega con la cámara.
+ */
+export type FacialControlUsage = 'off' | 'occasional' | 'primary';
+
 export type UserSetting = {
     id: number;
     user_id: number;
+    locale: string;
     appearance: 'light' | 'dark' | 'system';
     show_mascot: boolean;
-    gestures_enabled: boolean;
+    facial_control_usage: FacialControlUsage;
+    /** La cámara se enciende sola al abrir un juego compatible (solo con `primary`). */
+    camera_autostart: boolean;
+    dashboard_welcome_dismissed_at: string | null;
     created_at: string;
     updated_at: string;
 };

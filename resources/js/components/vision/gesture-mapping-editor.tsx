@@ -481,7 +481,7 @@ function GestureMappingEditor({ config }: GestureMappingEditorProps) {
             </div>
 
             {/* Guardar */}
-            <Button onClick={handleSave} disabled={saving}>
+            <Button type="button" onClick={handleSave} disabled={saving}>
                 {saving && <Loader2 className="size-4 animate-spin" />}
                 {saving ? t('vision.mapping.saving') : t('vision.mapping.save')}
             </Button>

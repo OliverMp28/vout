@@ -16,7 +16,7 @@ import {
 } from '@/hooks/use-engine-preload';
 import { useGestureEngine } from '@/hooks/use-gesture-engine';
 import { useTranslation } from '@/hooks/use-translation';
-import { PRESET_PLATFORMER } from '@/lib/mediapipe/action-presets';
+import { buildCalibrationPayload } from '@/lib/mediapipe/calibration-payload';
 import { GestureType } from '@/lib/mediapipe/types';
 import type { GestureEvent } from '@/lib/mediapipe/types';
 import { cn } from '@/lib/utils';
@@ -212,16 +212,14 @@ function CalibrationWizard({
     const handleSave = useCallback(() => {
         setSaving(true);
 
-        // Usar el preset de plataformas como mapeo por defecto.
-        // El usuario puede personalizarlo después en el GestureMappingEditor.
-        const data = {
-            profile_name: existingProfileName ?? 'Default',
-            detection_mode: 'face_landmarks',
+        // Perfil nuevo: completo, con el preset de plataformas de partida.
+        // Reconfigurar: solo la sensibilidad, sin tocar el mapeo que el
+        // usuario personalizó en el editor.
+        const data = buildCalibrationPayload({
+            hasExistingProfile,
+            existingProfileName,
             sensitivity,
-            gesture_mapping: PRESET_PLATFORMER.mapping,
-            head_tracking_mode: PRESET_PLATFORMER.headTrackingMode,
-            is_active: true,
-        };
+        });
 
         router[saveMethod](saveUrl, data, {
             preserveScroll: true,
@@ -233,7 +231,13 @@ function CalibrationWizard({
             },
             onFinish: () => setSaving(false),
         });
-    }, [saveUrl, saveMethod, sensitivity, existingProfileName]);
+    }, [
+        saveUrl,
+        saveMethod,
+        sensitivity,
+        existingProfileName,
+        hasExistingProfile,
+    ]);
 
     // Cleanup al desmontar — capturar valor actual de la ref en variable local
     // para que el cleanup detenga el objeto correcto incluso si la ref cambia.
@@ -277,6 +281,7 @@ function CalibrationWizard({
                 </div>
 
                 <Button
+                    type="button"
                     variant="secondary"
                     onClick={() => setReconfiguring(true)}
                 >
@@ -338,6 +343,7 @@ function CalibrationWizard({
                     )}
 
                     <Button
+                        type="button"
                         onClick={handleEnableCamera}
                         disabled={camera.status === 'requesting'}
                     >
@@ -376,6 +382,7 @@ function CalibrationWizard({
                     </CameraPreview>
 
                     <Button
+                        type="button"
                         onClick={handleCaptureBaseline}
                         disabled={
                             baselineState !== 'idle' ||
@@ -492,7 +499,11 @@ function CalibrationWizard({
                     </div>
 
                     <div className="flex items-center gap-3">
-                        <Button onClick={handleSave} disabled={saving}>
+                        <Button
+                            type="button"
+                            onClick={handleSave}
+                            disabled={saving}
+                        >
                             {saving && (
                                 <Loader2 className="size-4 animate-spin" />
                             )}
@@ -503,6 +514,7 @@ function CalibrationWizard({
                         </Button>
 
                         <Button
+                            type="button"
                             variant="secondary"
                             onClick={() => {
                                 // Detener motor y cámara para un reinicio limpio.

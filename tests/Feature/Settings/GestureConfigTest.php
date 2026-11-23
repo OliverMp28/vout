@@ -1,7 +1,9 @@
 <?php
 
+use App\Enums\FacialControlUsage;
 use App\Models\GestureConfig;
 use App\Models\User;
+use App\Models\UserSetting;
 
 // -----------------------------------------------------------------------
 // Authentication & authorization
@@ -212,8 +214,47 @@ test('creating an active gesture config enables gestures in user settings', func
             'is_active' => true,
         ]);
 
-    // GestureConfigController::store() debe activar gestures_enabled automáticamente.
-    expect($user->settings()->first()->gestures_enabled)->toBeTrue();
+    // Crear un perfil implica usar la cámara: "no la uso" pasa a "a veces".
+    expect($user->settings()->first()->facial_control_usage)->toBe(FacialControlUsage::Occasional);
+});
+
+test('creating a gesture config keeps the primary profile', function () {
+    $user = User::factory()->create();
+    UserSetting::factory()->for($user)->primaryCamera(autostart: true)->create();
+
+    $this->actingAs($user)
+        ->post(route('gesture-configs.store'), [
+            'profile_name' => 'Default',
+            'detection_mode' => 'face_landmarks',
+            'sensitivity' => 5,
+            'gesture_mapping' => ['BROW_RAISE' => ['type' => 'keyboard', 'key' => 'Space', 'mode' => 'press']],
+            'is_active' => true,
+        ]);
+
+    expect($user->settings()->first())
+        ->facial_control_usage->toBe(FacialControlUsage::Primary)
+        ->camera_autostart->toBeTrue();
+});
+
+test('updating only the sensitivity keeps the custom mapping', function () {
+    // El asistente, al reconfigurar, solo envía la sensibilidad.
+    $user = User::factory()->create();
+    $config = GestureConfig::factory()->for($user)->active()->create([
+        'gesture_mapping' => ['SMILE' => ['type' => 'keyboard', 'key' => 'KeyZ', 'mode' => 'press']],
+        'head_tracking_mode' => 'cursor',
+    ]);
+
+    $this->actingAs($user)
+        ->put(route('gesture-configs.update', $config), [
+            'sensitivity' => 8,
+            'is_active' => true,
+        ])
+        ->assertSessionHasNoErrors();
+
+    expect($config->fresh())
+        ->sensitivity->toBe(8)
+        ->head_tracking_mode->toBe('cursor')
+        ->gesture_mapping->toBe(['SMILE' => ['type' => 'keyboard', 'key' => 'KeyZ', 'mode' => 'press']]);
 });
 
 // -----------------------------------------------------------------------

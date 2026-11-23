@@ -19,11 +19,15 @@ type Props = {
 
 export function ContinuePlayingCard({ game }: Props) {
     const { t, locale } = useTranslation();
-    const preloadDecision = usePreloadDecision('game-entry');
+    const preloadDecision = usePreloadDecision('game-entry', {
+        gameSupportsFacialControl:
+            game !== null && game.facial_control_support !== 'none',
+    });
 
     // "Seguir jugando" lleva directo al juego: quien usa el control facial
-    // descarga ya los ficheros del motor (solo red, a baja prioridad).
-    useRuntimePrefetch(game === null ? 'none' : preloadDecision);
+    // descarga ya los ficheros del motor (solo red, a baja prioridad), si el
+    // juego admite la cámara.
+    useRuntimePrefetch(preloadDecision);
 
     if (game === null) {
         return <ContinuePlayingEmpty />;

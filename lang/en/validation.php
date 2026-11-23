@@ -179,6 +179,7 @@ return [
     */
 
     'custom' => [
+        'facial_control_usage_invalid' => 'Choose how you use the camera: not at all, sometimes, or to play.',
         'origin' => 'Must be a valid origin (scheme + host). E.g. https://my-app.com or http://localhost:3000',
         'redirect_uri_not_in_origins' => 'The redirect URI must belong to one of the allowed origins.',
         'url_https_required' => 'In production this URL must use HTTPS. Plain HTTP is only accepted in local development.',

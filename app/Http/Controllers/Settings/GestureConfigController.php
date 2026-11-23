@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Settings;
 
+use App\Enums\FacialControlUsage;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Settings\StoreGestureConfigRequest;
 use App\Http\Requests\Settings\UpdateGestureConfigRequest;
@@ -28,12 +29,14 @@ class GestureConfigController extends Controller
 
         $user->gestureConfigs()->create($validated);
 
-        // Asegurar que gestures_enabled esté activo en las preferencias del usuario.
-        // Crear un perfil de gestos implica querer tener los controles activados.
-        $user->settings()->updateOrCreate(
-            ['user_id' => $user->id],
-            ['gestures_enabled' => true]
-        );
+        // Crear un perfil de gestos implica usar la cámara: quien la tenía
+        // en "no la uso" pasa a "la uso a veces". A quien juega con ella no
+        // se le baja el perfil.
+        $settings = $user->settings()->firstOrCreate(['user_id' => $user->id]);
+
+        if (! $settings->facial_control_usage->usesCamera()) {
+            $settings->update(['facial_control_usage' => FacialControlUsage::Occasional]);
+        }
 
         return back();
     }

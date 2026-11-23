@@ -10,6 +10,7 @@ import {
 } from '@/lib/mediapipe/preload-policy';
 import type {
     DeviceHints,
+    FacialControlIntent,
     PreloadContext,
 } from '@/lib/mediapipe/preload-policy';
 import {
@@ -28,27 +29,49 @@ import { TEST_ASSETS } from '../support/fake-worker';
 function decide(
     context: PreloadContext,
     {
-        enabled = true,
+        intent = 'enabled',
         hasProfile = true,
+        gameSupportsFacialControl = true,
         device = {},
     }: {
-        enabled?: boolean;
+        intent?: FacialControlIntent;
         hasProfile?: boolean;
+        gameSupportsFacialControl?: boolean;
         device?: Partial<DeviceHints>;
     } = {},
 ) {
     return decidePreload({
-        intent: enabled ? 'enabled' : 'none',
+        intent,
         context,
         hasProfile,
+        gameSupportsFacialControl,
         device: { ...NO_DEVICE_LIMITS, ...device },
     });
 }
 
+const ALL_CONTEXTS = ['play', 'game-detail', 'game-entry', 'setup'] as const;
+
 describe('decidePreload', () => {
     test('sin control facial no se adelanta nada, en ninguna página', () => {
-        for (const context of ['play', 'game-entry', 'setup'] as const) {
-            expect(decide(context, { enabled: false })).toBe('none');
+        for (const context of ALL_CONTEXTS) {
+            expect(decide(context, { intent: 'none' })).toBe('none');
+        }
+    });
+
+    test('un juego que no admite el control facial no adelanta nada', () => {
+        for (const intent of ['enabled', 'primary'] as const) {
+            for (const context of [
+                'play',
+                'game-detail',
+                'game-entry',
+            ] as const) {
+                expect(
+                    decide(context, {
+                        intent,
+                        gameSupportsFacialControl: false,
+                    }),
+                ).toBe('none');
+            }
         }
     });
 
@@ -63,6 +86,28 @@ describe('decidePreload', () => {
     test('desde donde se entra a jugar solo se descargan los ficheros', () => {
         expect(decide('game-entry')).toBe('prefetch');
         expect(decide('game-entry', { hasProfile: false })).toBe('prefetch');
+        expect(decide('game-detail')).toBe('prefetch');
+    });
+
+    test('quien juega con la cámara tiene el motor listo desde la ficha', () => {
+        expect(decide('game-detail', { intent: 'primary' })).toBe('warm');
+        // "Seguir jugando" sigue descargando solo.
+        expect(decide('game-entry', { intent: 'primary' })).toBe('prefetch');
+    });
+
+    test('quien juega con la cámara prepara el motor aunque no tenga perfil', () => {
+        expect(decide('play', { intent: 'primary', hasProfile: false })).toBe(
+            'warm',
+        );
+    });
+
+    test('con poca memoria la ficha descarga, pero no prepara el motor', () => {
+        expect(
+            decide('game-detail', {
+                intent: 'primary',
+                device: { lowMemory: true },
+            }),
+        ).toBe('prefetch');
     });
 
     test('configurando el control facial se prepara el motor', () => {
@@ -70,7 +115,7 @@ describe('decidePreload', () => {
     });
 
     test('con ahorro de datos o conexión lenta, nada', () => {
-        for (const context of ['play', 'game-entry', 'setup'] as const) {
+        for (const context of ALL_CONTEXTS) {
             expect(decide(context, { device: { saveData: true } })).toBe(
                 'none',
             );
@@ -90,9 +135,25 @@ describe('decidePreload', () => {
 });
 
 describe('facialControlIntent', () => {
-    test('sale del ajuste del usuario', () => {
-        expect(facialControlIntent({ gestures_enabled: true })).toBe('enabled');
-        expect(facialControlIntent({ gestures_enabled: false })).toBe('none');
+    test('sale del perfil de uso del usuario', () => {
+        expect(facialControlIntent({ facial_control_usage: 'off' })).toBe(
+            'none',
+        );
+        expect(
+            facialControlIntent({ facial_control_usage: 'occasional' }),
+        ).toBe('enabled');
+        expect(facialControlIntent({ facial_control_usage: 'primary' })).toBe(
+            'primary',
+        );
+    });
+
+    test('un perfil desconocido cuenta como no usar la cámara', () => {
+        expect(facialControlIntent({ facial_control_usage: 'always' })).toBe(
+            'none',
+        );
+        expect(facialControlIntent({ facial_control_usage: null })).toBe(
+            'none',
+        );
     });
 
     test('sin ajustes o sin sesión, ninguna', () => {

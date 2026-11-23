@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\FacialControlUsage;
 use App\Models\Category;
 use App\Models\Developer;
 use App\Models\Game;
@@ -164,12 +165,24 @@ it('user setting castea booleanos y persiste appearance correctamente', function
     $setting = UserSetting::factory()->create([
         'appearance' => 'dark',
         'show_mascot' => false,
-        'gestures_enabled' => true,
+        'facial_control_usage' => 'primary',
+        'camera_autostart' => true,
     ]);
+
+    $setting->refresh();
 
     expect($setting->appearance)->toBe('dark')
         ->and($setting->show_mascot)->toBeBool()->toBeFalse()
-        ->and($setting->gestures_enabled)->toBeBool()->toBeTrue();
+        ->and($setting->facial_control_usage)->toBe(FacialControlUsage::Primary)
+        ->and($setting->camera_autostart)->toBeBool()->toBeTrue();
+});
+
+it('user setting nuevo no usa la cámara', function () {
+    $setting = UserSetting::query()->create(['user_id' => User::factory()->create()->id]);
+
+    expect($setting->facial_control_usage)->toBe(FacialControlUsage::Off)
+        ->and($setting->camera_autostart)->toBeFalse()
+        ->and($setting->show_mascot)->toBeTrue();
 });
 
 it('user setting pertenece a un usuario', function () {

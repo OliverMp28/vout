@@ -2,41 +2,35 @@
 
 namespace App\Http\Controllers\Settings;
 
+use App\Enums\FacialControlUsage;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Settings\UpdateUserSettingRequest;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 
 class UserSettingController extends Controller
 {
     /**
      * Actualiza preferencias del usuario. Cada campo es opcional para que
-     * los controles puedan persistir de forma independiente:
-     *   - los tabs de tema envían sólo `appearance`
-     *   - el formulario de Apariencia envía `show_mascot` + `gestures_enabled`
+     * cada control se guarde por separado al cambiarlo (ver el Form Request).
+     *
+     * El encendido automático de la cámara solo tiene sentido con "juego con
+     * la cámara": al cambiar a otro perfil se apaga, para que volver a elegir
+     * ese perfil no lo reactive sin que el usuario lo vea.
      */
-    public function update(Request $request): RedirectResponse
+    public function update(UpdateUserSettingRequest $request): RedirectResponse
     {
-        $validated = $request->validate([
-            'appearance' => ['sometimes', 'required', Rule::in(['light', 'dark', 'system'])],
-            'show_mascot' => ['sometimes', 'required', 'boolean'],
-            'gestures_enabled' => ['sometimes', 'required', 'boolean'],
-        ]);
-
+        $validated = $request->validated();
         $user = $request->user();
 
-        $settings = $user->settings()->firstOrCreate(
-            ['user_id' => $user->id],
-            [
-                'appearance' => 'system',
-                'show_mascot' => true,
-                'gestures_enabled' => false,
-            ]
-        );
+        $settings = $user->settings()->firstOrCreate(['user_id' => $user->id]);
 
-        if (! empty($validated)) {
-            $settings->update($validated);
+        $settings->fill($validated);
+
+        if ($settings->facial_control_usage !== FacialControlUsage::Primary) {
+            $settings->camera_autostart = false;
         }
+
+        $settings->save();
 
         return back();
     }

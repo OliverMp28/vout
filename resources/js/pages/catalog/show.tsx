@@ -16,6 +16,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import {
+    useDeferredEngineWarmup,
     usePreloadDecision,
     useRuntimePrefetch,
 } from '@/hooks/use-engine-preload';
@@ -40,8 +41,13 @@ export default function CatalogShow({
     const isAuthenticated = !!auth?.user;
 
     // Desde aquí se entra a jugar: quien usa el control facial descarga ya
-    // los ficheros del motor (solo red, a baja prioridad).
-    useRuntimePrefetch(usePreloadDecision('game-entry'));
+    // los ficheros del motor (solo red, a baja prioridad), y quien juega con
+    // la cámara lo deja preparado. Nada si el juego no admite la cámara.
+    const preloadDecision = usePreloadDecision('game-detail', {
+        gameSupportsFacialControl: game.facial_control_support !== 'none',
+    });
+    useRuntimePrefetch(preloadDecision);
+    useDeferredEngineWarmup(preloadDecision);
 
     const [isFavorite, setIsFavorite] = useState(
         userInteraction?.is_favorite ?? false,

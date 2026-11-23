@@ -1,6 +1,8 @@
 <?php
 
+use App\Enums\FacialControlUsage;
 use App\Models\User;
+use App\Models\UserSetting;
 
 // -----------------------------------------------------------------------
 // Autenticación y acceso
@@ -43,7 +45,8 @@ test('user can update appearance settings', function () {
         ->patch(route('user-settings.update'), [
             'appearance' => 'dark',
             'show_mascot' => false,
-            'gestures_enabled' => true,
+            'facial_control_usage' => 'primary',
+            'camera_autostart' => true,
         ])
         ->assertRedirect()
         ->assertSessionHasNoErrors();
@@ -53,7 +56,8 @@ test('user can update appearance settings', function () {
     expect($settings)
         ->appearance->toBe('dark')
         ->show_mascot->toBeFalse()
-        ->gestures_enabled->toBeTrue();
+        ->facial_control_usage->toBe(FacialControlUsage::Primary)
+        ->camera_autostart->toBeTrue();
 });
 
 test('updating appearance settings creates user settings if none exist', function () {
@@ -63,17 +67,16 @@ test('updating appearance settings creates user settings if none exist', functio
 
     $this->actingAs($user)
         ->patch(route('user-settings.update'), [
-            'appearance' => 'system',
-            'show_mascot' => true,
-            'gestures_enabled' => false,
+            'show_mascot' => false,
         ])
         ->assertRedirect();
 
     expect($user->settings()->exists())->toBeTrue();
     expect($user->settings()->first())
         ->appearance->toBe('system')
-        ->show_mascot->toBeTrue()
-        ->gestures_enabled->toBeFalse();
+        ->show_mascot->toBeFalse()
+        ->facial_control_usage->toBe(FacialControlUsage::Off)
+        ->camera_autostart->toBeFalse();
 });
 
 test('appearance accepts only the whitelisted modes', function () {
@@ -86,20 +89,32 @@ test('appearance accepts only the whitelisted modes', function () {
         ->assertSessionHasErrors(['appearance']);
 });
 
+test('the facial control usage accepts only the three profiles', function () {
+    $user = User::factory()->create();
+
+    $this->actingAs($user)
+        ->patch(route('user-settings.update'), [
+            'facial_control_usage' => 'always',
+        ])
+        ->assertSessionHasErrors([
+            'facial_control_usage' => __('validation.custom.facial_control_usage_invalid'),
+        ]);
+});
+
 test('booleans are validated when provided', function () {
     $user = User::factory()->create();
 
     $this->actingAs($user)
         ->patch(route('user-settings.update'), [
             'show_mascot' => 'not-a-boolean',
-            'gestures_enabled' => 'not-a-boolean',
+            'camera_autostart' => 'not-a-boolean',
         ])
-        ->assertSessionHasErrors(['show_mascot', 'gestures_enabled']);
+        ->assertSessionHasErrors(['show_mascot', 'camera_autostart']);
 });
 
-test('appearance can be updated independently of mascot or gestures', function () {
-    // Los tabs de tema envían sólo `appearance`; el form Save sólo
-    // envía mascot+gestures. Ambos canales deben funcionar por separado.
+test('each setting can be saved on its own', function () {
+    // Cada control de Apariencia se guarda al cambiarlo y envía solo su
+    // campo: el resto no se toca.
     $user = User::factory()->create();
 
     $this->actingAs($user)
@@ -107,18 +122,59 @@ test('appearance can be updated independently of mascot or gestures', function (
         ->assertRedirect()
         ->assertSessionHasNoErrors();
 
-    expect($user->settings()->first()->appearance)->toBe('light');
+    $this->actingAs($user)
+        ->patch(route('user-settings.update'), ['facial_control_usage' => 'occasional'])
+        ->assertSessionHasNoErrors();
 
     $this->actingAs($user)
-        ->patch(route('user-settings.update'), [
-            'show_mascot' => false,
-            'gestures_enabled' => true,
-        ])
-        ->assertRedirect()
+        ->patch(route('user-settings.update'), ['show_mascot' => false])
         ->assertSessionHasNoErrors();
 
     expect($user->settings()->first())
         ->appearance->toBe('light')
         ->show_mascot->toBeFalse()
-        ->gestures_enabled->toBeTrue();
+        ->facial_control_usage->toBe(FacialControlUsage::Occasional);
+});
+
+test('leaving the primary profile turns the camera autostart off', function () {
+    $user = User::factory()->create();
+    UserSetting::factory()->for($user)->primaryCamera(autostart: true)->create();
+
+    $this->actingAs($user)
+        ->patch(route('user-settings.update'), ['facial_control_usage' => 'occasional'])
+        ->assertSessionHasNoErrors();
+
+    expect($user->settings()->first())
+        ->facial_control_usage->toBe(FacialControlUsage::Occasional)
+        ->camera_autostart->toBeFalse();
+
+    // Volver a elegir "juego con la cámara" no lo reactiva solo.
+    $this->actingAs($user)
+        ->patch(route('user-settings.update'), ['facial_control_usage' => 'primary'])
+        ->assertSessionHasNoErrors();
+
+    expect($user->settings()->first()->camera_autostart)->toBeFalse();
+});
+
+test('the camera autostart only sticks with the primary profile', function () {
+    $user = User::factory()->create();
+    UserSetting::factory()->for($user)->occasionalCamera()->create();
+
+    $this->actingAs($user)
+        ->patch(route('user-settings.update'), ['camera_autostart' => true])
+        ->assertSessionHasNoErrors();
+
+    expect($user->settings()->first()->camera_autostart)->toBeFalse();
+});
+
+test('the settings are shared with every page', function () {
+    $user = User::factory()->create();
+    UserSetting::factory()->for($user)->primaryCamera(autostart: true)->create();
+
+    $this->actingAs($user)
+        ->get(route('appearance.edit'))
+        ->assertInertia(fn ($page) => $page
+            ->where('auth.user.settings.facial_control_usage', 'primary')
+            ->where('auth.user.settings.camera_autostart', true)
+        );
 });

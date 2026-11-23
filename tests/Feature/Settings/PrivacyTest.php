@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Game;
 use App\Models\GestureConfig;
 use App\Models\User;
 use App\Models\UserSetting;
@@ -54,11 +55,13 @@ test('export returns a JSON download with the expected shape', function () {
         'email' => 'ada@example.com',
         'username' => 'ada',
     ]);
-    UserSetting::factory()->create(['user_id' => $user->id, 'appearance' => 'dark']);
+    UserSetting::factory()->primaryCamera(autostart: true)->create(['user_id' => $user->id, 'appearance' => 'dark']);
     GestureConfig::factory()->create([
         'user_id' => $user->id,
         'profile_name' => 'Default',
     ]);
+    $game = Game::factory()->create(['name' => 'Daino Test']);
+    $user->games()->attach($game->id, ['play_count' => 3]);
 
     $response = $this
         ->actingAs($user)
@@ -84,6 +87,9 @@ test('export returns a JSON download with the expected shape', function () {
         ->toHaveKey('name', 'Ada Lovelace');
 
     expect($payload['settings']['appearance'])->toBe('dark');
+    expect($payload['settings']['facial_control_usage'])->toBe('primary');
+    expect($payload['settings']['camera_autostart'])->toBeTrue();
+    expect($payload['games_played'][0]['game_title'])->toBe('Daino Test');
     expect($payload['gesture_configs'])->toHaveCount(1);
     expect($payload['gesture_configs'][0]['profile_name'])->toBe('Default');
 });

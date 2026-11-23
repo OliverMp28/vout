@@ -38,6 +38,7 @@ Las **contraseñas** se guardan cifradas con bcrypt. Los **secretos de 2FA** se 
 | Tema claro/oscuro, estado del sidebar, mascota activada, idioma preferido | Recordar tus preferencias entre sesiones |
 | Juegos favoritos, juegos guardados, partidas jugadas, mejor puntuación por juego, última vez que jugaste | Personalizar tu dashboard y mostrarte "Continuar jugando" |
 | Configuraciones de gestos (nombre del perfil, sensibilidad 1-10, mapeo tecla↔gesto) | Guardar tu calibración de control facial para que no tengas que repetirla en cada sesión |
+| Cómo usas el control facial (no uso la cámara / la uso a veces / juego con la cámara) y si autorizas que la cámara se encienda sola al abrir un juego compatible | Preparar solo lo que necesitas y, si lo autorizas, encender la cámara sin que tengas que pulsar |
 
 **Base legal:** ejecución del contrato (art. 6.1.b) o interés legítimo (art. 6.1.f) para mejorar tu experiencia. Puedes revocar estas preferencias borrando tu cuenta o cambiándolas desde `Ajustes`.
 
@@ -119,7 +120,7 @@ Cuando activas los controles por gestos faciales:
 
 Esto encaja con el **principio de minimización del RGPD (art. 5.1.c)** y con las directrices de la AEPD sobre biometría (**procesamiento local, edge computing**). No tratamos datos biométricos del artículo 9 del RGPD porque no almacenamos ni procesamos centralizadamente ningún rasgo que permita identificar a una persona de forma unívoca.
 
-Puedes desactivar la función en cualquier momento desde `Ajustes → Apariencia → Controles por gestos`. Al hacerlo se deshabilita el worker y no volveremos a pedir acceso a la cámara hasta que la actives de nuevo.
+Puedes desactivar la función en cualquier momento desde `Ajustes → Apariencia → Control facial` (eligiendo «No uso la cámara»). Al hacerlo se deshabilita el worker y no volveremos a pedir acceso a la cámara hasta que la actives de nuevo.
 
 ## 7. Menores de edad
 

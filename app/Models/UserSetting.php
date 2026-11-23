@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\FacialControlUsage;
 use Database\Factories\UserSettingFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -28,8 +29,23 @@ class UserSetting extends Model
         'locale',
         'appearance',
         'show_mascot',
-        'gestures_enabled',
+        'facial_control_usage',
+        'camera_autostart',
         'dashboard_welcome_dismissed_at',
+    ];
+
+    /**
+     * Valores por defecto, iguales a los de la migración: la fila se crea
+     * sobre la marcha en varios sitios y así el modelo recién creado ya los
+     * tiene (sin volver a leerlo de la base de datos).
+     *
+     * @var array<string, mixed>
+     */
+    protected $attributes = [
+        'appearance' => 'system',
+        'show_mascot' => true,
+        'facial_control_usage' => 'off',
+        'camera_autostart' => false,
     ];
 
     /**
@@ -41,7 +57,8 @@ class UserSetting extends Model
     {
         return [
             'show_mascot' => 'boolean',
-            'gestures_enabled' => 'boolean',
+            'facial_control_usage' => FacialControlUsage::class,
+            'camera_autostart' => 'boolean',
             'dashboard_welcome_dismissed_at' => 'datetime',
         ];
     }

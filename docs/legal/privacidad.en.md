@@ -38,6 +38,7 @@ We only store what we actually use. Here's the full table, derived from Vout's o
 | Light/dark theme, sidebar state, mascot toggle, preferred language | Remember your preferences across sessions |
 | Favorite games, saved games, play count, best score per game, last played at | Personalize your dashboard and show "Continue playing" |
 | Gesture configs (profile name, sensitivity 1-10, key↔gesture mapping) | Save your facial-control calibration so you don't have to redo it every session |
+| How you use face control (I don't use the camera / I use it sometimes / I play with the camera) and whether you allow the camera to switch on by itself when you open a compatible game | Prepare only what you need and, if you allow it, switch the camera on without you having to press anything |
 
 **Legal basis:** performance of a contract (art. 6.1.b) or legitimate interest (art. 6.1.f) in improving your experience. You can revoke these preferences by deleting your account or changing them in `Settings`.
 
@@ -119,7 +120,7 @@ When you activate facial gesture controls:
 
 This aligns with the **GDPR minimization principle (art. 5.1.c)** and the AEPD guidelines on biometrics (**local/edge computing**). We do not process art. 9 GDPR biometric data because we neither store nor centrally process any trait that uniquely identifies a person.
 
-You can disable the feature anytime at `Settings → Appearance → Gesture controls`. Doing so disables the worker, and we won't request camera access again until you enable it.
+You can disable the feature anytime at `Settings → Appearance → Face control` (choosing "I don't use the camera"). Doing so disables the worker, and we won't request camera access again until you enable it.
 
 ## 7. Minors
 

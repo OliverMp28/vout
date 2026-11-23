@@ -5,35 +5,43 @@
  *
  * Principios:
  *
- *   1. **Solo para quien usa el control facial.** Sin el ajuste activado no se
- *      descarga nada, en ninguna página: el control facial es un añadido y
- *      quien juega con teclado no debe pagar por él.
- *   2. **Solo donde se va a usar.** En la página de juego se prepara el motor
- *      (sin cámara). En las páginas desde las que se entra a jugar (ficha del
- *      juego, "Seguir jugando") solo se descargan los ficheros a la caché:
- *      ni CPU ni memoria. En el resto, nada.
- *   3. **Respetar el equipo.** Con el ahorro de datos, una conexión lenta o
+ *   1. **Solo para quien usa el control facial.** Con el perfil "no uso la
+ *      cámara" no se descarga nada, en ninguna página: el control facial es
+ *      un añadido y quien juega con teclado no debe pagar por él.
+ *   2. **Solo donde se va a usar, y solo en juegos que lo admiten.** En la
+ *      página de juego se prepara el motor (sin cámara). En las páginas desde
+ *      las que se entra a jugar (ficha del juego, "Seguir jugando") solo se
+ *      descargan los ficheros a la caché: ni CPU ni memoria. En el resto,
+ *      nada. Un juego que no recibe los controles de Vout no adelanta nada.
+ *   3. **Quien juega con la cámara (`primary`) lo tiene listo antes.** En la
+ *      ficha de un juego compatible ya se prepara el motor, y en la página de
+ *      juego aunque aún no tenga perfil (lo normal es que lo pruebe).
+ *   4. **Respetar el equipo.** Con el ahorro de datos, una conexión lenta o
  *      poca memoria no se adelanta nada: el motor se carga al pulsar
  *      "Activar", como siempre.
- *   4. **La cámara nunca.** Abrirla es siempre decisión del usuario.
- *
- * A futuro (perfiles de uso, tarea C del plan 6), quien elija "uso la cámara
- * para jugar" tendrá una intención más fuerte (`primary`): motor preparado en
- * todo el portal y arranque automático con permiso. Se añade aquí.
+ *   5. **La cámara nunca.** Abrirla es siempre decisión del usuario (el
+ *      encendido automático, que también lo es, no pasa por aquí).
  *
  * Sin DOM ni React: las pistas del equipo se leen con `readDeviceHints`.
  */
 
-/** Lo que el usuario ha dicho del control facial. */
-export type FacialControlIntent = 'none' | 'enabled';
+/**
+ * Lo que el usuario ha dicho del control facial (su perfil de uso):
+ * - `none`    → no usa la cámara.
+ * - `enabled` → la usa a veces.
+ * - `primary` → juega con la cámara.
+ */
+export type FacialControlIntent = 'none' | 'enabled' | 'primary';
 
 /**
  * Dónde se está:
- * - `play`       → la página de un juego.
- * - `game-entry` → una página desde la que se entra a jugar.
- * - `setup`      → el asistente que configura el control facial.
+ * - `play`        → la página de un juego.
+ * - `game-detail` → la ficha de un juego (desde ella se entra a jugarlo).
+ * - `game-entry`  → otra página desde la que se entra a jugar ("Seguir
+ *                   jugando").
+ * - `setup`       → el asistente que configura el control facial.
  */
-export type PreloadContext = 'play' | 'game-entry' | 'setup';
+export type PreloadContext = 'play' | 'game-detail' | 'game-entry' | 'setup';
 
 /**
  * - `none`     → nada.
@@ -67,6 +75,11 @@ export type PreloadSignals = {
     context: PreloadContext;
     /** Tiene un perfil de gestos (sin él no se puede activar en el juego). */
     hasProfile: boolean;
+    /**
+     * Si el juego de la página recibe los controles de Vout (`play` y
+     * `game-detail`). Donde no hay un juego concreto, true.
+     */
+    gameSupportsFacialControl?: boolean;
     device: DeviceHints;
 };
 
@@ -74,9 +87,15 @@ export function decidePreload({
     intent,
     context,
     hasProfile,
+    gameSupportsFacialControl = true,
     device,
 }: PreloadSignals): PreloadDecision {
     if (intent === 'none') {
+        return 'none';
+    }
+
+    // En un juego que no recibe los controles, la cámara no haría nada.
+    if (!gameSupportsFacialControl) {
         return 'none';
     }
 
@@ -89,22 +108,32 @@ export function decidePreload({
         return 'prefetch';
     }
 
+    if (context === 'game-detail') {
+        return intent === 'primary' && !device.lowMemory ? 'warm' : 'prefetch';
+    }
+
     if (device.lowMemory) {
         return 'none';
     }
 
-    if (context === 'play' && !hasProfile) {
+    if (context === 'play' && !hasProfile && intent !== 'primary') {
         return 'none';
     }
 
     return 'warm';
 }
 
+const INTENT_BY_USAGE: Record<string, FacialControlIntent> = {
+    off: 'none',
+    occasional: 'enabled',
+    primary: 'primary',
+};
+
 /** La intención a partir de los ajustes del usuario (null sin sesión). */
 export function facialControlIntent(
-    settings: { gestures_enabled?: boolean | null } | null | undefined,
+    settings: { facial_control_usage?: string | null } | null | undefined,
 ): FacialControlIntent {
-    return settings?.gestures_enabled === true ? 'enabled' : 'none';
+    return INTENT_BY_USAGE[settings?.facial_control_usage ?? 'off'] ?? 'none';
 }
 
 /** Lo que este módulo lee de `navigator` (Network Information y Device Memory). */
