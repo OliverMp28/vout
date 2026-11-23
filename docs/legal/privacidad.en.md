@@ -39,6 +39,8 @@ We only store what we actually use. Here's the full table, derived from Vout's o
 | Favorite games, saved games, play count, best score per game, last played at | Personalize your dashboard and show "Continue playing" |
 | Gesture configs (profile name, sensitivity 1-10, key↔gesture mapping) | Save your facial-control calibration so you don't have to redo it every session |
 | How you use face control (I don't use the camera / I use it sometimes / I play with the camera) and whether you allow the camera to switch on by itself when you open a compatible game | Prepare only what you need and, if you allow it, switch the camera on without you having to press anything |
+| On the game page: whether you left the face control panel open and whether you want to see the camera while you play | Show you the page the way you left it |
+| Per game: whether you use the controls the game suggests or your own | Not ask you every time you play |
 
 **Legal basis:** performance of a contract (art. 6.1.b) or legitimate interest (art. 6.1.f) in improving your experience. You can revoke these preferences by deleting your account or changing them in `Settings`.
 

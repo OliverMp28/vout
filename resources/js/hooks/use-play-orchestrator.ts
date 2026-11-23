@@ -12,6 +12,8 @@
  *   detener motor y cámara al desmontar.
  * - Preparar el motor antes de activar cuando el usuario usa el control facial
  *   (`preload-policy.ts`): una vez cargado el juego, sin cámara.
+ * - Decidir qué controles se usan: los del usuario o los que sugiere el juego
+ *   (`lib/play/preset-choice.ts`), con la respuesta guardada por juego.
  */
 
 import { router } from '@inertiajs/react';
@@ -29,14 +31,12 @@ import type { GameSessionPayload } from '@/hooks/use-game-session';
 import { useGestureEngine } from '@/hooks/use-gesture-engine';
 import { useIframeHandshake } from '@/hooks/use-iframe-handshake';
 import { transformCursorToIframe } from '@/lib/iframe/cursor-forwarder';
+import { sendJson } from '@/lib/json-request';
 import {
     PRESET_PLATFORMER,
     findPresetByKey,
 } from '@/lib/mediapipe/action-presets';
-import type {
-    GestureActionMapping,
-    HeadTrackingMode,
-} from '@/lib/mediapipe/action-types';
+import type { HeadTrackingMode } from '@/lib/mediapipe/action-types';
 import type { CameraDevice } from '@/lib/mediapipe/camera-devices';
 import { TELEMETRY_KEYS } from '@/lib/mediapipe/gesture-engine';
 import type { HeadTrackPosition } from '@/lib/mediapipe/head-tracker';
@@ -45,7 +45,10 @@ import type {
     GestureEvent,
     GestureType,
 } from '@/lib/mediapipe/types';
+import { resolvePresetChoice } from '@/lib/play/preset-choice';
 import { index as catalogIndex } from '@/routes/catalog';
+import { update as updatePresetChoice } from '@/routes/play/preset';
+import type { FacialControlSupport } from '@/types';
 
 // ---------------------------------------------------------------------------
 // Tipos
@@ -56,6 +59,8 @@ type GameInfo = {
     slug: string;
     embed_url: string;
     effective_origins: string[];
+    /** Si recibe los controles de Vout (sin ellos no se ofrece la cámara). */
+    facial_control_support: FacialControlSupport;
 };
 
 type UserInfo = {
@@ -66,6 +71,11 @@ type UserInfo = {
 export type UsePlayOrchestratorOptions = {
     game: GameInfo;
     activeGestureConfig: GestureConfigData | null;
+    /**
+     * Qué respondió el usuario a los controles que sugiere este juego (la
+     * clave del preset, `own` o null si nunca se le preguntó).
+     */
+    presetChoice: string | null;
     /** Sesión de juego inicial emitida por `PlayController`. */
     session: GameSessionPayload;
     user: UserInfo;
@@ -82,7 +92,12 @@ export type UsePlayOrchestratorReturn = {
     dispatchEnabled: boolean;
     lastGesture: GestureType | null;
     hasGestureConfig: boolean;
-    presetSuggestion: string | null;
+    /** Preset que sugiere el juego (si existe), o null. */
+    suggestedPreset: string | null;
+    /** Preset del juego en uso en lugar de los controles propios, o null. */
+    activeGamePreset: string | null;
+    /** Hay que preguntar si se usan los controles del juego. */
+    askPresetChoice: boolean;
     errorMessage: string | null;
 
     // ── Subsistemas ────────────────────────────────────────────────────────
@@ -114,10 +129,13 @@ export type UsePlayOrchestratorReturn = {
     handleSelectCamera: (deviceId: string) => void;
     /** Recentra el cursor al centro del iframe (no del viewport). */
     recenterCursor: () => void;
-    handleAcceptPreset: (presetKey: string) => void;
+    /**
+     * Elige los controles de este juego: la clave del preset sugerido o
+     * `own` (los propios). Se guarda para no volver a preguntar.
+     */
+    choosePreset: (choice: string) => void;
     setDispatchEnabled: React.Dispatch<React.SetStateAction<boolean>>;
     setSensitivity: React.Dispatch<React.SetStateAction<number>>;
-    dismissPresetSuggestion: () => void;
 };
 
 // ---------------------------------------------------------------------------
@@ -127,6 +145,7 @@ export type UsePlayOrchestratorReturn = {
 export function usePlayOrchestrator({
     game,
     activeGestureConfig,
+    presetChoice: initialPresetChoice,
     session: initialSession,
     user,
     iframeRef,
@@ -141,17 +160,29 @@ export function usePlayOrchestrator({
 
     // ── Estado de UI ──────────────────────────────────────────────────────
     const [sensitivity, setSensitivity] = useState(baseSensitivity);
-    const [activeMapping, setActiveMapping] =
-        useState<GestureActionMapping>(baseMapping);
-    const [headTrackingMode, setHeadTrackingMode] =
-        useState<HeadTrackingMode>(baseHeadMode);
     const [dispatchEnabled, setDispatchEnabled] = useState(false);
     const [lastGesture, setLastGesture] = useState<GestureType | null>(null);
-    const [presetSuggestion, setPresetSuggestion] = useState<string | null>(
-        null,
-    );
+    const [suggestedPreset, setSuggestedPreset] = useState<string | null>(null);
+    const [storedPresetChoice, setStoredPresetChoice] =
+        useState(initialPresetChoice);
 
     const hasGestureConfig = activeGestureConfig !== null;
+    const gameSupportsFacialControl = game.facial_control_support !== 'none';
+
+    // Controles en uso: los del juego si los eligió (o si está probando sin
+    // perfil), los suyos si no. Se calcula, no se copia a otro estado.
+    const presetResolution = resolvePresetChoice({
+        suggested: suggestedPreset,
+        stored: storedPresetChoice,
+        trial: !hasGestureConfig,
+    });
+    const gamePreset =
+        presetResolution.gamePreset === null
+            ? undefined
+            : findPresetByKey(presetResolution.gamePreset);
+    const activeMapping = gamePreset?.mapping ?? baseMapping;
+    const headTrackingMode: HeadTrackingMode =
+        gamePreset?.headTrackingMode ?? baseHeadMode;
 
     // ── Sesión de juego ────────────────────────────────────────────────────
     // Token vigente para el iframe. Se renueva solo antes de caducar; cada
@@ -175,9 +206,9 @@ export function usePlayOrchestrator({
     // ── Handshake con el iframe ────────────────────────────────────────────
     // Solo se ofrecen presets que existen: el valor llega de un origen
     // externo y uno desconocido dejaría un banner cuyo "Aplicar" no hace nada.
-    const handleReady = useCallback((suggestedPreset?: string) => {
-        if (suggestedPreset && findPresetByKey(suggestedPreset)) {
-            setPresetSuggestion(suggestedPreset);
+    const handleReady = useCallback((suggested?: string) => {
+        if (suggested && findPresetByKey(suggested)) {
+            setSuggestedPreset(suggested);
         }
     }, []);
 
@@ -301,6 +332,7 @@ export function usePlayOrchestrator({
     // en la página: activar solo tiene que abrir la cámara.
     const preloadDecision = usePreloadDecision('play', {
         hasProfile: hasGestureConfig,
+        gameSupportsFacialControl,
     });
 
     const engine = useGestureEngine({
@@ -354,9 +386,10 @@ export function usePlayOrchestrator({
         }
     }, [camera, engine, engineTelemetry, videoRef]);
 
+    // También sin perfil: puede estar a punto de pulsar "Probar ahora".
     const handleEngineIntent = useCallback(() => {
-        if (hasGestureConfig) enginePrewarm();
-    }, [hasGestureConfig, enginePrewarm]);
+        if (gameSupportsFacialControl) enginePrewarm();
+    }, [gameSupportsFacialControl, enginePrewarm]);
 
     const handleStopEngine = useCallback(() => {
         engine.stopDetection();
@@ -377,25 +410,32 @@ export function usePlayOrchestrator({
     );
 
     const handleToggleEngine = useCallback(() => {
-        if (engine.status === 'running' || engine.status === 'loading') {
+        if (
+            engine.status === 'running' ||
+            engine.status === 'loading' ||
+            engine.status === 'paused'
+        ) {
             handleStopEngine();
         } else {
             void handleActivateEngine();
         }
     }, [engine.status, handleActivateEngine, handleStopEngine]);
 
-    const handleAcceptPreset = useCallback((presetKey: string) => {
-        const preset = findPresetByKey(presetKey);
-        if (preset) {
-            setActiveMapping(preset.mapping);
-            setHeadTrackingMode(preset.headTrackingMode);
-        }
-        setPresetSuggestion(null);
-    }, []);
-
-    const dismissPresetSuggestion = useCallback(
-        () => setPresetSuggestion(null),
-        [],
+    const gameSlug = game.slug;
+    const choosePreset = useCallback(
+        (choice: string) => {
+            setStoredPresetChoice(choice);
+            void sendJson(updatePresetChoice.url(gameSlug), 'PUT', { choice });
+            // Para que volver atrás a esta página no vuelva a preguntar. Solo
+            // cambia esta prop: el resto conserva su identidad (un `game` o
+            // una `session` nuevos reiniciarían el handshake).
+            router.replace({
+                preserveScroll: true,
+                preserveState: true,
+                props: (props) => ({ ...props, presetChoice: choice }),
+            });
+        },
+        [gameSlug],
     );
 
     // ── Recenter cursor al centro del iframe (no del viewport) ───────────
@@ -476,7 +516,9 @@ export function usePlayOrchestrator({
         dispatchEnabled: effectiveDispatchEnabled,
         lastGesture,
         hasGestureConfig,
-        presetSuggestion,
+        suggestedPreset,
+        activeGamePreset: gamePreset ? presetResolution.gamePreset : null,
+        askPresetChoice: presetResolution.ask,
         errorMessage: engine.error ?? camera.error ?? null,
 
         engine,
@@ -494,9 +536,8 @@ export function usePlayOrchestrator({
         handleRetryGame,
         handleSelectCamera,
         recenterCursor,
-        handleAcceptPreset,
+        choosePreset,
         setDispatchEnabled,
         setSensitivity,
-        dismissPresetSuggestion,
     };
 }

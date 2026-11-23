@@ -90,6 +90,39 @@ it('incluye effective_origins derivado de embed_url', function () {
         );
 });
 
+it('dice si el juego admite el control facial', function () {
+    $user = User::factory()->create();
+    $game = Game::factory()->designedForFace()->create(['is_active' => true]);
+
+    $this->actingAs($user)
+        ->get(route('play.show', $game))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('game.facial_control_support', 'designed')
+        );
+});
+
+it('sin respuesta guardada, los controles del juego aún no se han elegido', function () {
+    $user = User::factory()->create();
+    $game = Game::factory()->compatibleWithFace()->create(['is_active' => true]);
+
+    $this->actingAs($user)
+        ->get(route('play.show', $game))
+        ->assertInertia(fn ($page) => $page->where('presetChoice', null));
+});
+
+it('incluye los controles que el usuario eligió para el juego', function () {
+    $user = User::factory()->create();
+    $game = Game::factory()->compatibleWithFace()->create(['is_active' => true]);
+    $other = Game::factory()->compatibleWithFace()->create(['is_active' => true]);
+    $user->games()->attach($game->id, ['gesture_preset_choice' => 'runner']);
+    $user->games()->attach($other->id, ['gesture_preset_choice' => 'own']);
+
+    $this->actingAs($user)
+        ->get(route('play.show', $game))
+        ->assertInertia(fn ($page) => $page->where('presetChoice', 'runner'));
+});
+
 // ─── Props Inertia: token de sesión del juego ────────────────
 
 it('incluye el token de sesión y su expiración para el usuario autenticado', function () {

@@ -732,7 +732,7 @@ The presets Vout offers:
 | `accessible` | Keys: Space, Enter, arrows, Escape |
 | `runner` | Game events `JUMP`, `DUCK` and `PAUSE` |
 
-If your game has actions of its own that don't fit a key, you can recommend a preset by sending `suggestedPreset` in your `READY` (for example `'runner'`). The portal will offer the user to switch to that preset for the current session, without touching their saved configuration. It is a suggestion: the user can decline it, so don't rely on it alone.
+If your game has actions of its own that don't fit a key, you can recommend a preset by sending `suggestedPreset` in your `READY` (for example `'runner'`). The portal asks the user once, in the face control panel, whether they use your game's controls or their own, and remembers the answer for your game (without touching their saved configuration). If you change the suggested preset, they're asked again. Someone trying face control without having set it up uses yours directly. It is a suggestion: the user can keep their own controls, so don't rely on it alone.
 
 #### If you convert keys by hand
 

@@ -15,6 +15,10 @@ export type UserSetting = {
     facial_control_usage: FacialControlUsage;
     /** La cámara se enciende sola al abrir un juego compatible (solo con `primary`). */
     camera_autostart: boolean;
+    /** Panel de control facial abierto en la página de juego; null, según el perfil. */
+    play_panel_open: boolean | null;
+    /** Ver la cámara mientras se juega. */
+    show_camera_preview: boolean;
     dashboard_welcome_dismissed_at: string | null;
     created_at: string;
     updated_at: string;

@@ -5,6 +5,7 @@ use App\Http\Controllers\Settings\AppearanceController;
 use App\Http\Controllers\Settings\ConnectedAppsController;
 use App\Http\Controllers\Settings\GestureConfigController;
 use App\Http\Controllers\Settings\PasswordController;
+use App\Http\Controllers\Settings\PlayPreferenceController;
 use App\Http\Controllers\Settings\PrivacyController;
 use App\Http\Controllers\Settings\ProfileController;
 use App\Http\Controllers\Settings\TwoFactorAuthenticationController;
@@ -40,6 +41,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('two-factor.show');
 
     Route::patch('settings/appearance', [UserSettingController::class, 'update'])->name('user-settings.update');
+
+    // Preferencias de la página de juego (panel abierto, ver la cámara):
+    // JSON y 204, sin recargar el juego.
+    Route::patch('settings/play-preferences', [PlayPreferenceController::class, 'update'])
+        ->middleware('throttle:30,1')
+        ->name('play-preferences.update');
 
     Route::delete('settings/google', [SocialiteController::class, 'unlink'])->name('google.unlink');
 

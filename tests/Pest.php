@@ -27,6 +27,9 @@ pest()->extend(TestCase::class)
     ->use(RefreshDatabase::class)
     ->in('Browser');
 
+// Helpers compartidos de los tests de navegador de la página de juego.
+require_once __DIR__.'/Browser/Support/play.php';
+
 /*
 |--------------------------------------------------------------------------
 | Expectations

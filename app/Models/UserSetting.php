@@ -31,6 +31,8 @@ class UserSetting extends Model
         'show_mascot',
         'facial_control_usage',
         'camera_autostart',
+        'play_panel_open',
+        'show_camera_preview',
         'dashboard_welcome_dismissed_at',
     ];
 
@@ -46,6 +48,8 @@ class UserSetting extends Model
         'show_mascot' => true,
         'facial_control_usage' => 'off',
         'camera_autostart' => false,
+        'play_panel_open' => null,
+        'show_camera_preview' => false,
     ];
 
     /**
@@ -59,6 +63,8 @@ class UserSetting extends Model
             'show_mascot' => 'boolean',
             'facial_control_usage' => FacialControlUsage::class,
             'camera_autostart' => 'boolean',
+            'play_panel_open' => 'boolean',
+            'show_camera_preview' => 'boolean',
             'dashboard_welcome_dismissed_at' => 'datetime',
         ];
     }

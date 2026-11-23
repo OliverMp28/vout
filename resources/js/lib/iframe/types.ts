@@ -192,9 +192,11 @@ export type VoutToGameMessage =
 /**
  * Señal de que el juego está listo para recibir credenciales.
  *
- * Opcionalmente puede incluir un `suggestedPreset` (ej. 'platformer') para que
- * Vout ofrezca al usuario un toast no bloqueante sugiriendo cambiar al mapeo
- * recomendado por ese juego. El cambio es solo en memoria y no se persiste.
+ * Opcionalmente puede incluir un `suggestedPreset` (ej. 'platformer'): el
+ * portal pregunta una vez, en el panel de control facial, si se usan los
+ * controles del juego o los propios, y guarda la respuesta para ese juego
+ * (`game_user.gesture_preset_choice`). La configuración guardada del usuario
+ * no cambia.
  */
 export type GameReadyMessage = {
     type: 'READY';

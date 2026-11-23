@@ -179,6 +179,8 @@ return [
     */
 
     'custom' => [
+        'preset_choice_invalid' => 'Choose which controls you use in this game.',
+        'play_preference_boolean' => 'This setting only accepts yes or no.',
         'facial_control_usage_invalid' => 'Choose how you use the camera: not at all, sometimes, or to play.',
         'origin' => 'Must be a valid origin (scheme + host). E.g. https://my-app.com or http://localhost:3000',
         'redirect_uri_not_in_origins' => 'The redirect URI must belong to one of the allowed origins.',

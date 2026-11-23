@@ -76,7 +76,15 @@ class PlayController extends Controller
                 'cover_image' => $game->cover_image,
                 'embed_url' => $game->embed_url,
                 'effective_origins' => $game->effective_origins,
+                // Si recibe los controles de Vout: sin ellos no se ofrece la cámara.
+                'facial_control_support' => $game->facial_control_support->value,
             ],
+
+            // Qué controles eligió el usuario cuando el juego le sugirió los
+            // suyos (null si aún no se le ha preguntado; ver PresetChoiceController).
+            'presetChoice' => $user->games()
+                ->where('games.id', $game->id)
+                ->value('game_user.gesture_preset_choice'),
 
             // Null si el usuario no tiene config activa → el frontend deshabilita el motor.
             'activeGestureConfig' => $activeGestureConfig,

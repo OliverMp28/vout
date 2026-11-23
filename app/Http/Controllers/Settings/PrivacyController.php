@@ -98,6 +98,8 @@ class PrivacyController extends Controller
                 'show_mascot',
                 'facial_control_usage',
                 'camera_autostart',
+                'play_panel_open',
+                'show_camera_preview',
                 'dashboard_welcome_dismissed_at',
             ]),
             'gesture_configs' => $user->gestureConfigs->map(fn ($config) => [
@@ -116,6 +118,7 @@ class PrivacyController extends Controller
                 'play_count' => (int) $game->pivot->play_count,
                 'best_score' => $game->pivot->best_score,
                 'last_played_at' => $game->pivot->last_played_at,
+                'gesture_preset_choice' => $game->pivot->gesture_preset_choice,
             ])->values(),
             'registered_apps' => $user->registeredApps->map(fn ($app) => [
                 'name' => $app->name,

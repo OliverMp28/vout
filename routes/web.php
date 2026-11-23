@@ -9,6 +9,7 @@ use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\OAuth\JwksController;
 use App\Http\Controllers\OAuth\OidcDiscoveryController;
 use App\Http\Controllers\Play\ConsentController as PlayConsentController;
+use App\Http\Controllers\Play\PresetChoiceController as PlayPresetChoiceController;
 use App\Http\Controllers\Play\SessionTokenController as PlaySessionTokenController;
 use App\Http\Controllers\PlayController;
 use App\Http\Controllers\VisionLabController;
@@ -88,6 +89,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('play/{game}/token', [PlaySessionTokenController::class, 'store'])
         ->middleware('throttle:12,1')
         ->name('play.token.store');
+
+    // Controles que el usuario eligió para el juego (los suyos o los que
+    // sugiere el juego): se pregunta una vez por juego.
+    Route::put('play/{game}/preset', [PlayPresetChoiceController::class, 'update'])
+        ->middleware('throttle:30,1')
+        ->name('play.preset.update');
 });
 
 Route::middleware('guest')->group(function () {

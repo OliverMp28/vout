@@ -1,16 +1,18 @@
 /**
- * Panel lateral del reproductor de juego (Fase 3.5 — Sesión 3).
+ * Panel de control facial del reproductor de juego.
  *
- * El componente actúa como router condicional que renderiza uno de tres
- * sub-paneles según el contexto del usuario:
+ * Solo existe en juegos que reciben los controles de Vout, y en escritorio
+ * va en una columna que el usuario abre o cierra (`play/game.tsx`). Elige
+ * uno de tres sub-paneles:
  *
- *  - `UnconfiguredPanel` → Sin configuración de gestos guardada.
- *    Muestra un CTA invitador hacia Ajustes; no expone controles inútiles.
+ *  - `TrialPanel` → Sin perfil de gestos guardado. Ofrece probarlo ya
+ *    ("Probar ahora"), sin configurar ni guardar nada, con los controles que
+ *    sugiere el juego o los de plataformas.
  *
- *  - `IdlePanel` → Tiene config pero el motor no está corriendo.
- *    Muestra estado, CTA de activación y enlace a personalizar controles.
+ *  - `IdlePanel` → Tiene perfil pero el motor no está en marcha.
+ *    Estado, botón de activar y enlace a personalizar controles.
  *
- *  - `RunningPanel` → Motor activo.
+ *  - `RunningPanel` → Motor en marcha, cargando o en pausa (pestaña oculta).
  *    Panel completo: dispatch, sensibilidad, calibración, último gesto, FPS.
  *
  * Regla de UX: el control facial es ADITIVO, nunca restrictivo. Un usuario
@@ -39,6 +41,7 @@ import {
 import { useState } from 'react';
 import type { ReactNode } from 'react';
 
+import { GamePresetChoice } from '@/components/play/game-preset-choice';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -58,6 +61,7 @@ import type {
 } from '@/lib/mediapipe/types';
 import { cn } from '@/lib/utils';
 import appearance from '@/routes/appearance';
+import { show as legalShow } from '@/routes/legal';
 
 // ---------------------------------------------------------------------------
 // Props
@@ -115,8 +119,15 @@ type ControlPanelProps = {
     /** Si se muestra la vista de la cámara mientras el motor funciona. */
     previewEnabled: boolean;
     onTogglePreview: (enabled: boolean) => void;
-    /** La vista de la cámara (se muestra con `previewEnabled`). */
+    /** La vista de la cámara, si se ve en el panel (si no, va sobre el juego). */
     preview?: ReactNode;
+    /** Preset que sugiere el juego, o null. */
+    suggestedPreset: string | null;
+    /** Preset del juego en uso, o null si se usan los controles propios. */
+    activeGamePreset: string | null;
+    /** Hay que preguntar qué controles se usan en este juego. */
+    askPresetChoice: boolean;
+    onChoosePreset: (choice: string) => void;
 };
 
 // ---------------------------------------------------------------------------
@@ -144,25 +155,35 @@ const HEAD_MODE_KEY: Record<HeadTrackingMode, string> = {
 
 export function ControlPanel(props: ControlPanelProps) {
     const { hasGestureConfig, engineStatus } = props;
-    const isRunning = engineStatus === 'running';
-    const isLoading = engineStatus === 'loading';
 
-    if (!hasGestureConfig) {
-        return <UnconfiguredPanel />;
+    if (
+        engineStatus === 'running' ||
+        engineStatus === 'loading' ||
+        engineStatus === 'paused'
+    ) {
+        return <RunningPanel {...props} />;
     }
 
-    if (isRunning || isLoading) {
-        return <RunningPanel {...props} />;
+    if (!hasGestureConfig) {
+        return <TrialPanel {...props} />;
     }
 
     return <IdlePanel {...props} />;
 }
 
 // ---------------------------------------------------------------------------
-// UnconfiguredPanel — usuario sin perfil de gestos
+// TrialPanel — sin perfil de gestos: probarlo ya, sin configurar nada
 // ---------------------------------------------------------------------------
 
-function UnconfiguredPanel() {
+function TrialPanel({
+    cameraBusy,
+    cameraNotice,
+    onToggleEngine,
+    onEngineIntent,
+}: Pick<
+    ControlPanelProps,
+    'cameraBusy' | 'cameraNotice' | 'onToggleEngine' | 'onEngineIntent'
+>) {
     const { t } = useTranslation();
 
     return (
@@ -175,12 +196,49 @@ function UnconfiguredPanel() {
                 <h3 className="text-base font-semibold tracking-tight text-foreground">
                     {t('play.panel.unconfigured.title')}
                 </h3>
-                <p className="max-w-[240px] text-xs leading-relaxed text-muted-foreground">
+                <p className="max-w-[260px] text-xs leading-relaxed text-muted-foreground">
                     {t('play.panel.unconfigured.description')}
                 </p>
             </div>
 
-            <Button asChild variant="default" size="sm" className="gap-2">
+            <div className="w-full space-y-2">
+                <Button
+                    type="button"
+                    id="play-engine-toggle"
+                    onClick={onToggleEngine}
+                    onPointerEnter={onEngineIntent}
+                    onFocus={onEngineIntent}
+                    disabled={cameraBusy}
+                    aria-busy={cameraBusy}
+                    className="w-full gap-2"
+                >
+                    {cameraBusy ? (
+                        <>
+                            <Loader2 className="size-4 animate-spin" />
+                            {t('play.camera.connecting')}
+                        </>
+                    ) : (
+                        <>
+                            <Play className="size-4 fill-current" />
+                            {t('play.panel.unconfigured.try')}
+                        </>
+                    )}
+                </Button>
+                <p className="text-[11px] text-muted-foreground">
+                    {t('play.panel.unconfigured.privacy')}{' '}
+                    <Link
+                        href={legalShow('privacidad').url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-medium text-primary underline-offset-2 hover:underline"
+                    >
+                        {t('play.panel.unconfigured.privacy_link')}
+                    </Link>
+                </p>
+                <CameraNoticeAlert notice={cameraNotice} />
+            </div>
+
+            <Button asChild variant="ghost" size="sm" className="gap-2">
                 <Link href={appearance.edit.url()}>
                     <Settings2 className="size-4" />
                     {t('play.panel.unconfigured.cta')}
@@ -190,24 +248,47 @@ function UnconfiguredPanel() {
     );
 }
 
+/** Los controles del juego, si sugiere unos (solo con perfil propio). */
+function PresetRow({
+    hasGestureConfig,
+    suggestedPreset,
+    activeGamePreset,
+    askPresetChoice,
+    onChoosePreset,
+}: Pick<
+    ControlPanelProps,
+    | 'hasGestureConfig'
+    | 'suggestedPreset'
+    | 'activeGamePreset'
+    | 'askPresetChoice'
+    | 'onChoosePreset'
+>) {
+    if (suggestedPreset === null || !hasGestureConfig) {
+        return null;
+    }
+
+    return (
+        <GamePresetChoice
+            suggested={suggestedPreset}
+            active={activeGamePreset}
+            ask={askPresetChoice}
+            onChoose={onChoosePreset}
+        />
+    );
+}
+
 // ---------------------------------------------------------------------------
 // IdlePanel — configurado, motor detenido
 // ---------------------------------------------------------------------------
 
-function IdlePanel({
-    engineStatus,
-    cameraBusy,
-    cameraNotice,
-    onToggleEngine,
-    onEngineIntent,
-}: Pick<
-    ControlPanelProps,
-    | 'engineStatus'
-    | 'cameraBusy'
-    | 'cameraNotice'
-    | 'onToggleEngine'
-    | 'onEngineIntent'
->) {
+function IdlePanel(props: ControlPanelProps) {
+    const {
+        engineStatus,
+        cameraBusy,
+        cameraNotice,
+        onToggleEngine,
+        onEngineIntent,
+    } = props;
     const { t } = useTranslation();
     const engineBadge = ENGINE_BADGE[engineStatus];
 
@@ -234,6 +315,7 @@ function IdlePanel({
             <section className="space-y-2">
                 <div className="rounded-xl bg-linear-to-b from-primary/40 to-primary/10 p-px shadow-lg shadow-primary/10">
                     <Button
+                        type="button"
                         id="play-engine-toggle"
                         onClick={onToggleEngine}
                         onPointerEnter={onEngineIntent}
@@ -258,6 +340,8 @@ function IdlePanel({
                 </div>
                 <CameraNoticeAlert notice={cameraNotice} />
             </section>
+
+            <PresetRow {...props} />
 
             <Separator />
 
@@ -284,35 +368,38 @@ function IdlePanel({
 // RunningPanel — motor activo o cargando
 // ---------------------------------------------------------------------------
 
-function RunningPanel({
-    engineStatus,
-    handshakeStatus,
-    dispatchEnabled,
-    sensitivity,
-    headTrackingMode,
-    lastGesture,
-    fps,
-    cameras,
-    activeCameraId,
-    cameraBusy,
-    cameraNotice,
-    onSelectCamera,
-    onToggleEngine,
-    onToggleDispatch,
-    onSensitivityChange,
-    onRecenter,
-    onCalibrate,
-    calibration,
-    previewEnabled,
-    onTogglePreview,
-    preview,
-}: ControlPanelProps) {
+function RunningPanel(props: ControlPanelProps) {
+    const {
+        engineStatus,
+        hasGestureConfig,
+        handshakeStatus,
+        dispatchEnabled,
+        sensitivity,
+        headTrackingMode,
+        lastGesture,
+        fps,
+        cameras,
+        activeCameraId,
+        cameraBusy,
+        cameraNotice,
+        onSelectCamera,
+        onToggleEngine,
+        onToggleDispatch,
+        onSensitivityChange,
+        onRecenter,
+        onCalibrate,
+        calibration,
+        previewEnabled,
+        onTogglePreview,
+        preview,
+    } = props;
     const { t } = useTranslation();
     const [advancedOpen, setAdvancedOpen] = useState(false);
 
     const engineBadge = ENGINE_BADGE[engineStatus];
     const isRunning = engineStatus === 'running';
     const isLoading = engineStatus === 'loading';
+    const isPaused = engineStatus === 'paused';
     const isCalibrating = calibration.status === 'calibrating';
 
     return (
@@ -335,14 +422,31 @@ function RunningPanel({
                 </div>
             </section>
 
+            {/* Prueba sin perfil: se dice y se ofrece guardarlo */}
+            {!hasGestureConfig && (
+                <Alert className="px-3 py-2.5" data-play-trial>
+                    <Info />
+                    <AlertDescription className="text-xs">
+                        {t('play.panel.trial_notice')}{' '}
+                        <Link
+                            href={appearance.edit.url()}
+                            className="font-medium text-primary underline-offset-2 hover:underline"
+                        >
+                            {t('play.panel.unconfigured.cta')}
+                        </Link>
+                    </AlertDescription>
+                </Alert>
+            )}
+
             {/* ── Parar motor ──────────────────────────────────────────────── */}
             <section>
                 <Button
+                    type="button"
                     id="play-engine-toggle"
                     onClick={onToggleEngine}
-                    variant={isRunning ? 'destructive' : 'default'}
+                    variant={isRunning || isPaused ? 'destructive' : 'default'}
                     size="lg"
-                    aria-pressed={isRunning}
+                    aria-pressed={isRunning || isPaused}
                     className="h-12 w-full gap-2 text-sm font-semibold transition-all duration-200 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 >
                     {isLoading ? (
@@ -382,6 +486,8 @@ function RunningPanel({
                 </div>
                 {previewEnabled && preview}
             </section>
+
+            <PresetRow {...props} />
 
             <Separator />
 

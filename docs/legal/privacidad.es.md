@@ -39,6 +39,8 @@ Las **contraseñas** se guardan cifradas con bcrypt. Los **secretos de 2FA** se 
 | Juegos favoritos, juegos guardados, partidas jugadas, mejor puntuación por juego, última vez que jugaste | Personalizar tu dashboard y mostrarte "Continuar jugando" |
 | Configuraciones de gestos (nombre del perfil, sensibilidad 1-10, mapeo tecla↔gesto) | Guardar tu calibración de control facial para que no tengas que repetirla en cada sesión |
 | Cómo usas el control facial (no uso la cámara / la uso a veces / juego con la cámara) y si autorizas que la cámara se encienda sola al abrir un juego compatible | Preparar solo lo que necesitas y, si lo autorizas, encender la cámara sin que tengas que pulsar |
+| En la página de juego: si dejaste abierto el panel de control facial y si quieres ver la cámara mientras juegas | Mostrarte la página como la dejaste |
+| Por juego: si usas los controles que sugiere el juego o los tuyos | No preguntarte en cada partida |
 
 **Base legal:** ejecución del contrato (art. 6.1.b) o interés legítimo (art. 6.1.f) para mejorar tu experiencia. Puedes revocar estas preferencias borrando tu cuenta o cambiándolas desde `Ajustes`.
 

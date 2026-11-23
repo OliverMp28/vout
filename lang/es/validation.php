@@ -168,6 +168,8 @@ return [
     'uuid' => 'El campo :attribute debe ser un UUID válido.',
 
     'custom' => [
+        'preset_choice_invalid' => 'Elige qué controles usas en este juego.',
+        'play_preference_boolean' => 'Este ajuste solo admite sí o no.',
         'facial_control_usage_invalid' => 'Elige cómo usas la cámara: no la uso, la uso a veces o juego con ella.',
         'origin' => 'Debe ser un origen válido (scheme + host). Ej: https://mi-app.com o http://localhost:3000',
         'redirect_uri_not_in_origins' => 'El redirect URI debe pertenecer a uno de los orígenes permitidos.',

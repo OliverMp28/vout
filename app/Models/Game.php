@@ -161,7 +161,7 @@ class Game extends Model
     public function users(): BelongsToMany
     {
         return $this->belongsToMany(User::class)
-            ->withPivot('is_favorite', 'is_saved', 'play_count', 'best_score', 'last_played_at')
+            ->withPivot('is_favorite', 'is_saved', 'play_count', 'best_score', 'last_played_at', 'gesture_preset_choice')
             ->withTimestamps();
     }
 

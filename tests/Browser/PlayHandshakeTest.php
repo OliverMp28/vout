@@ -300,8 +300,10 @@ test('el portal entrega la identidad a un juego de otro origen tras su READY', f
         ->and($payload['vout_id'])->toBe($user->vout_id)
         ->and($payload['scopes'])->toBe(['game:play']);
 
-    $page->assertNoJavaScriptErrors()
-        ->assertSee('runner');
+    $page->assertNoJavaScriptErrors();
+
+    // El juego sugirió sus controles (se ofrecen en el panel de control facial).
+    expect($page->script("document.querySelector('#game-frame').dataset.suggestedPreset"))->toBe('runner');
 
     expect($page->script("document.querySelector('iframe').getAttribute('sandbox')"))
         ->toBe('allow-scripts allow-same-origin allow-orientation-lock')
@@ -468,8 +470,9 @@ test('un juego integrado con el SDK recibe la identidad sin escribir el saludo a
         ->and($echo['log']['auth'][0]['username'])->toBe($user->name)
         ->and(decodeJwtSection($echo['log']['auth'][0]['token'], 1)['vout_id'])->toBe($user->vout_id);
 
-    $page->assertNoJavaScriptErrors()
-        ->assertSee('runner');
+    $page->assertNoJavaScriptErrors();
+
+    expect($page->script("document.querySelector('#game-frame').dataset.suggestedPreset"))->toBe('runner');
 });
 
 test('el SDK convierte las teclas, el ratón y las acciones del portal en entrada real del juego', function (): void {
@@ -667,7 +670,7 @@ test('si la cámara no se puede abrir, el panel lo explica y el juego sigue disp
     $this->actingAs($user);
 
     visit('/catalog');
-    $game = embedStubIn(Game::factory()->create(['is_active' => true]));
+    $game = embedStubIn(Game::factory()->compatibleWithFace()->create(['is_active' => true]));
 
     // El navegador de pruebas no tiene cámara: activar el control facial
     // falla, y eso no puede quedar en silencio ni tapar el juego.
@@ -675,7 +678,8 @@ test('si la cámara no se puede abrir, el panel lo explica y el juego sigue disp
 
     expect(waitForAuthMessages($page))->not->toBeNull();
 
-    $page->click('#play-engine-toggle')
+    $page->click('#play-panel-trigger')
+        ->click('#play-engine-toggle')
         ->assertVisible('aside [data-slot="alert"]')
         ->assertVisible('#play-engine-toggle')
         ->assertNoJavaScriptErrors();

@@ -732,7 +732,7 @@ Los presets que ofrece Vout:
 | `accessible` | Teclas: Espacio, Enter, flechas, Escape |
 | `runner` | Eventos de juego `JUMP`, `DUCK` y `PAUSE` |
 
-Si tu juego tiene acciones propias que no encajan con una tecla, puedes recomendar un preset enviando `suggestedPreset` en tu `READY` (por ejemplo `'runner'`). El portal le ofrecerá al usuario cambiar a ese preset durante la partida, sin tocar su configuración guardada. Es una sugerencia: el usuario puede rechazarla, así que no dependas solo de ella.
+Si tu juego tiene acciones propias que no encajan con una tecla, puedes recomendar un preset enviando `suggestedPreset` en tu `READY` (por ejemplo `'runner'`). El portal le pregunta una vez al usuario, en el panel de control facial, si usa los controles de tu juego o los suyos, y recuerda la respuesta para tu juego (sin tocar su configuración guardada). Si cambias de preset sugerido, se le vuelve a preguntar. Quien prueba el control facial sin haberlo configurado usa directamente el tuyo. Es una sugerencia: el usuario puede quedarse con sus controles, así que no dependas solo de ella.
 
 #### Si conviertes las teclas a mano
 
