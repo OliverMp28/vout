@@ -1,5 +1,5 @@
 /**
- * Pure gesture classification from MediaPipe blendshapes.
+ * Clasificación de gestos a partir de los blendshapes de MediaPipe.
  *
  * Cada gesto es una pequeña máquina de estados (inactivo ↔ activo) que emite
  * tres clases de evento:
@@ -10,29 +10,47 @@
  *             umbral de suelta (histéresis, `GESTURE_RELEASE_RATIO`).
  *
  * Emitir el final de forma explícita es lo que permite a un juego distinguir
- * un toque de una pulsación mantenida y encadenar gestos rápidos: antes el
- * final solo podía deducirse por inactividad, más de medio segundo tarde.
+ * un toque de una pulsación mantenida y encadenar gestos rápidos.
+ *
+ * Qué señal tiene cada gesto, su recorrido, la postura de cabeza en que es
+ * fiable y qué lo distingue de otros gestos está en `gesture-rules.ts`. Fuera
+ * de esa postura la señal cuenta como 0: el gesto no empieza y, si estaba
+ * activo, termina (no se queda "pulsado").
  *
  * Además mide, sin influir en la detección, cuánto tarda cada gesto en
- * cruzar su umbral desde que la señal empieza a subir (`drainGestureRiseSamples`).
+ * cruzar su umbral desde que la señal empieza a subir (`drainRiseSamples`).
  *
- * Worker-safe — no DOM or React imports.
+ * Worker-safe: sin DOM ni React.
  */
 
 import {
-    GESTURE_BLENDSHAPE_MAP,
     GESTURE_DEBOUNCE_MS,
     GESTURE_RELEASE_MS,
     GESTURE_RELEASE_RATIO,
     GESTURE_RISE_FLOOR_RATIO,
-    GESTURE_THRESHOLD_SCALE,
     sensitivityToThreshold,
 } from './constants';
-import type { GestureEvent, GestureType, NeutralBaseline } from './types';
+import {
+    GESTURE_RULES,
+    gestureSignal,
+    isPoseWithinTolerance,
+} from './gesture-rules';
+import type { GestureRule, SignalReader } from './gesture-rules';
+import type {
+    GestureEvent,
+    GestureType,
+    HeadPose,
+    NeutralBaseline,
+} from './types';
 
-// ---------------------------------------------------------------------------
-// Internal tracking state (lives inside the worker scope)
-// ---------------------------------------------------------------------------
+/** Lo que el clasificador necesita de un fotograma con cara. */
+export type ClassifierFrame = {
+    /** Blendshapes de MediaPipe (0-1). */
+    blendshapes: Record<string, number>;
+    /** Postura de la cabeza, o null si MediaPipe no dio la matriz. */
+    headPose: HeadPose | null;
+    timestamp: number;
+};
 
 type GestureTracking = {
     /** Timestamp del último `start` o `hold` emitido. */
@@ -41,178 +59,195 @@ type GestureTracking = {
     belowSince: number | null;
 };
 
-/** Gestos actualmente activos. Un gesto ausente del mapa está inactivo. */
-const activeGestures = new Map<GestureType, GestureTracking>();
-
 /**
- * Gestos inactivos cuya señal ya superó el suelo de subida: momento del primer
- * fotograma por encima. Se borra si la señal vuelve a bajar del suelo.
+ * Umbral de activación de un gesto con una sensibilidad (1-10): el de la
+ * sensibilidad ajustado al recorrido del gesto.
  */
-const risingSince = new Map<GestureType, number>();
-
-/** Tiempos de subida (ms) de los `start` emitidos desde el último drenado. */
-let riseSamples: number[] = [];
-
-// ---------------------------------------------------------------------------
-// Public API
-// ---------------------------------------------------------------------------
-
-/**
- * Classify gestures from a blendshape record.
- *
- * @param blendshapes - Raw blendshape values from MediaPipe (0-1 range).
- * @param sensitivity - User sensitivity setting (1-10).
- * @param baseline    - Optional neutral baseline to subtract.
- * @param timestamp   - Frame timestamp in ms.
- * @returns Gesture events for this frame (may be empty).
- */
-export function classifyGestures(
-    blendshapes: Record<string, number>,
+export function activationThreshold(
+    gesture: GestureType,
     sensitivity: number,
-    baseline: NeutralBaseline | null,
-    timestamp: number,
-): GestureEvent[] {
-    const threshold = sensitivityToThreshold(sensitivity);
-    const events: GestureEvent[] = [];
+): number {
+    return (
+        sensitivityToThreshold(sensitivity) *
+        GESTURE_RULES[gesture].thresholdScale
+    );
+}
 
-    for (const [gesture, keys] of Object.entries(GESTURE_BLENDSHAPE_MAP)) {
-        const gestureType = gesture as GestureType;
+export class GestureClassifier {
+    /** Gestos activos. Un gesto ausente del mapa está inactivo. */
+    private readonly active = new Map<GestureType, GestureTracking>();
 
-        // Take the max confidence across associated blendshape keys.
-        let raw = 0;
-        for (const key of keys) {
-            const value = blendshapes[key] ?? 0;
-            if (value > raw) raw = value;
-        }
+    /**
+     * Gestos inactivos cuya señal ya superó el suelo de subida: momento del
+     * primer fotograma por encima. Se borra si la señal vuelve a bajar.
+     */
+    private readonly risingSince = new Map<GestureType, number>();
 
-        // Subtract the neutral baseline if available.
-        if (baseline) {
-            const baselineMax = Math.max(
-                ...keys.map((k) => baseline.blendshapes[k] ?? 0),
+    /** Tiempos de subida (ms) de los `start` emitidos desde el último drenado. */
+    private riseSamples: number[] = [];
+
+    /**
+     * Clasifica un fotograma.
+     *
+     * @param sensitivity - Sensibilidad del usuario (1-10).
+     * @param baseline    - Cara neutra: se resta a cada blendshape y su
+     *                      postura es el "frente" de las tolerancias.
+     * @returns Los eventos de este fotograma (puede no haber ninguno).
+     */
+    classify(
+        frame: ClassifierFrame,
+        sensitivity: number,
+        baseline: NeutralBaseline | null,
+    ): GestureEvent[] {
+        const { blendshapes, headPose, timestamp } = frame;
+        const neutral = baseline?.blendshapes;
+        const signal: SignalReader = (key) =>
+            Math.max(0, (blendshapes[key] ?? 0) - (neutral?.[key] ?? 0));
+        const events: GestureEvent[] = [];
+
+        for (const [gesture, rule] of Object.entries(GESTURE_RULES) as [
+            GestureType,
+            GestureRule,
+        ][]) {
+            const reliable =
+                headPose === null ||
+                isPoseWithinTolerance(
+                    headPose,
+                    baseline?.headPose ?? null,
+                    rule.poseTolerance,
+                );
+            const value = reliable ? gestureSignal(rule, signal) : 0;
+            const threshold = activationThreshold(gesture, sensitivity);
+            const event = this.track(
+                gesture,
+                rule,
+                value,
+                threshold,
+                signal,
+                timestamp,
             );
-            raw = Math.max(0, raw - baselineMax);
+
+            if (event !== null) {
+                events.push(event);
+            }
         }
 
-        // Apply per-gesture scale for low-amplitude blendshapes.
-        const activationThreshold =
-            threshold * (GESTURE_THRESHOLD_SCALE[gestureType] ?? 1.0);
-        const tracking = activeGestures.get(gestureType);
+        return events;
+    }
+
+    /**
+     * Da por terminados todos los gestos activos. Lo usa el worker cuando deja
+     * de ver la cara el tiempo suficiente o al calibrar: sin señal fiable, un
+     * gesto sostenido no debe quedarse "pulsado".
+     */
+    releaseAll(timestamp: number): GestureEvent[] {
+        const events: GestureEvent[] = [];
+
+        for (const gesture of this.active.keys()) {
+            events.push({ gesture, confidence: 0, timestamp, phase: 'end' });
+        }
+        this.active.clear();
+
+        return events;
+    }
+
+    /**
+     * Olvida el estado de todos los gestos sin emitir nada: al pausar, para
+     * que un estado viejo no bloquee los eventos al reanudar.
+     */
+    reset(): void {
+        this.active.clear();
+        this.risingSince.clear();
+        this.riseSamples = [];
+    }
+
+    /**
+     * Devuelve y olvida los tiempos de subida medidos: para cada `start`, los
+     * ms desde el primer fotograma en que la señal superó el suelo de subida
+     * hasta el que cruzó el umbral. 0 si lo cruzó de un fotograma a otro.
+     *
+     * Es telemetría: dice cuánto retraso añade el umbral al gesto.
+     */
+    drainRiseSamples(): number[] {
+        const samples = this.riseSamples;
+        this.riseSamples = [];
+
+        return samples;
+    }
+
+    /** Avanza la máquina de estados de un gesto y devuelve su evento, si hay. */
+    private track(
+        gesture: GestureType,
+        rule: GestureRule,
+        value: number,
+        threshold: number,
+        signal: SignalReader,
+        timestamp: number,
+    ): GestureEvent | null {
+        const tracking = this.active.get(gesture);
 
         if (tracking === undefined) {
-            trackRise(gestureType, raw, activationThreshold, timestamp);
+            this.trackRise(gesture, value, threshold, timestamp);
 
-            if (raw >= activationThreshold) {
-                riseSamples.push(
-                    timestamp - (risingSince.get(gestureType) ?? timestamp),
-                );
-                risingSince.delete(gestureType);
-                activeGestures.set(gestureType, {
-                    lastEmittedAt: timestamp,
-                    belowSince: null,
-                });
-                events.push({
-                    gesture: gestureType,
-                    confidence: raw,
-                    timestamp,
-                    phase: 'start',
-                });
+            if (value < threshold || !(rule.canStart?.(signal) ?? true)) {
+                return null;
             }
 
-            continue;
+            this.riseSamples.push(
+                timestamp - (this.risingSince.get(gesture) ?? timestamp),
+            );
+            this.risingSince.delete(gesture);
+            this.active.set(gesture, {
+                lastEmittedAt: timestamp,
+                belowSince: null,
+            });
+
+            return { gesture, confidence: value, timestamp, phase: 'start' };
         }
 
-        if (raw >= activationThreshold * GESTURE_RELEASE_RATIO) {
+        if (value >= threshold * GESTURE_RELEASE_RATIO) {
             tracking.belowSince = null;
 
-            if (timestamp - tracking.lastEmittedAt >= GESTURE_DEBOUNCE_MS) {
-                tracking.lastEmittedAt = timestamp;
-                events.push({
-                    gesture: gestureType,
-                    confidence: raw,
-                    timestamp,
-                    phase: 'hold',
-                });
+            if (timestamp - tracking.lastEmittedAt < GESTURE_DEBOUNCE_MS) {
+                return null;
             }
 
-            continue;
+            tracking.lastEmittedAt = timestamp;
+
+            return { gesture, confidence: value, timestamp, phase: 'hold' };
         }
 
         tracking.belowSince ??= timestamp;
 
-        if (timestamp - tracking.belowSince >= GESTURE_RELEASE_MS) {
-            activeGestures.delete(gestureType);
-            events.push({
-                gesture: gestureType,
-                confidence: raw,
-                timestamp: tracking.belowSince,
-                phase: 'end',
-            });
+        if (timestamp - tracking.belowSince < GESTURE_RELEASE_MS) {
+            return null;
         }
+
+        this.active.delete(gesture);
+
+        return {
+            gesture,
+            confidence: value,
+            timestamp: tracking.belowSince,
+            phase: 'end',
+        };
     }
 
-    return events;
-}
+    /** Anota el inicio de la subida de un gesto inactivo, o lo olvida si cae. */
+    private trackRise(
+        gesture: GestureType,
+        value: number,
+        threshold: number,
+        timestamp: number,
+    ): void {
+        if (value < threshold * GESTURE_RISE_FLOOR_RATIO) {
+            this.risingSince.delete(gesture);
 
-/**
- * Da por terminados todos los gestos activos. Lo usa el worker cuando deja
- * de ver la cara el tiempo suficiente: sin cara no hay señal que medir, y
- * un gesto sostenido no debe quedarse "pulsado".
- *
- * @param timestamp - Momento en que se dejó de ver la cara.
- */
-export function releaseActiveGestures(timestamp: number): GestureEvent[] {
-    const events: GestureEvent[] = [];
+            return;
+        }
 
-    for (const gesture of activeGestures.keys()) {
-        events.push({ gesture, confidence: 0, timestamp, phase: 'end' });
-    }
-    activeGestures.clear();
-
-    return events;
-}
-
-/**
- * Olvida el estado de todos los gestos sin emitir nada — call when
- * pausing/resuming detection so stale state doesn't block new events.
- */
-export function resetGestureTracking(): void {
-    activeGestures.clear();
-    risingSince.clear();
-    riseSamples = [];
-}
-
-/**
- * Devuelve y olvida los tiempos de subida medidos: para cada `start`, los ms
- * desde el primer fotograma en que la señal superó el suelo de subida hasta
- * el que cruzó el umbral. 0 si lo cruzó de un fotograma a otro.
- *
- * Es telemetría: dice cuánto retraso añade el umbral al gesto.
- */
-export function drainGestureRiseSamples(): number[] {
-    const samples = riseSamples;
-    riseSamples = [];
-
-    return samples;
-}
-
-// ---------------------------------------------------------------------------
-// Internal helpers
-// ---------------------------------------------------------------------------
-
-/** Anota el inicio de la subida de un gesto inactivo, o lo olvida si cae. */
-function trackRise(
-    gesture: GestureType,
-    raw: number,
-    activationThreshold: number,
-    timestamp: number,
-): void {
-    if (raw < activationThreshold * GESTURE_RISE_FLOOR_RATIO) {
-        risingSince.delete(gesture);
-
-        return;
-    }
-
-    if (!risingSince.has(gesture)) {
-        risingSince.set(gesture, timestamp);
+        if (!this.risingSince.has(gesture)) {
+            this.risingSince.set(gesture, timestamp);
+        }
     }
 }

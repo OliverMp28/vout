@@ -116,8 +116,32 @@ describe('NeutralCalibration', () => {
         neutral.addFrame(frame(0, { headPose: null }));
         neutral.addFrame(frame(33, { headPose: null }));
 
-        expect(neutral.addFrame(frame(66, { headPose: null })).status).toBe(
-            'done',
+        const result = neutral.addFrame(frame(66, { headPose: null }));
+
+        expect(result.status).toBe('done');
+
+        if (result.status === 'done') {
+            expect(result.baseline.headPose).toBeUndefined();
+        }
+    });
+
+    test('guarda la postura media de los fotogramas válidos como frente', () => {
+        const neutral = calibration();
+
+        // Cámara encima de la pantalla: la cabeza se ve algo bajada.
+        neutral.addFrame(frame(0, { headPose: { ...FRONT, roll: -0.1 } }));
+        neutral.addFrame(frame(33, { headPose: { ...FRONT, pitch: 0.9 } }));
+        neutral.addFrame(
+            frame(66, { headPose: { ...FRONT, pitch: 0.06, roll: -0.2 } }),
         );
+
+        const result = neutral.addFrame(frame(99, { headPose: null }));
+
+        expect(result.status).toBe('done');
+
+        if (result.status === 'done') {
+            expect(result.baseline.headPose?.pitch).toBeCloseTo(0.03);
+            expect(result.baseline.headPose?.roll).toBeCloseTo(-0.15);
+        }
     });
 });

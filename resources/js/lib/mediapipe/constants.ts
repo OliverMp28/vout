@@ -5,60 +5,10 @@
  * These keys are the canonical names emitted by MediaPipe Tasks Vision.
  */
 
-import { GestureType } from './types';
-
-// ---------------------------------------------------------------------------
-// Blendshape key → gesture mapping
-// ---------------------------------------------------------------------------
-
-/**
- * Which blendshape(s) to evaluate for each gesture type.
- * When multiple keys are listed the classifier takes the **max** value
- * across them before comparing against the threshold.
+/*
+ * Qué blendshapes forman cada gesto, su recorrido, la postura de cabeza en
+ * que son fiables y lo que distingue unos gestos de otros: `gesture-rules.ts`.
  */
-export const GESTURE_BLENDSHAPE_MAP: Record<GestureType, string[]> = {
-    // Gestos originales
-    [GestureType.BrowRaise]: [
-        'browInnerUp',
-        'browOuterUpLeft',
-        'browOuterUpRight',
-    ],
-    [GestureType.MouthOpen]: ['jawOpen'],
-    [GestureType.BlinkLeft]: ['eyeBlinkLeft'],
-    [GestureType.BlinkRight]: ['eyeBlinkRight'],
-    // Gestos faciales extendidos (Sesion 0 — 3.2)
-    [GestureType.Smile]: ['mouthSmileLeft', 'mouthSmileRight'],
-    [GestureType.BrowFrown]: ['browDownLeft', 'browDownRight'],
-    [GestureType.MouthPucker]: ['mouthPucker'],
-} as const;
-
-/**
- * Whitelist de blendshapes que el classifier realmente consume (Sesión 3.4 §4.2).
- *
- * MediaPipe devuelve 52 categorías por frame. Solo 11 se usan para clasificar
- * gestos — el resto son desperdicio (copia de objeto, serialización postMessage,
- * recálculo del baseline en calibración). En modo Vision Lab (`enableBlendshapes`)
- * seguimos devolviendo el set completo para poder depurar; en modo juego
- * filtramos a este subconjunto.
- *
- * Se deriva automáticamente del `GESTURE_BLENDSHAPE_MAP` para que añadir un
- * gesto nuevo propague a la whitelist sin tocar dos sitios.
- */
-export const USED_BLENDSHAPE_KEYS: ReadonlySet<string> = new Set(
-    Object.values(GESTURE_BLENDSHAPE_MAP).flat(),
-);
-
-/**
- * Per-gesture threshold multiplier (0 < scale ≤ 1).
- *
- * Some blendshapes have inherently low amplitude. Applying a scale < 1
- * lowers the effective threshold without changing the user-facing sensitivity.
- *
- * Effective threshold = sensitivityToThreshold(sensitivity) * scale
- *
- * Gestures with no entry here default to scale 1.0 (no adjustment).
- */
-export const GESTURE_THRESHOLD_SCALE: Partial<Record<GestureType, number>> = {};
 
 // ---------------------------------------------------------------------------
 // Sensitivity ↔ threshold mapping
@@ -127,18 +77,6 @@ export const GESTURE_RISE_FLOOR_RATIO = 0.25;
 // ---------------------------------------------------------------------------
 // Head pose
 // ---------------------------------------------------------------------------
-
-/**
- * Umbral normalizado [-1,1] por encima del cual los blendshapes se distorsionan
- * lo suficiente como para generar falsos positivos de gestos. Cuando
- * |headPose.pitch| o |headPose.roll| superan este valor se suprime la
- * clasificación de gestos (pero NO el head tracking). Sesión 3.4 §4/§6.5.
- *
- * Equivalencias en grados físicos (head-pose.ts normaliza yaw/45° y roll/30°):
- *   Giro horizontal (code `pitch` = yaw físico): 0.45 × 45° ≈ 20°
- *   Cabeceo vertical (code `roll` = pitch físico): 0.45 × 30° ≈ 13.5°
- */
-export const HEAD_POSE_GESTURE_GATE = 0.45;
 
 /** Landmark indices used as fallback when transformation matrix is unavailable. */
 export const HEAD_POSE_LANDMARKS = {

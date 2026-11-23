@@ -1,11 +1,14 @@
 /**
  * Calibración de la cara neutra: la línea base que el clasificador resta a
- * cada blendshape (`classifyGestures`).
+ * cada blendshape (`GestureClassifier`).
  *
  * Solo valen los fotogramas con la cara de frente y relajada. Una línea base
  * tomada mirando a un lado, o sonriendo, desplaza todos los umbrales: es lo
  * que hacía que, tras "Centrar cursor" (que antes también calibraba), un
  * gesto disparase otro.
+ *
+ * También guarda la postura media de la cabeza: es el "frente" del usuario,
+ * desde el que se miden las tolerancias de postura de cada gesto.
  *
  * Si en `timeoutMs` no se reúnen bastantes fotogramas válidos, falla con el
  * motivo más frecuente para que la interfaz pueda explicarlo.
@@ -18,12 +21,13 @@ import {
     CALIBRATION_MAX_HEAD_ROTATION,
     CALIBRATION_RELAXED_MAX,
     CALIBRATION_TIMEOUT_MS,
-    USED_BLENDSHAPE_KEYS,
 } from './constants';
+import { USED_BLENDSHAPE_KEYS } from './gesture-rules';
 import type {
     CalibrationFailureReason,
     HeadPose,
     NeutralBaseline,
+    NeutralPose,
 } from './types';
 
 /** Por qué un fotograma no vale para la línea base. */
@@ -58,6 +62,7 @@ const DEFAULT_OPTIONS: NeutralCalibrationOptions = {
 export class NeutralCalibration {
     private readonly options: NeutralCalibrationOptions;
     private readonly samples: Record<string, number>[] = [];
+    private readonly poses: HeadPose[] = [];
     private readonly rejections: Record<CalibrationRejection, number> = {
         no_face: 0,
         not_frontal: 0,
@@ -76,6 +81,10 @@ export class NeutralCalibration {
 
         if (rejection === null && frame.blendshapes !== null) {
             this.samples.push(frame.blendshapes);
+
+            if (frame.headPose !== null) {
+                this.poses.push(frame.headPose);
+            }
         } else if (rejection !== null) {
             this.rejections[rejection]++;
         }
@@ -132,7 +141,31 @@ export class NeutralCalibration {
             blendshapes[key] = sum / this.samples.length;
         }
 
-        return { capturedAt: Date.now(), blendshapes };
+        const headPose = this.averagePose();
+
+        return headPose === null
+            ? { capturedAt: Date.now(), blendshapes }
+            : { capturedAt: Date.now(), blendshapes, headPose };
+    }
+
+    /** Postura media de los fotogramas válidos, o null si no hubo ninguna. */
+    private averagePose(): NeutralPose | null {
+        if (this.poses.length === 0) {
+            return null;
+        }
+
+        let pitch = 0;
+        let roll = 0;
+
+        for (const pose of this.poses) {
+            pitch += pose.pitch;
+            roll += pose.roll;
+        }
+
+        return {
+            pitch: pitch / this.poses.length,
+            roll: roll / this.poses.length,
+        };
     }
 
     /**

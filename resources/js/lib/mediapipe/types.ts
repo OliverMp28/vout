@@ -65,9 +65,21 @@ export type { HeadTrackPosition } from './head-tracker';
 // ---------------------------------------------------------------------------
 
 /** Average blendshape values captured while the user holds a neutral face. */
+/**
+ * Postura de la cabeza en la cara neutra: el "frente" del usuario, que no
+ * siempre es el de la cámara (una cámara encima de la pantalla ve la cabeza
+ * algo bajada). Mismos ejes que `HeadPose`.
+ */
+export type NeutralPose = {
+    pitch: number;
+    roll: number;
+};
+
 export type NeutralBaseline = {
     capturedAt: number;
     blendshapes: Record<string, number>;
+    /** Sin ella, las tolerancias de postura se miden desde la cámara. */
+    headPose?: NeutralPose;
 };
 
 /**
@@ -228,7 +240,7 @@ export type WorkerOutMessage =
           headPose: HeadPose | null;
           /** Los 52 blendshapes, solo con `enableBlendshapes`. */
           blendshapes: Record<string, number> | null;
-          /** Ver `drainGestureRiseSamples`. */
+          /** Ver `GestureClassifier.drainRiseSamples`. */
           gestureRiseMs: number[];
           timing: FrameTiming;
       }

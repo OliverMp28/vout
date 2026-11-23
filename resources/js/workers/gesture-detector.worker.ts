@@ -26,16 +26,10 @@ import type {
 import {
     DEFAULT_DETECTION_CONFIG,
     FACE_LOST_RELEASE_MS,
-    HEAD_POSE_GESTURE_GATE,
     MAX_CONSECUTIVE_INFERENCE_ERRORS,
-    USED_BLENDSHAPE_KEYS,
 } from '@/lib/mediapipe/constants';
-import {
-    classifyGestures,
-    drainGestureRiseSamples,
-    releaseActiveGestures,
-    resetGestureTracking,
-} from '@/lib/mediapipe/gesture-classifier';
+import { GestureClassifier } from '@/lib/mediapipe/gesture-classifier';
+import { USED_BLENDSHAPE_KEYS } from '@/lib/mediapipe/gesture-rules';
 import { extractHeadPose } from '@/lib/mediapipe/head-pose';
 import { NeutralCalibration } from '@/lib/mediapipe/neutral-calibration';
 import type {
@@ -88,6 +82,8 @@ let config: WorkerConfig = {
     enableBlendshapes: false,
 };
 let baseline: NeutralBaseline | null = null;
+
+const classifier = new GestureClassifier();
 
 /** Calibración en curso, o null. */
 let calibration: NeutralCalibration | null = null;
@@ -328,7 +324,7 @@ function handleFrame(
         frameId,
         timestamp,
         ...analysis,
-        gestureRiseMs: drainGestureRiseSamples(),
+        gestureRiseMs: classifier.drainRiseSamples(),
         timing: {
             receivedAt,
             inferenceStart,
@@ -370,7 +366,7 @@ function analyse(
         calibrate(timestamp, bsMap, headPose);
 
         return {
-            gestures: releaseActiveGestures(timestamp),
+            gestures: classifier.releaseAll(timestamp),
             headPose,
             blendshapes: null,
         };
@@ -384,7 +380,7 @@ function analyse(
         return {
             gestures:
                 timestamp - faceLostSince >= FACE_LOST_RELEASE_MS
-                    ? releaseActiveGestures(faceLostSince)
+                    ? classifier.releaseAll(faceLostSince)
                     : [],
             headPose: null,
             blendshapes: null,
@@ -393,19 +389,14 @@ function analyse(
 
     faceLostSince = null;
 
-    // Sesión 3.4 §6.5 — con la cabeza muy girada los blendshapes frontales se
-    // distorsionan (mirar arriba → falso BROW_RAISE). Se suprimen los gestos;
-    // el head tracking sigue.
-    const headExtremeRotation =
-        headPose != null &&
-        (Math.abs(headPose.pitch) > HEAD_POSE_GESTURE_GATE ||
-            Math.abs(headPose.roll) > HEAD_POSE_GESTURE_GATE);
-    const gestures = headExtremeRotation
-        ? []
-        : classifyGestures(bsMap, config.sensitivity, baseline, timestamp);
-
+    // Con la cabeza girada, cada gesto deja de fiarse de su señal a partir
+    // de su propia tolerancia (`gesture-rules.ts`); el head tracking sigue.
     return {
-        gestures,
+        gestures: classifier.classify(
+            { blendshapes: bsMap, headPose, timestamp },
+            config.sensitivity,
+            baseline,
+        ),
         headPose,
         blendshapes: config.enableBlendshapes ? bsMap : null,
     };
@@ -475,7 +466,7 @@ self.onmessage = (e: MessageEvent<WorkerInMessage>) => {
 
         case 'PAUSE':
             paused = true;
-            resetGestureTracking();
+            classifier.reset();
             faceLostSince = null;
             break;
 
