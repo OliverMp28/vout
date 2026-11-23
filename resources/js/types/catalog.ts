@@ -24,6 +24,14 @@ export type GameUserInteraction = {
     last_played_at: string | null;
 };
 
+/**
+ * Si el juego admite el control facial (lo declara el desarrollador):
+ * - `none`       → no recibe los controles de Vout.
+ * - `compatible` → recibe las teclas y los clics de Vout.
+ * - `designed`   → además está pensado para jugarse con la cara.
+ */
+export type FacialControlSupport = 'none' | 'compatible' | 'designed';
+
 export type Game = {
     id: number;
     name: string;
@@ -31,6 +39,7 @@ export type Game = {
     description: string | null;
     cover_image: string | null;
     embed_url: string | null;
+    facial_control_support: FacialControlSupport;
     release_date: string | null;
     play_count: number;
     is_active: boolean;
@@ -44,6 +53,8 @@ export type CatalogFilters = {
     categories: string[];
     search: string;
     sort: 'popular' | 'newest' | 'alphabetical';
+    /** Solo juegos que se pueden jugar con la cara. */
+    face: boolean;
 };
 
 export type CursorPagination<T> = {

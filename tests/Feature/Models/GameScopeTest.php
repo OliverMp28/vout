@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\FacialControlSupport;
 use App\Models\Category;
 use App\Models\Game;
 use App\Models\User;
@@ -21,6 +22,28 @@ it('scopeFeatured devuelve solo juegos destacados', function () {
     Game::factory()->count(3)->create(['is_featured' => false]);
 
     expect(Game::query()->featured()->count())->toBe(2);
+});
+
+// ─── scopePlayableWithFace ───────────────────────────────────
+
+it('scopePlayableWithFace devuelve los juegos compatibles y los pensados para la cara', function () {
+    Game::factory()->create();
+    $compatible = Game::factory()->compatibleWithFace()->create();
+    $designed = Game::factory()->designedForFace()->create();
+
+    expect(Game::query()->playableWithFace()->pluck('id')->sort()->values()->all())
+        ->toBe([$compatible->id, $designed->id]);
+});
+
+it('un juego nuevo no admite el control facial', function () {
+    $game = Game::query()->create([
+        'name' => 'Bare Game',
+        'slug' => 'bare-game',
+        'embed_url' => 'https://games.test/bare',
+    ]);
+
+    expect($game->facial_control_support)->toBe(FacialControlSupport::None)
+        ->and($game->fresh()->facial_control_support)->toBe(FacialControlSupport::None);
 });
 
 // ─── scopeInCategories ───────────────────────────────────────

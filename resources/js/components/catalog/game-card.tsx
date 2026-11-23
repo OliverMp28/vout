@@ -1,6 +1,7 @@
 import { Link, router, usePage } from '@inertiajs/react';
 import { Bookmark, Heart, Gamepad2 } from 'lucide-react';
 import { useCallback, useState } from 'react';
+import { FacialControlBadge } from '@/components/catalog/facial-control-badge';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -165,8 +166,13 @@ export function GameCard({ game }: Props) {
                     {game.name}
                 </h3>
 
-                {game.categories.length > 0 && (
+                {(game.categories.length > 0 ||
+                    game.facial_control_support !== 'none') && (
                     <div className="flex flex-wrap gap-1">
+                        <FacialControlBadge
+                            support={game.facial_control_support}
+                            className="px-1.5 py-0 text-[10px]"
+                        />
                         {game.categories.slice(0, 2).map((cat) => (
                             <Badge
                                 key={cat.id}

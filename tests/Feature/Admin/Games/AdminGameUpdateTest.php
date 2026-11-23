@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\FacialControlSupport;
 use App\Models\AuditLog;
 use App\Models\Category;
 use App\Models\Game;
@@ -71,4 +72,41 @@ it('rechaza a usuarios no admin', function (): void {
             'name' => 'Hack Attempt',
         ])
         ->assertForbidden();
+});
+
+it('admin puede cambiar si el juego admite el control facial', function (): void {
+    $admin = User::factory()->admin()->create();
+    $game = Game::factory()->create();
+
+    $this->actingAs($admin)
+        ->put(route('admin.games.update', $game), [
+            'facial_control_support' => 'designed',
+        ])
+        ->assertRedirect()
+        ->assertSessionHasNoErrors();
+
+    expect($game->fresh()->facial_control_support)->toBe(FacialControlSupport::Designed);
+});
+
+it('rechaza un nivel de control facial que no existe', function (): void {
+    $admin = User::factory()->admin()->create();
+    $game = Game::factory()->compatibleWithFace()->create();
+
+    $this->actingAs($admin)
+        ->put(route('admin.games.update', $game), [
+            'facial_control_support' => 'maybe',
+        ])
+        ->assertSessionHasErrors('facial_control_support');
+
+    expect($game->fresh()->facial_control_support)->toBe(FacialControlSupport::Compatible);
+});
+
+it('el detalle del admin muestra si el juego admite el control facial', function (): void {
+    $admin = User::factory()->admin()->create();
+    $game = Game::factory()->designedForFace()->create();
+
+    $this->actingAs($admin)
+        ->get(route('admin.games.show', $game))
+        ->assertInertia(fn ($page) => $page
+            ->where('game.facial_control_support', 'designed'));
 });

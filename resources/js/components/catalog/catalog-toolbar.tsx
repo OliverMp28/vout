@@ -1,4 +1,4 @@
-import { Search, X } from 'lucide-react';
+import { ScanFace, Search, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -8,6 +8,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { Toggle } from '@/components/ui/toggle';
 import { useTranslation } from '@/hooks/use-translation';
 import type { CatalogFilters } from '@/types';
 
@@ -16,6 +17,9 @@ type Props = {
     onSearchChange: (value: string) => void;
     sort: CatalogFilters['sort'];
     onSortChange: (sort: CatalogFilters['sort']) => void;
+    /** Solo juegos que se pueden jugar con la cara. */
+    face: boolean;
+    onFaceChange: (face: boolean) => void;
     hasActiveFilters: boolean;
     onClearFilters: () => void;
 };
@@ -25,6 +29,8 @@ export function CatalogToolbar({
     onSearchChange,
     sort,
     onSortChange,
+    face,
+    onFaceChange,
     hasActiveFilters,
     onClearFilters,
 }: Props) {
@@ -53,7 +59,19 @@ export function CatalogToolbar({
                 )}
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+                {/* Solo los que se juegan con la cara */}
+                <Toggle
+                    id="catalog-filter-face"
+                    variant="outline"
+                    pressed={face}
+                    onPressedChange={onFaceChange}
+                    className="gap-1.5 px-3"
+                >
+                    <ScanFace aria-hidden="true" />
+                    {t('catalog.filter.face')}
+                </Toggle>
+
                 {/* Sort */}
                 <Select
                     value={sort}

@@ -24,6 +24,8 @@ class GameIndexRequest extends FormRequest
             'categories.*' => ['string', 'exists:categories,slug'],
             'search' => ['nullable', 'string', 'max:100'],
             'sort' => ['nullable', 'string', 'in:popular,newest,alphabetical'],
+            // Solo juegos que se pueden jugar con la cara.
+            'face' => ['nullable', 'boolean'],
             'cursor' => ['nullable', 'string'],
         ];
     }
@@ -33,7 +35,7 @@ class GameIndexRequest extends FormRequest
      *
      * Centraliza los defaults aquí para que el controller permanezca limpio.
      *
-     * @return array{categories: list<string>, search: string, sort: string}
+     * @return array{categories: list<string>, search: string, sort: string, face: bool}
      */
     public function filters(): array
     {
@@ -41,6 +43,7 @@ class GameIndexRequest extends FormRequest
             'categories' => $this->array('categories', []),
             'search' => $this->string('search')->trim()->toString(),
             'sort' => $this->string('sort', 'popular')->toString(),
+            'face' => $this->boolean('face'),
         ];
     }
 }

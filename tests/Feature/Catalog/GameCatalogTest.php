@@ -62,6 +62,39 @@ it('filtra con lógica OR entre múltiples categorías', function () {
         ->assertInertia(fn ($page) => $page->has('games.data', 2));
 });
 
+it('filtra los juegos que se pueden jugar con la cara', function () {
+    Game::factory()->create(['name' => 'Keyboard Only']);
+    Game::factory()->compatibleWithFace()->create(['name' => 'Compatible Game', 'play_count' => 20]);
+    Game::factory()->designedForFace()->create(['name' => 'Face Game', 'play_count' => 10]);
+
+    $this->get(route('catalog.index', ['face' => 1]))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->has('games.data', 2)
+            ->where('games.data.0.name', 'Compatible Game')
+            ->where('games.data.0.facial_control_support', 'compatible')
+            ->where('games.data.1.facial_control_support', 'designed')
+            ->where('filters.face', true)
+        );
+});
+
+it('sin el filtro de la cara salen todos los juegos', function () {
+    Game::factory()->create();
+    Game::factory()->designedForFace()->create();
+
+    $this->get(route('catalog.index'))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->has('games.data', 2)
+            ->where('filters.face', false)
+        );
+});
+
+it('rechaza un valor del filtro de la cara que no es booleano', function () {
+    $this->get(route('catalog.index', ['face' => 'yes-please']))
+        ->assertSessionHasErrors('face');
+});
+
 it('busca juegos por término en el nombre', function () {
     Game::factory()->create(['name' => 'Retro Invaders', 'description' => 'A classic.']);
     Game::factory()->create(['name' => 'Bubble Pop', 'description' => 'Match bubbles.']);
@@ -140,6 +173,16 @@ it('muestra el detalle de un juego activo', function () {
         ->assertInertia(fn ($page) => $page
             ->component('catalog/show')
             ->where('game.data.slug', $game->slug)
+        );
+});
+
+it('el detalle dice si el juego se puede jugar con la cara', function () {
+    $game = Game::factory()->designedForFace()->create();
+
+    $this->get(route('catalog.show', $game))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('game.data.facial_control_support', 'designed')
         );
 });
 

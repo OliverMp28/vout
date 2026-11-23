@@ -8,6 +8,8 @@
  *   - App\Http\Controllers\Developers\DevelopersLandingController
  */
 
+import type { FacialControlSupport } from './catalog';
+
 export type RegisteredAppResource = {
     readonly id: number;
     readonly slug: string;
@@ -103,6 +105,7 @@ export type DeveloperGameCardResource = {
     readonly slug: string;
     readonly cover_image: string | null;
     readonly embed_url: string | null;
+    readonly facial_control_support: FacialControlSupport;
     readonly status: GameStatus;
     readonly is_active: boolean;
     readonly play_count: number;
@@ -145,6 +148,7 @@ export type GameFormData = {
     description: string;
     registered_app_id: number | null;
     embed_url: string;
+    facial_control_support: FacialControlSupport;
     cover_image: string;
     release_date: string;
     repo_url: string;

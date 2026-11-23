@@ -169,6 +169,12 @@ function DetailsPanel({ game }: { game: AdminGameDetail }) {
                         </dd>
                     </div>
                 )}
+                <MetaRow
+                    label={t('admin.games.show.details.facial_control')}
+                    value={t(
+                        `facial_control.support.${game.facial_control_support}.label`,
+                    )}
+                />
                 {game.registered_app && (
                     <MetaRow
                         label={t('admin.games.show.details.app')}

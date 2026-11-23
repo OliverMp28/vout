@@ -23,6 +23,8 @@ export default function CatalogIndex({
         setSearch,
         sort,
         setSort,
+        face,
+        setFace,
         categories: selectedCategories,
         toggleCategory,
         clearFilters,
@@ -100,6 +102,8 @@ export default function CatalogIndex({
                     onSearchChange={setSearch}
                     sort={sort}
                     onSortChange={setSort}
+                    face={face}
+                    onFaceChange={setFace}
                     hasActiveFilters={hasActiveFilters}
                     onClearFilters={clearFilters}
                 />

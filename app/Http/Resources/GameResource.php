@@ -24,6 +24,7 @@ class GameResource extends JsonResource
             'description' => $this->description,
             'cover_image' => $this->cover_image,
             'embed_url' => $this->embed_url,
+            'facial_control_support' => $this->facial_control_support?->value ?? 'none',
             'release_date' => $this->release_date?->toDateString(),
             'play_count' => $this->play_count,
             'is_active' => $this->is_active,

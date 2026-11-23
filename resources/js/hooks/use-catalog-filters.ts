@@ -20,6 +20,7 @@ export function useCatalogFilters({ filters }: UseCatalogFiltersOptions) {
                 params.categories = merged.categories;
             if (merged.search) params.search = merged.search;
             if (merged.sort !== 'popular') params.sort = merged.sort;
+            if (merged.face) params.face = '1';
 
             router.get(catalogIndex.url(), params as Record<string, string>, {
                 preserveScroll: true,
@@ -62,21 +63,31 @@ export function useCatalogFilters({ filters }: UseCatalogFiltersOptions) {
         [navigate],
     );
 
+    const setFace = useCallback(
+        (face: boolean) => {
+            navigate({ face });
+        },
+        [navigate],
+    );
+
     const clearFilters = useCallback(() => {
         setSearchValue('');
-        navigate({ categories: [], search: '', sort: 'popular' });
+        navigate({ categories: [], search: '', sort: 'popular', face: false });
     }, [navigate]);
 
     const hasActiveFilters =
         filters.categories.length > 0 ||
         filters.search !== '' ||
-        filters.sort !== 'popular';
+        filters.sort !== 'popular' ||
+        filters.face;
 
     return {
         search,
         setSearch,
         sort: filters.sort,
         setSort,
+        face: filters.face,
+        setFace,
         categories: filters.categories,
         toggleCategory,
         clearFilters,

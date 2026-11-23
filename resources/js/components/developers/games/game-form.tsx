@@ -1,6 +1,7 @@
 import { Link } from '@inertiajs/react';
 import { AlertCircle, BadgeCheck, Plus, UserRoundPlus } from 'lucide-react';
 import type { ReactNode, SubmitEvent } from 'react';
+import { FacialControlSupportField } from '@/components/catalog/facial-control-support-field';
 import { FlowDiagram } from '@/components/developers/flow-diagram';
 import { InfoHint } from '@/components/developers/info-hint';
 import { UrlPathInput } from '@/components/developers/url-path-input';
@@ -302,6 +303,31 @@ export function GameForm({
                             </AlertDescription>
                         </Alert>
                     </div>
+                </Section>
+
+                <Section
+                    title={t(
+                        'developers.games.form.section.facial_control.title',
+                    )}
+                    description={t(
+                        'developers.games.form.section.facial_control.description',
+                    )}
+                >
+                    <FacialControlSupportField
+                        idPrefix="game"
+                        value={data.facial_control_support}
+                        onChange={(next) =>
+                            onChange('facial_control_support', next)
+                        }
+                        disabled={isLocked}
+                    />
+                    <InputError message={errors.facial_control_support} />
+                    <Link
+                        href={`/developers/docs/integration-guide#${t('developers.games.form.facial_control.guide_anchor')}`}
+                        className="inline-block text-sm font-medium text-primary underline-offset-4 hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                    >
+                        {t('developers.games.form.facial_control.cta')}
+                    </Link>
                 </Section>
 
                 <Section

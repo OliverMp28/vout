@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Enums\FacialControlSupport;
 use App\Models\Game;
 use Illuminate\Database\Seeder;
 
@@ -48,6 +49,8 @@ class TestGameSeeder extends Seeder
                 'name' => 'Test Game (Dev)',
                 'description' => 'Página de prueba para validar el handshake READY → VOUT_AUTH y el despacho de acciones. Solo visible en entornos de desarrollo.',
                 'embed_url' => 'http://localhost/test-game/index.html',
+                // Recibe las teclas como eventos reales (mismo origen).
+                'facial_control_support' => FacialControlSupport::Compatible,
                 'cover_image' => null,
                 'release_date' => now()->toDateString(),
                 'play_count' => 0,

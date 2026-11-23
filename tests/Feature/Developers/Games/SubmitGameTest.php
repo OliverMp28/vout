@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\FacialControlSupport;
 use App\Enums\GameStatus;
 use App\Models\Category;
 use App\Models\Game;
@@ -122,4 +123,59 @@ it('exige un invitado autenticarse para acceder al listado de juegos', function 
     $response = $this->get(route('developers.games.index'));
 
     $response->assertRedirect(route('login'));
+});
+
+it('un juego nuevo no admite el control facial si el dev no dice nada', function (): void {
+    $user = User::factory()->create();
+    $app = makeAppForUser($user);
+    $category = Category::factory()->create();
+
+    actingAs($user)->post(route('developers.games.store'), [
+        'name' => 'Silent Game',
+        'description' => str_repeat('Un juego sin cámara. ', 4),
+        'registered_app_id' => $app->id,
+        'embed_url' => 'https://games.test/silent',
+        'category_ids' => [$category->id],
+    ])->assertSessionHasNoErrors();
+
+    expect(Game::query()->where('slug', 'silent-game')->firstOrFail()->facial_control_support)
+        ->toBe(FacialControlSupport::None);
+});
+
+it('guarda si el juego admite el control facial', function (): void {
+    $user = User::factory()->create();
+    $app = makeAppForUser($user);
+    $category = Category::factory()->create();
+
+    actingAs($user)->post(route('developers.games.store'), [
+        'name' => 'Face Runner',
+        'description' => str_repeat('Un juego con gestos. ', 4),
+        'registered_app_id' => $app->id,
+        'embed_url' => 'https://games.test/face',
+        'facial_control_support' => 'designed',
+        'category_ids' => [$category->id],
+    ])->assertSessionHasNoErrors();
+
+    expect(Game::query()->where('slug', 'face-runner')->firstOrFail()->facial_control_support)
+        ->toBe(FacialControlSupport::Designed);
+});
+
+it('rechaza un nivel de control facial que no existe', function (): void {
+    $user = User::factory()->create();
+    $app = makeAppForUser($user);
+    $category = Category::factory()->create();
+
+    actingAs($user)
+        ->from(route('developers.games.create'))
+        ->post(route('developers.games.store'), [
+            'name' => 'Bad Level',
+            'description' => str_repeat('lorem ipsum ', 5),
+            'registered_app_id' => $app->id,
+            'embed_url' => 'https://games.test/bad',
+            'facial_control_support' => 'always',
+            'category_ids' => [$category->id],
+        ])
+        ->assertSessionHasErrors('facial_control_support');
+
+    expect(Game::query()->count())->toBe(0);
 });

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Developers;
 
+use App\Enums\FacialControlSupport;
 use App\Enums\GameStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Developers\StoreDeveloperGameRequest;
@@ -50,7 +51,7 @@ class DeveloperGameController extends Controller
             ->get([
                 'id', 'submitted_by_user_id', 'registered_app_id',
                 'name', 'slug', 'cover_image', 'embed_url',
-                'status', 'is_active', 'play_count',
+                'facial_control_support', 'status', 'is_active', 'play_count',
                 'created_at', 'updated_at',
             ]);
 
@@ -92,6 +93,7 @@ class DeveloperGameController extends Controller
                 'slug' => $this->uniqueSlug($data['name']),
                 'description' => $data['description'],
                 'embed_url' => $data['embed_url'],
+                'facial_control_support' => $data['facial_control_support'] ?? FacialControlSupport::None,
                 'cover_image' => $data['cover_image'] ?? null,
                 'release_date' => $data['release_date'] ?? null,
                 'repo_url' => $data['repo_url'] ?? null,
@@ -161,6 +163,7 @@ class DeveloperGameController extends Controller
             $game->fill(collect($data)->only([
                 'name', 'description', 'embed_url', 'cover_image',
                 'release_date', 'repo_url', 'registered_app_id',
+                'facial_control_support',
             ])->all())->save();
 
             // Si se editó tras un rechazo, se vuelve a cola.
@@ -301,6 +304,7 @@ class DeveloperGameController extends Controller
             'slug' => $game->slug,
             'cover_image' => $game->cover_image,
             'embed_url' => $game->embed_url,
+            'facial_control_support' => $game->facial_control_support->value,
             'status' => $game->status->value,
             'is_active' => (bool) $game->is_active,
             'play_count' => (int) $game->play_count,

@@ -191,6 +191,7 @@ function toFormData(game: DeveloperGameDetailResource): GameFormData {
         description: game.description,
         registered_app_id: game.registered_app_id,
         embed_url: game.embed_url ?? '',
+        facial_control_support: game.facial_control_support,
         cover_image: game.cover_image ?? '',
         release_date: game.release_date ?? '',
         repo_url: game.repo_url ?? '',

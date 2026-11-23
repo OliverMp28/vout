@@ -92,7 +92,7 @@ class GameController extends Controller
     /**
      * Construye la query del catálogo aplicando filtros, scopes y eager loading.
      *
-     * @param  array{categories: list<string>, search: string, sort: string}  $filters
+     * @param  array{categories: list<string>, search: string, sort: string, face: bool}  $filters
      */
     private function buildCatalogQuery(array $filters, ?int $userId): Builder
     {
@@ -102,6 +102,10 @@ class GameController extends Controller
             ->inCategories($filters['categories'])
             ->search($filters['search'])
             ->sortedBy($filters['sort']);
+
+        if ($filters['face']) {
+            $query->playableWithFace();
+        }
 
         if ($userId !== null) {
             $query->withUserInteraction($userId);

@@ -2,6 +2,7 @@
  * Tipos del Panel de Administración (Fase 4.2).
  */
 
+import type { FacialControlSupport } from '@/types/catalog';
 import type { GameStatus } from '@/types/developers';
 
 // ── Admin: Apps ─────────────────────────────────────────────────────────
@@ -107,6 +108,7 @@ export type AdminGameDetail = {
     description: string;
     cover_image: string | null;
     embed_url: string | null;
+    facial_control_support: FacialControlSupport;
     repo_url: string | null;
     release_date: string | null;
     status: GameStatus;

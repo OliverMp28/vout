@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\FacialControlSupport;
 use App\Enums\GameStatus;
 use Database\Factories\GameFactory;
 use Illuminate\Database\Eloquent\Builder;
@@ -40,6 +41,7 @@ class Game extends Model
         'repo_url',
         'cover_image',
         'embed_url',
+        'facial_control_support',
         'release_date',
         'play_count',
         'is_active',
@@ -69,6 +71,7 @@ class Game extends Model
             'is_featured' => 'boolean',
             'play_count' => 'integer',
             'status' => GameStatus::class,
+            'facial_control_support' => FacialControlSupport::class,
         ];
     }
 
@@ -80,6 +83,7 @@ class Game extends Model
      */
     protected $attributes = [
         'status' => 'published',
+        'facial_control_support' => 'none',
     ];
 
     /**
@@ -204,6 +208,15 @@ class Game extends Model
     public function submittedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'submitted_by_user_id');
+    }
+
+    /**
+     * Scope: juegos que se pueden jugar con la cara (compatibles o pensados
+     * para el control facial).
+     */
+    public function scopePlayableWithFace(Builder $query): Builder
+    {
+        return $query->whereIn('games.facial_control_support', FacialControlSupport::playableWithFace());
     }
 
     /**

@@ -792,6 +792,18 @@ Treat it as a hint and bound it: if `at` is in the future or more than a couple 
 
 The user can also map a gesture to an event with any name they like, and it reaches you as is in `event`. Treat it as text you don't control: compare it against your list of actions and drop the rest.
 
+### Declare whether your game can be played with the face
+
+The portal can't check whether your game understands the messages above: your page lives on another origin. That's why, when you submit the game (or edit it in your dashboard), you declare one of these three levels under "Face control". The Vout team reviews it when approving the game.
+
+| Level | When to choose it | What the portal does |
+| :--- | :--- | :--- |
+| **Doesn't receive Vout's controls** (default) | Your game doesn't use the SDK or convert `VOUT_KEY` / `VOUT_POINTER`. | It doesn't offer the camera in your game. |
+| **Compatible** | You use the SDK (or convert the messages by hand) and your game can be played with keyboard or mouse. | It offers the camera with each user's own controls, may switch it on automatically for users who allowed it, and shows the "Face control" badge. |
+| **Made for face control** | On top of that, it plays well with gestures alone: few actions, no split-second precision, and tolerant of a small delay. | The same, with the "Made for face control" badge. People who play with the camera find it with the catalog filter. |
+
+Be conservative: declaring "Compatible" when it isn't leaves someone who plays hands-free with a camera switched on that does nothing. If in doubt, try your game with the portal's face control before submitting it.
+
 ### Minimal example without the SDK
 
 ```js

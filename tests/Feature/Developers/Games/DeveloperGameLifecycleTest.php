@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\FacialControlSupport;
 use App\Enums\GameStatus;
 use App\Models\Category;
 use App\Models\Developer;
@@ -109,4 +110,19 @@ it('un extraño recibe 403 al intentar ver un juego ajeno', function (): void {
 
     actingAs($stranger)->get(route('developers.games.show', $game))
         ->assertForbidden();
+});
+
+it('el dev puede cambiar si su juego admite el control facial', function (): void {
+    $user = User::factory()->create();
+    $game = Game::factory()->submittedBy($user)->forApp(lifecycleApp($user))->pendingReview()->create();
+
+    actingAs($user)->put(route('developers.games.update', $game), [
+        'facial_control_support' => 'compatible',
+    ])->assertSessionHasNoErrors();
+
+    expect($game->fresh()->facial_control_support)->toBe(FacialControlSupport::Compatible);
+
+    actingAs($user)->get(route('developers.games.show', $game))
+        ->assertInertia(fn ($page) => $page
+            ->where('game.facial_control_support', 'compatible'));
 });

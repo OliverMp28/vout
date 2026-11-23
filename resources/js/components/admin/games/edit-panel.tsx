@@ -2,6 +2,7 @@ import { useForm } from '@inertiajs/react';
 import { Pencil } from 'lucide-react';
 import { useState } from 'react';
 import { Panel } from '@/components/admin/panel';
+import { FacialControlSupportField } from '@/components/catalog/facial-control-support-field';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -32,6 +33,7 @@ export function EditPanel({ game, categories, developers }: EditPanelProps) {
         name: game.name,
         description: game.description ?? '',
         embed_url: game.embed_url ?? '',
+        facial_control_support: game.facial_control_support,
         cover_image: game.cover_image ?? '',
         release_date: game.release_date ?? '',
         repo_url: game.repo_url ?? '',
@@ -185,6 +187,21 @@ export function EditPanel({ game, categories, developers }: EditPanelProps) {
                         <InputError message={errors.repo_url} />
                     </div>
                 </div>
+
+                <fieldset className="grid gap-2" disabled={processing}>
+                    <legend className="mb-2 text-sm font-medium">
+                        {t('admin.games.show.edit.facial_control')}
+                    </legend>
+                    <FacialControlSupportField
+                        idPrefix="edit"
+                        value={data.facial_control_support}
+                        onChange={(next) =>
+                            setData('facial_control_support', next)
+                        }
+                        disabled={processing}
+                    />
+                    <InputError message={errors.facial_control_support} />
+                </fieldset>
 
                 {categories.length > 0 && (
                     <ChipGroup

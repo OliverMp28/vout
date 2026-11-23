@@ -10,6 +10,7 @@ import {
     Users,
 } from 'lucide-react';
 import { useCallback, useState } from 'react';
+import { FacialControlBadge } from '@/components/catalog/facial-control-badge';
 import { GameGrid } from '@/components/catalog/game-grid';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -126,6 +127,23 @@ export default function CatalogShow({
                                 </p>
                             )}
                         </div>
+
+                        {/* Control facial */}
+                        {game.facial_control_support !== 'none' && (
+                            <div
+                                id="game-facial-control"
+                                className="space-y-1.5"
+                            >
+                                <FacialControlBadge
+                                    support={game.facial_control_support}
+                                />
+                                <p className="text-xs text-muted-foreground">
+                                    {t(
+                                        `facial_control.detail.${game.facial_control_support}`,
+                                    )}
+                                </p>
+                            </div>
+                        )}
 
                         {/* Categories */}
                         {game.categories.length > 0 && (

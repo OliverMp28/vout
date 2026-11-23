@@ -5,12 +5,12 @@ namespace App\Http\Controllers\Admin;
 use App\Enums\GameStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\RejectGameRequest;
+use App\Http\Requests\Admin\UpdateGameRequest;
 use App\Models\Category;
 use App\Models\Developer;
 use App\Models\Game;
 use App\Notifications\GameApprovedNotification;
 use App\Notifications\GameRejectedNotification;
-use App\Rules\PortableUrl;
 use App\Support\Audit;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -164,24 +164,13 @@ class AdminGameController extends Controller
      * Actualización administrativa (corregir typos, metadatos, categorías).
      * El admin puede editar cualquier juego en cualquier estado.
      */
-    public function update(Request $request, Game $game): RedirectResponse
+    public function update(UpdateGameRequest $request, Game $game): RedirectResponse
     {
-        $data = $request->validate([
-            'name' => ['sometimes', 'string', 'min:2', 'max:255'],
-            'description' => ['sometimes', 'string', 'min:20', 'max:5000'],
-            'embed_url' => ['sometimes', new PortableUrl],
-            'cover_image' => ['nullable', new PortableUrl, 'max:500'],
-            'release_date' => ['nullable', 'date'],
-            'repo_url' => ['nullable', new PortableUrl, 'max:500'],
-            'category_ids' => ['sometimes', 'array', 'min:1', 'max:5'],
-            'category_ids.*' => ['integer', 'exists:categories,id'],
-            'developer_ids' => ['sometimes', 'array', 'max:10'],
-            'developer_ids.*' => ['integer', 'exists:developers,id'],
-        ]);
+        $data = $request->validated();
 
         $game->fill(collect($data)->only([
             'name', 'description', 'embed_url', 'cover_image',
-            'release_date', 'repo_url',
+            'release_date', 'repo_url', 'facial_control_support',
         ])->all())->save();
 
         if (array_key_exists('category_ids', $data)) {
@@ -227,6 +216,7 @@ class AdminGameController extends Controller
             'description' => $game->description,
             'cover_image' => $game->cover_image,
             'embed_url' => $game->embed_url,
+            'facial_control_support' => $game->facial_control_support->value,
             'repo_url' => $game->repo_url,
             'release_date' => $game->release_date?->toDateString(),
             'status' => $game->status->value,

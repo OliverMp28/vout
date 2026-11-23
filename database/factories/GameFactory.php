@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Enums\FacialControlSupport;
 use App\Enums\GameStatus;
 use App\Models\Game;
 use App\Models\RegisteredApp;
@@ -31,6 +32,7 @@ class GameFactory extends Factory
             'repo_url' => fake()->optional()->url(),
             'cover_image' => fake()->optional()->imageUrl(640, 480, 'games'),
             'embed_url' => fake()->url(),
+            'facial_control_support' => FacialControlSupport::None,
             'release_date' => fake()->optional()->date(),
             'play_count' => fake()->numberBetween(0, 10000),
             'is_active' => true,
@@ -56,6 +58,26 @@ class GameFactory extends Factory
     {
         return $this->state(fn (array $attributes): array => [
             'is_featured' => true,
+        ]);
+    }
+
+    /**
+     * Estado: juego que recibe las teclas y los clics del control facial.
+     */
+    public function compatibleWithFace(): static
+    {
+        return $this->state(fn (array $attributes): array => [
+            'facial_control_support' => FacialControlSupport::Compatible,
+        ]);
+    }
+
+    /**
+     * Estado: juego pensado para jugarse con gestos de la cara.
+     */
+    public function designedForFace(): static
+    {
+        return $this->state(fn (array $attributes): array => [
+            'facial_control_support' => FacialControlSupport::Designed,
         ]);
     }
 
