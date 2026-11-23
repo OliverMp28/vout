@@ -14,6 +14,9 @@
  *   (`preload-policy.ts`): una vez cargado el juego, sin cámara.
  * - Decidir qué controles se usan: los del usuario o los que sugiere el juego
  *   (`lib/play/preset-choice.ts`), con la respuesta guardada por juego.
+ * - Encender la cámara sola a quien lo autorizó, con aviso de 3 s
+ *   (`use-play-autostart.ts`), y pausarla o apagarla con la pestaña oculta
+ *   (`use-hidden-tab-policy.ts`).
  */
 
 import { router } from '@inertiajs/react';
@@ -29,7 +32,10 @@ import {
 import { useGameSession } from '@/hooks/use-game-session';
 import type { GameSessionPayload } from '@/hooks/use-game-session';
 import { useGestureEngine } from '@/hooks/use-gesture-engine';
+import { useHiddenTabPolicy } from '@/hooks/use-hidden-tab-policy';
 import { useIframeHandshake } from '@/hooks/use-iframe-handshake';
+import { usePlayAutostart } from '@/hooks/use-play-autostart';
+import type { PlayAutostart } from '@/hooks/use-play-autostart';
 import { transformCursorToIframe } from '@/lib/iframe/cursor-forwarder';
 import { sendJson } from '@/lib/json-request';
 import {
@@ -78,6 +84,11 @@ export type UsePlayOrchestratorOptions = {
     presetChoice: string | null;
     /** Sesión de juego inicial emitida por `PlayController`. */
     session: GameSessionPayload;
+    /**
+     * Encender la cámara sola al cargar el juego: el usuario lo autorizó, el
+     * juego lo admite y tiene perfil de gestos.
+     */
+    autostartWanted?: boolean;
     user: UserInfo;
     iframeRef: React.RefObject<HTMLIFrameElement | null>;
     videoRef: React.RefObject<HTMLVideoElement | null>;
@@ -98,6 +109,11 @@ export type UsePlayOrchestratorReturn = {
     activeGamePreset: string | null;
     /** Hay que preguntar si se usan los controles del juego. */
     askPresetChoice: boolean;
+    /** Encendido automático de la cámara (aviso, cuenta atrás, "Ahora no"). */
+    autostart: PlayAutostart;
+    /** La cámara se apagó por dejar la pestaña oculta (hasta que se reactive). */
+    stoppedWhileHidden: boolean;
+    dismissHiddenStop: () => void;
     errorMessage: string | null;
 
     // ── Subsistemas ────────────────────────────────────────────────────────
@@ -147,6 +163,7 @@ export function usePlayOrchestrator({
     activeGestureConfig,
     presetChoice: initialPresetChoice,
     session: initialSession,
+    autostartWanted = false,
     user,
     iframeRef,
     videoRef,
@@ -165,6 +182,10 @@ export function usePlayOrchestrator({
     const [suggestedPreset, setSuggestedPreset] = useState<string | null>(null);
     const [storedPresetChoice, setStoredPresetChoice] =
         useState(initialPresetChoice);
+    // Encendida (sola o a mano) en esta visita: el encendido automático no
+    // vuelve a intentarlo, salvo tras apagarse por la pestaña oculta.
+    const [cameraAttempted, setCameraAttempted] = useState(false);
+    const [stoppedWhileHidden, setStoppedWhileHidden] = useState(false);
 
     const hasGestureConfig = activeGestureConfig !== null;
     const gameSupportsFacialControl = game.facial_control_support !== 'none';
@@ -372,6 +393,8 @@ export function usePlayOrchestrator({
         // La apertura puede tardar (espera a la primera imagen): un segundo
         // clic mientras tanto no debe lanzar otra.
         if (camera.status === 'requesting') return;
+        setCameraAttempted(true);
+        setStoppedWhileHidden(false);
         // El motor se prepara mientras se abre la cámara, no después.
         engine.prewarm();
         const requestedAt = performance.now();
@@ -397,6 +420,65 @@ export function usePlayOrchestrator({
         setDispatchEnabled(false);
         onCursorMoveRef.current?.(0, 0, false);
     }, [camera, engine]);
+
+    // ── Pestaña oculta: pausar y, tras 1 minuto, apagar la cámara ─────────
+    // Con la pestaña oculta no llegan imágenes, pero la cámara seguiría
+    // encendida (con su luz) hasta salir del juego.
+    const engineStatusRef = useRef(engine.status);
+    useEffect(() => {
+        engineStatusRef.current = engine.status;
+    });
+    const activeWhenHiddenRef = useRef(false);
+    const enginePause = engine.pauseDetection;
+    const engineResume = engine.resumeDetection;
+
+    useHiddenTabPolicy({
+        onHide: () => {
+            const status = engineStatusRef.current;
+            activeWhenHiddenRef.current =
+                status === 'running' || status === 'loading';
+
+            if (activeWhenHiddenRef.current) {
+                enginePause();
+            }
+        },
+        onLongHidden: () => {
+            if (!activeWhenHiddenRef.current) {
+                return;
+            }
+
+            activeWhenHiddenRef.current = false;
+            handleStopEngine();
+            setStoppedWhileHidden(true);
+            // Quien la tiene en automático la recupera al volver (con aviso).
+            setCameraAttempted(false);
+        },
+        onReturn: (kind) => {
+            if (
+                kind === 'short' &&
+                activeWhenHiddenRef.current &&
+                engineStatusRef.current === 'paused'
+            ) {
+                engineResume();
+            }
+
+            activeWhenHiddenRef.current = false;
+        },
+    });
+
+    const dismissHiddenStop = useCallback(
+        () => setStoppedWhileHidden(false),
+        [],
+    );
+
+    // ── Encendido automático ──────────────────────────────────────────────
+    const autostart = usePlayAutostart({
+        wanted: autostartWanted && gameSupportsFacialControl,
+        gameReady: handshake.status === 'authenticated',
+        engineIdle: engine.status === 'idle' || engine.status === 'ready',
+        attempted: cameraAttempted,
+        onStart: () => void handleActivateEngine(),
+    });
 
     const handleSelectCamera = useCallback(
         (deviceId: string) => {
@@ -519,6 +601,9 @@ export function usePlayOrchestrator({
         suggestedPreset,
         activeGamePreset: gamePreset ? presetResolution.gamePreset : null,
         askPresetChoice: presetResolution.ask,
+        autostart,
+        stoppedWhileHidden,
+        dismissHiddenStop,
         errorMessage: engine.error ?? camera.error ?? null,
 
         engine,

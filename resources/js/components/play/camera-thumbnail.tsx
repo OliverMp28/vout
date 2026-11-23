@@ -1,7 +1,8 @@
 /**
  * La cámara en miniatura sobre el juego, cuando el panel no se ve (cerrado,
  * o la hoja móvil sin abrir): quien la encendió la sigue viendo sin ocupar
- * una columna. La pinta el worker, como en el panel.
+ * una columna. La pinta el worker, como en el panel. A pantalla completa va
+ * en la barra lateral, fuera del juego.
  */
 
 import { Camera, X } from 'lucide-react';
@@ -14,15 +15,28 @@ type CameraThumbnailProps = {
     engine: FaceMeshPreviewTarget;
     /** Apaga la vista de la cámara (la preferencia, no la cámara). */
     onHide: () => void;
+    /**
+     * En su sitio, en lugar de flotar en una esquina del juego (la barra
+     * lateral de la pantalla completa).
+     */
+    inline?: boolean;
 };
 
-export function CameraThumbnail({ engine, onHide }: CameraThumbnailProps) {
+export function CameraThumbnail({
+    engine,
+    onHide,
+    inline = false,
+}: CameraThumbnailProps) {
     const { t } = useTranslation();
 
     return (
         <div
             id="play-camera-thumbnail"
-            className="absolute right-3 bottom-3 z-40 w-36 sm:w-44"
+            className={
+                inline
+                    ? 'relative w-full'
+                    : 'absolute right-3 bottom-3 z-40 w-36 sm:w-44'
+            }
         >
             <FaceMeshView
                 engine={engine}

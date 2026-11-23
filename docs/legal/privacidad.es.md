@@ -1,6 +1,6 @@
 ---
-version: "1.0.0"
-last_updated: "2026-04-18"
+version: "1.1.0"
+last_updated: "2026-11-23"
 ---
 
 # Política de Privacidad
@@ -113,16 +113,21 @@ Si crees que no estamos respetando estos derechos, puedes reclamar ante la **Age
 
 Este es uno de los puntos más sensibles y queremos dejarlo **cristalino**.
 
-Cuando activas los controles por gestos faciales:
+Cuando usas el control facial:
 
-- Tu **cámara sólo se enciende** si tú pulsas el botón "Activar". Sin ese clic explícito, no tocamos el hardware.
-- El análisis de la imagen lo hace **MediaPipe FaceLandmarker en tu navegador**, dentro de un Web Worker aislado. **Los frames de vídeo jamás salen de tu dispositivo.**
-- Lo que guardamos en nuestra base de datos es **sólo configuración numérica**: un nombre de perfil, un valor de sensibilidad (1-10) y un JSON con el mapeo "este gesto dispara esta tecla". **No hay vectores biométricos, ni landmarks, ni imágenes, ni plantillas faciales.**
-- Cuando cierras la pestaña o sales del juego, el stream de cámara se detiene inmediatamente.
+- Tu **cámara sólo se enciende** de dos formas, y siempre en un juego que admite el control facial:
+  - cuando pulsas "Activar", "Activar cámara" o "Probar ahora";
+  - **sola al abrir el juego**, solo si lo has autorizado expresamente en `Ajustes → Apariencia` (perfil «Juego con la cámara» y la casilla «Encender la cámara al abrir un juego compatible») y el navegador ya tiene tu permiso. Aun así, verás antes un aviso de 3 segundos con el botón «Ahora no» para cancelarlo.
+
+  Nunca pedimos el permiso de la cámara al navegador sin que pulses un botón.
+- Mientras la cámara está encendida, la página lo indica siempre («Cámara activa», con el botón «Apagar»).
+- El análisis de la imagen lo hace **MediaPipe FaceLandmarker en tu navegador**, dentro de un Web Worker aislado. **Los frames de vídeo jamás salen de tu dispositivo.** La vista de la cámara, si la activas, también se dibuja solo en tu pantalla.
+- Lo que guardamos en nuestra base de datos es **sólo configuración**: un nombre de perfil, un valor de sensibilidad (1-10), un JSON con el mapeo "este gesto dispara esta tecla" y tus preferencias de uso (ver 2.2). **No hay vectores biométricos, ni landmarks, ni imágenes, ni plantillas faciales.**
+- La cámara se apaga en cuanto sales del juego o cierras la pestaña. Si dejas la pestaña del juego oculta, el análisis se pausa y, pasado un minuto, la cámara se apaga.
 
 Esto encaja con el **principio de minimización del RGPD (art. 5.1.c)** y con las directrices de la AEPD sobre biometría (**procesamiento local, edge computing**). No tratamos datos biométricos del artículo 9 del RGPD porque no almacenamos ni procesamos centralizadamente ningún rasgo que permita identificar a una persona de forma unívoca.
 
-Puedes desactivar la función en cualquier momento desde `Ajustes → Apariencia → Control facial` (eligiendo «No uso la cámara»). Al hacerlo se deshabilita el worker y no volveremos a pedir acceso a la cámara hasta que la actives de nuevo.
+Puedes cambiar cómo la usas en cualquier momento desde `Ajustes → Apariencia → Control facial`. Con «No uso la cámara» no se carga nada del control facial y la cámara solo se enciende si tú pulsas «Probar ahora» en un juego. Quitar la casilla del encendido automático hace que vuelva a hacer falta pulsar para encenderla.
 
 ## 7. Menores de edad
 

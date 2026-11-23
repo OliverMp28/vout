@@ -310,6 +310,26 @@
 }
 
 /*
+ * ─── Autostart countdown ─────────────────────────────────────
+ * The bar under "Encendiendo la cámara…" fills during the 3 s
+ * notice (AUTOSTART_COUNTDOWN_SECONDS). Informative, so it stays
+ * with reduced motion (a slow linear fill, no flashing).
+ */
+@keyframes autostart-progress {
+    from {
+        transform: scaleX(0);
+    }
+    to {
+        transform: scaleX(1);
+    }
+}
+
+.animate-autostart-progress {
+    transform-origin: left;
+    animation: autostart-progress 3s linear both;
+}
+
+/*
  * ─── Iframe shimmer skeleton ─────────────────────────────────
  * Subtle diagonal sheen for the iframe loading state — premium
  * feel without the clinical gray of typical skeletons.

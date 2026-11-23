@@ -1,6 +1,6 @@
 ---
-version: "1.0.0"
-last_updated: "2026-04-18"
+version: "1.1.0"
+last_updated: "2026-11-23"
 ---
 
 # Privacy Policy
@@ -113,16 +113,21 @@ If you feel we're not respecting these rights, you can file a complaint with the
 
 This is one of the most sensitive points and we want it **crystal clear**.
 
-When you activate facial gesture controls:
+When you use face control:
 
-- Your **camera is only turned on** if you press the "Activate" button. Without that explicit click, we don't touch the hardware.
-- Image analysis is done by **MediaPipe FaceLandmarker in your browser**, inside an isolated Web Worker. **Video frames never leave your device.**
-- What we save in our database is **only numeric configuration**: a profile name, a sensitivity value (1-10), and a JSON mapping "this gesture triggers this key". **No biometric vectors, no landmarks, no images, no facial templates.**
-- When you close the tab or leave the game, the camera stream stops immediately.
+- Your **camera is only turned on** in two ways, and always in a game that supports face control:
+  - when you press "Activate", "Turn camera on" or "Try it now";
+  - **by itself when you open the game**, only if you have expressly allowed it in `Settings → Appearance` ("I play with the camera" profile and the "Turn the camera on when I open a compatible game" checkbox) and the browser already has your permission. Even then, you'll first see a 3-second notice with a "Not now" button to cancel it.
+
+  We never ask the browser for camera permission without you pressing a button.
+- While the camera is on, the page always shows it ("Camera on", with a "Turn off" button).
+- Image analysis is done by **MediaPipe FaceLandmarker in your browser**, inside an isolated Web Worker. **Video frames never leave your device.** The camera view, if you turn it on, is also drawn only on your screen.
+- What we save in our database is **only configuration**: a profile name, a sensitivity value (1-10), a JSON mapping "this gesture triggers this key" and your usage preferences (see 2.2). **No biometric vectors, no landmarks, no images, no facial templates.**
+- The camera turns off as soon as you leave the game or close the tab. If you leave the game tab hidden, analysis pauses and, after one minute, the camera turns off.
 
 This aligns with the **GDPR minimization principle (art. 5.1.c)** and the AEPD guidelines on biometrics (**local/edge computing**). We do not process art. 9 GDPR biometric data because we neither store nor centrally process any trait that uniquely identifies a person.
 
-You can disable the feature anytime at `Settings → Appearance → Face control` (choosing "I don't use the camera"). Doing so disables the worker, and we won't request camera access again until you enable it.
+You can change how you use it at any time in `Settings → Appearance → Face control`. With "I don't use the camera" nothing from face control is loaded and the camera only turns on if you press "Try it now" in a game. Unticking the automatic switch-on box means you'll have to press a button to turn it on again.
 
 ## 7. Minors
 

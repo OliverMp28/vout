@@ -15,6 +15,8 @@
  *  - Tablet/móvil: el panel es una hoja, cerrada al entrar.
  *  - El iframe no cambia de sitio en el árbol: abrir o cerrar el panel no
  *    recarga el juego.
+ *  - Pantalla completa del escenario (`#play-stage`): dentro va todo lo que
+ *    debe seguir viéndose (cursor, avisos, miniatura, estado de la cámara).
  *
  * Reglas inamovibles:
  *  - El access token NUNCA aparece en URL — solo viaja por postMessage.
@@ -32,8 +34,11 @@ import type { CameraNotice } from '@/components/play/control-panel';
 import { CursorOverlay } from '@/components/play/cursor-overlay';
 import type { CursorOverlayHandle } from '@/components/play/cursor-overlay';
 import { EngineOverlay } from '@/components/play/engine-overlay';
+import { FullscreenToolbar } from '@/components/play/fullscreen-toolbar';
 import { NowPlayingHeader } from '@/components/play/now-playing-header';
 import { PlayToolbar } from '@/components/play/play-toolbar';
+import { StageNotice } from '@/components/play/stage-notice';
+import type { StageNoticeKind } from '@/components/play/stage-notice';
 import {
     Sheet,
     SheetContent,
@@ -42,6 +47,7 @@ import {
     SheetTitle,
 } from '@/components/ui/sheet';
 import { FaceMeshView } from '@/components/vision/face-mesh-view';
+import { useFullscreen } from '@/hooks/use-fullscreen';
 import type { GameSessionPayload } from '@/hooks/use-game-session';
 import { useWarmEngineState } from '@/hooks/use-gesture-engine';
 import { useIsDesktop } from '@/hooks/use-is-desktop';
@@ -87,6 +93,8 @@ type PlayGameProps = {
 /** Ids del panel (para `aria-controls` del botón "Control facial"). */
 const DESKTOP_PANEL_ID = 'play-control-panel';
 const SHEET_PANEL_ID = 'play-control-panel-sheet';
+/** Lo que se pone a pantalla completa. */
+const STAGE_ID = 'play-stage';
 
 /**
  * Guarda una preferencia de la página de juego con la cuenta, sin recargar
@@ -228,6 +236,9 @@ export default function PlayGame({
         suggestedPreset,
         activeGamePreset,
         askPresetChoice,
+        autostart,
+        stoppedWhileHidden,
+        dismissHiddenStop,
         errorMessage,
         engine,
         handshake,
@@ -245,6 +256,12 @@ export default function PlayGame({
         activeGestureConfig,
         presetChoice,
         session,
+        // Solo con perfil de gestos: sin él, la cámara no se enciende sola
+        // (se le ofrece probarlo).
+        autostartWanted:
+            preferences.autostart &&
+            mode.cameraAvailable &&
+            activeGestureConfig !== null,
         user: auth.user,
         iframeRef,
         videoRef,
@@ -330,13 +347,41 @@ export default function PlayGame({
               }
             : null;
 
+    // ── Pantalla completa: al entrar y al salir, el foco vuelve al juego ──
+    const focusGame = useCallback(() => {
+        iframeRef.current?.focus({ preventScroll: true });
+    }, []);
+    const fullscreen = useFullscreen(STAGE_ID, focusGame);
+
     // ── Vista de la cámara: en el panel si se ve, si no sobre el juego ────
     const engineActive = engine.status === 'running';
     const cameraPreviewSlot = previewSlot({
         previewEnabled,
         engineActive,
         panelVisible,
+        fullscreen: fullscreen.active,
     });
+
+    // ── Aviso sobre el juego: encendido automático o cámara apagada ───────
+    const engineStopped =
+        engine.status === 'idle' ||
+        engine.status === 'ready' ||
+        engine.status === 'error';
+    const stageNotice: StageNoticeKind | null =
+        autostart.state === 'countdown' ||
+        autostart.state === 'ask' ||
+        autostart.state === 'blocked'
+            ? autostart.state
+            : stoppedWhileHidden && engineStopped
+              ? 'hidden-stop'
+              : null;
+
+    const cameraStatus = {
+        engineStatus: engine.status,
+        cameraBusy: camera.busy,
+        onToggleEngine: handleToggleEngine,
+        onEngineIntent: handleEngineIntent,
+    };
 
     // ── Panel — el mismo contenido se usa en desktop y en el Sheet móvil ──
     const panelContent = (
@@ -409,12 +454,10 @@ export default function PlayGame({
                         panelOpen={panelVisible}
                         panelId={isDesktop ? DESKTOP_PANEL_ID : SHEET_PANEL_ID}
                         onTogglePanel={handleTogglePanel}
-                        cameraStatus={{
-                            engineStatus: engine.status,
-                            cameraBusy: camera.busy,
-                            onToggleEngine: handleToggleEngine,
-                            onEngineIntent: handleEngineIntent,
-                        }}
+                        cameraStatus={cameraStatus}
+                        onFullscreen={
+                            fullscreen.supported ? fullscreen.toggle : null
+                        }
                     />
                 }
             />
@@ -454,7 +497,16 @@ export default function PlayGame({
                 )}
             >
                 {/* ── Escenario: el juego, centrado y sin pasarse del alto ─── */}
-                <div id="play-stage" className="relative min-w-0">
+                <div
+                    id={STAGE_ID}
+                    data-fullscreen={fullscreen.active || undefined}
+                    className={cn(
+                        'relative min-w-0',
+                        // A pantalla completa: el juego y, a su lado (nunca
+                        // encima de sus botones), la barra del portal.
+                        fullscreen.active && 'flex items-center bg-black',
+                    )}
+                >
                     {/* ── Contenedor del iframe ───────────────────────────────── */}
                     <div
                         id="game-frame"
@@ -464,17 +516,24 @@ export default function PlayGame({
                         data-suggested-preset={suggestedPreset ?? ''}
                         data-preset-choice={activeGamePreset ?? 'own'}
                         className={cn(
-                            'group relative mx-auto aspect-video w-full max-w-[calc((100dvh-13rem)*16/9)] overflow-hidden rounded-2xl border bg-black transition-[border-color,box-shadow] duration-500',
-                            engine.status === 'running'
-                                ? 'border-primary/40 shadow-2xl ring-1 shadow-primary/20 ring-primary/30'
-                                : 'border-border/60 shadow-xl shadow-black/20',
+                            'group relative mx-auto aspect-video w-full overflow-hidden bg-black transition-[border-color,box-shadow] duration-500',
+                            fullscreen.active
+                                ? 'max-w-[calc(100dvh*16/9)] min-w-0 flex-1'
+                                : 'max-w-[calc((100dvh-13rem)*16/9)] rounded-2xl border',
+                            !fullscreen.active &&
+                                (engine.status === 'running'
+                                    ? 'border-primary/40 shadow-2xl ring-1 shadow-primary/20 ring-primary/30'
+                                    : 'border-border/60 shadow-xl shadow-black/20'),
                         )}
                     >
                         {/* Halo decorativo cuando el motor está activo */}
                         {engine.status === 'running' && (
                             <div
                                 aria-hidden="true"
-                                className="pointer-events-none absolute inset-0 z-30 rounded-2xl"
+                                className={cn(
+                                    'pointer-events-none absolute inset-0 z-30',
+                                    !fullscreen.active && 'rounded-2xl',
+                                )}
                                 style={{
                                     background:
                                         'radial-gradient(circle at top left, color-mix(in oklch, var(--primary) 18%, transparent), transparent 35%), radial-gradient(circle at bottom right, color-mix(in oklch, var(--primary) 14%, transparent), transparent 35%)',
@@ -573,10 +632,26 @@ export default function PlayGame({
                         )}
 
                         {/* Cámara en miniatura cuando el panel no se ve */}
-                        {cameraPreviewSlot === 'stage' && (
-                            <CameraThumbnail
-                                engine={engine}
-                                onHide={() => handleTogglePreview(false)}
+                        {cameraPreviewSlot === 'stage' &&
+                            !fullscreen.active && (
+                                <CameraThumbnail
+                                    engine={engine}
+                                    onHide={() => handleTogglePreview(false)}
+                                />
+                            )}
+
+                        {stageNotice && (
+                            <StageNotice
+                                key={stageNotice}
+                                kind={stageNotice}
+                                remaining={autostart.remaining}
+                                onActivate={handleToggleEngine}
+                                onDismiss={
+                                    stageNotice === 'hidden-stop'
+                                        ? dismissHiddenStop
+                                        : autostart.dismiss
+                                }
+                                onDone={focusGame}
                             />
                         )}
 
@@ -588,6 +663,32 @@ export default function PlayGame({
                             onRetryGame={handleRetryGame}
                         />
                     </div>
+
+                    {fullscreen.active && (
+                        <FullscreenToolbar
+                            onExit={fullscreen.exit}
+                            cameraStatus={
+                                mode.cameraAvailable
+                                    ? {
+                                          ...cameraStatus,
+                                          quickActivate: mode.quickActivate,
+                                          tone: 'overlay',
+                                      }
+                                    : null
+                            }
+                            thumbnail={
+                                cameraPreviewSlot === 'stage' ? (
+                                    <CameraThumbnail
+                                        inline
+                                        engine={engine}
+                                        onHide={() =>
+                                            handleTogglePreview(false)
+                                        }
+                                    />
+                                ) : null
+                            }
+                        />
+                    )}
                 </div>
 
                 {/* ── Panel desktop: columna que empuja al juego ─────────── */}

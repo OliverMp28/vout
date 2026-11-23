@@ -76,7 +76,7 @@ return [
         // `users.privacy_version_accepted` al registrar para detectar cuándo
         // hay que re-pedir consentimiento (cambio de versión = re-aceptación).
         // Debe coincidir con el `version:` del frontmatter en docs/legal/privacidad.*.md.
-        'current_privacy_version' => env('VOUT_LEGAL_PRIVACY_VERSION', '1.0.0'),
+        'current_privacy_version' => env('VOUT_LEGAL_PRIVACY_VERSION', '1.1.0'),
 
         // Edad mínima para registrarse (consentimiento digital art. 7 LOPDGDD).
         'minimum_age' => 14,

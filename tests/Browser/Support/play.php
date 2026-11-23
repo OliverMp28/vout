@@ -95,6 +95,7 @@ function registerEngineGameRoutes(): void
  * @param  bool|null  $panelOpen  Cómo dejó el usuario el panel de control facial (null: según el perfil).
  * @param  bool  $withProfile  El usuario tiene un perfil de gestos guardado.
  * @param  bool  $suggestsPreset  El juego hace el handshake y sugiere sus controles (`runner`).
+ * @param  bool  $autostart  El usuario autorizó que la cámara se encienda sola.
  */
 function engineTestGame(
     ?string $usage = null,
@@ -103,6 +104,7 @@ function engineTestGame(
     ?bool $panelOpen = true,
     bool $withProfile = true,
     bool $suggestsPreset = false,
+    bool $autostart = false,
 ): Game {
     $user = User::factory()->create();
 
@@ -115,6 +117,7 @@ function engineTestGame(
         'locale' => 'es',
         'facial_control_usage' => $usage ?? 'off',
         'play_panel_open' => $panelOpen,
+        'camera_autostart' => $autostart,
     ]);
 
     test()->actingAs($user);
@@ -394,4 +397,24 @@ function waitUntil(callable $check, int $timeoutMs = 10000): bool
     }
 
     return (bool) $check();
+}
+
+/** Simula que la pestaña se oculta (`true`) o vuelve a verse. */
+function setTabHidden(PendingAwaitablePage|Webpage $page, bool $hidden): void
+{
+    $state = $hidden ? 'hidden' : 'visible';
+
+    $page->script(<<<JS
+        (() => {
+            Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => '{$state}' });
+            Object.defineProperty(document, 'hidden', { configurable: true, get: () => '{$state}' === 'hidden' });
+            document.dispatchEvent(new Event('visibilitychange'));
+        })()
+    JS);
+}
+
+/** Espera `$ms` milisegundos en el navegador. */
+function pauseFor(PendingAwaitablePage|Webpage $page, int $ms): void
+{
+    $page->script("new Promise((resolve) => setTimeout(resolve, {$ms}))");
 }

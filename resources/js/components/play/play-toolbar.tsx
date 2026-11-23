@@ -7,9 +7,10 @@
  *   en móvil). Solo en juegos que reciben los controles de Vout.
  * - En un juego que no los recibe, a quien usa la cámara se le dice por qué
  *   no hay control facial.
+ * - "Pantalla completa", para todos (si el navegador lo permite).
  */
 
-import { ScanFace } from 'lucide-react';
+import { Maximize2, ScanFace } from 'lucide-react';
 import type { ComponentProps } from 'react';
 
 import { CameraStatus } from '@/components/play/camera-status';
@@ -27,6 +28,8 @@ type PlayToolbarProps = {
     panelId: string;
     onTogglePanel: () => void;
     cameraStatus: Omit<ComponentProps<typeof CameraStatus>, 'quickActivate'>;
+    /** Null si el navegador no deja poner el juego a pantalla completa. */
+    onFullscreen: (() => void) | null;
 };
 
 export function PlayToolbar({
@@ -35,6 +38,7 @@ export function PlayToolbar({
     panelId,
     onTogglePanel,
     cameraStatus,
+    onFullscreen,
 }: PlayToolbarProps) {
     const { t } = useTranslation();
 
@@ -84,6 +88,24 @@ export function PlayToolbar({
                         </span>
                     </Button>
                 </>
+            )}
+
+            {onFullscreen && (
+                <Button
+                    type="button"
+                    id="play-fullscreen"
+                    variant="outline"
+                    size="sm"
+                    onClick={onFullscreen}
+                    aria-label={t('play.fullscreen.enter')}
+                    title={t('play.fullscreen.enter')}
+                    className="gap-2"
+                >
+                    <Maximize2 aria-hidden="true" className="size-4" />
+                    <span className="hidden sm:inline">
+                        {t('play.fullscreen.enter')}
+                    </span>
+                </Button>
             )}
         </div>
     );

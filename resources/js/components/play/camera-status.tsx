@@ -10,6 +10,7 @@ import { Loader2, Video, VideoOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from '@/hooks/use-translation';
 import type { EngineStatus } from '@/lib/mediapipe/types';
+import { cn } from '@/lib/utils';
 
 type CameraStatusProps = {
     engineStatus: EngineStatus;
@@ -18,6 +19,8 @@ type CameraStatusProps = {
     quickActivate: boolean;
     onToggleEngine: () => void;
     onEngineIntent?: () => void;
+    /** `overlay`: sobre fondo oscuro (pantalla completa). */
+    tone?: 'default' | 'overlay';
 };
 
 export function CameraStatus({
@@ -26,6 +29,7 @@ export function CameraStatus({
     quickActivate,
     onToggleEngine,
     onEngineIntent,
+    tone = 'default',
 }: CameraStatusProps) {
     const { t } = useTranslation();
     const active =
@@ -38,7 +42,12 @@ export function CameraStatus({
             <div
                 id="play-camera-status"
                 data-camera-active="true"
-                className="flex items-center gap-1 rounded-full border border-red-500/30 bg-red-500/10 py-1 pr-1 pl-3 text-xs font-medium text-foreground"
+                className={cn(
+                    'flex items-center gap-1 rounded-full border border-red-500/30 bg-red-500/10 py-1 pr-1 pl-3 text-xs font-medium',
+                    tone === 'overlay'
+                        ? 'w-full justify-between text-white'
+                        : 'text-foreground',
+                )}
             >
                 <span className="relative flex size-2" aria-hidden="true">
                     <span className="absolute inline-flex size-full rounded-full bg-red-500 opacity-60 motion-safe:animate-ping" />
@@ -55,7 +64,11 @@ export function CameraStatus({
                     size="sm"
                     variant="ghost"
                     onClick={onToggleEngine}
-                    className="ml-1 h-7 gap-1.5 rounded-full px-2.5 text-xs"
+                    className={cn(
+                        'ml-1 h-7 gap-1.5 rounded-full px-2.5 text-xs',
+                        tone === 'overlay' &&
+                            'text-white hover:bg-white/10 hover:text-white',
+                    )}
                 >
                     <VideoOff aria-hidden="true" className="size-3.5" />
                     {t('play.camera_status.stop')}

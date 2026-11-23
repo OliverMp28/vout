@@ -25,6 +25,8 @@ it('renders the privacy policy', function (): void {
         ->assertInertia(fn ($page) => $page
             ->component('legal/show', false)
             ->where('slug', 'privacidad')
+            ->where('version', '1.1.0')
+            ->where('version', config('vout.legal.current_privacy_version'))
             ->has('markdown')
         );
 });

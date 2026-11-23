@@ -160,3 +160,138 @@ test('ver la cámara se recuerda y, con el panel cerrado, va en miniatura sobre 
 
     $page->assertNoJavaScriptErrors();
 });
+
+// ─── Encendido automático ─────────────────────────────────────────────
+
+test('con el encendido automático y el permiso dado, avisa 3 s y enciende la cámara sola', function (): void {
+    $game = engineTestGame(usage: 'primary', announcesReady: true, panelOpen: null, autostart: true);
+
+    $page = visit('/play/'.$game->slug, ['permissions' => ['camera']]);
+
+    useSyntheticCamera($page, 30);
+
+    expect(waitForSelector($page, '#play-stage-notice[data-notice="countdown"]'))->toBeTrue()
+        // Mientras avisa, la cámara sigue apagada.
+        ->and($page->script('document.querySelector("#game-frame").dataset.engineStatus'))->toBe('idle')
+        ->and(waitForEngineStatus($page, 'running'))->toBe('running')
+        ->and(waitForSelector($page, '#play-stage-notice', present: false))->toBeTrue();
+
+    $page->assertVisible('#play-camera-status')
+        ->assertNoJavaScriptErrors();
+});
+
+test('"Ahora no" deja la cámara apagada en esta visita', function (): void {
+    $game = engineTestGame(usage: 'primary', announcesReady: true, panelOpen: null, autostart: true);
+
+    $page = visit('/play/'.$game->slug, ['permissions' => ['camera']]);
+
+    useSyntheticCamera($page, 30);
+
+    expect(waitForSelector($page, '#play-autostart-cancel'))->toBeTrue();
+
+    $page->click('#play-autostart-cancel');
+    pauseFor($page, 4000);
+
+    expect($page->script('document.querySelector("#game-frame").dataset.engineStatus'))->toBe('idle');
+
+    $page->assertMissing('#play-stage-notice')
+        ->assertNoJavaScriptErrors();
+});
+
+test('sin permiso del navegador no se enciende sola: lo explica y deja el botón a mano', function (): void {
+    $game = engineTestGame(usage: 'primary', announcesReady: true, panelOpen: null, autostart: true);
+
+    $page = visit('/play/'.$game->slug);
+
+    useSyntheticCamera($page, 30);
+
+    expect(waitForSelector($page, '#play-stage-notice[data-notice="ask"]'))->toBeTrue()
+        // Para quien no usa el ratón: basta Enter.
+        ->and($page->script('document.activeElement?.id ?? null'))->toBe('play-stage-notice-activate');
+
+    pauseFor($page, 4000);
+
+    expect($page->script('document.querySelector("#game-frame").dataset.engineStatus'))->toBe('idle');
+
+    $page->click('#play-stage-notice-activate');
+
+    expect(waitForEngineStatus($page, 'running'))->toBe('running');
+
+    $page->assertNoJavaScriptErrors();
+});
+
+test('quien no juega con la cámara no la tiene en automático', function (): void {
+    $game = engineTestGame(usage: 'occasional', announcesReady: true, autostart: true);
+
+    $page = visit('/play/'.$game->slug, ['permissions' => ['camera']]);
+
+    expect(waitForGameFrame($page, 'handshakeStatus', ['authenticated']))->toBe('authenticated');
+
+    pauseFor($page, 4000);
+
+    $page->assertMissing('#play-stage-notice')
+        ->assertNoJavaScriptErrors();
+
+    expect($page->script('document.querySelector("#game-frame").dataset.engineStatus'))->toBe('idle');
+});
+
+// ─── Pestaña oculta y pantalla completa ───────────────────────────────
+
+test('con la pestaña oculta se pausa el análisis y al volver sigue', function (): void {
+    $game = engineTestGame(usage: 'occasional');
+
+    $page = visit('/play/'.$game->slug);
+
+    useSyntheticCamera($page, 30);
+    $page->click('#play-engine-toggle');
+
+    expect(waitForEngineStatus($page, 'running'))->toBe('running');
+
+    setTabHidden($page, true);
+
+    expect(waitForEngineStatus($page, 'paused'))->toBe('paused');
+
+    setTabHidden($page, false);
+
+    expect(waitForEngineStatus($page, 'running'))->toBe('running');
+
+    $page->assertNoJavaScriptErrors();
+});
+
+test('el juego se pone a pantalla completa con el estado de la cámara a la vista', function (): void {
+    $game = engineTestGame(usage: 'occasional');
+
+    $page = visit('/play/'.$game->slug);
+
+    useSyntheticCamera($page, 30);
+    $page->click('#play-engine-toggle');
+
+    expect(waitForEngineStatus($page, 'running'))->toBe('running');
+
+    $page->click('#play-fullscreen');
+
+    expect(waitForSelector($page, '#play-fullscreen-toolbar'))->toBeTrue()
+        ->and($page->script('document.fullscreenElement?.id ?? null'))->toBe('play-stage');
+
+    $page->assertVisible('#play-fullscreen-toolbar #play-camera-status');
+
+    // La barra va al lado del juego, no encima: no tapa sus botones.
+    $overlap = $page->script(<<<'JS'
+        (() => {
+            const game = document.querySelector('#game-frame').getBoundingClientRect();
+            const bar = document.querySelector('#play-fullscreen-toolbar').getBoundingClientRect();
+
+            return bar.left < game.right - 1 && bar.right > game.left + 1
+                && bar.top < game.bottom - 1 && bar.bottom > game.top + 1;
+        })()
+    JS);
+
+    expect($overlap)->toBeFalse();
+
+    $page->click('#play-fullscreen-exit');
+
+    expect(waitForSelector($page, '#play-fullscreen-toolbar', present: false))->toBeTrue()
+        ->and($page->script('document.fullscreenElement'))->toBeNull();
+
+    $page->assertNoJavaScriptErrors();
+});
