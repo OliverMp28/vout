@@ -7,12 +7,17 @@ import {
     GESTURE_RISE_FLOOR_RATIO,
     sensitivityToThreshold,
 } from '@/lib/mediapipe/constants';
+import { LIPS_APART_KEY } from '@/lib/mediapipe/face-measures';
 import {
     GestureClassifier,
     activationThreshold,
 } from '@/lib/mediapipe/gesture-classifier';
 import {
+    FROWN_MAX_SMILE,
     GESTURE_RULES,
+    LIPS_MUTE_HOLD_MS,
+    LIPS_MUTE_SMILE,
+    MOUTH_OPEN_MAX_SMILE,
     PUCKER_MAX_JAW_OPEN,
     USED_BLENDSHAPE_KEYS,
     WINK_MIN_ASYMMETRY,
@@ -286,6 +291,102 @@ describe('morritos', () => {
     test('con la boca cerrada sí cuentan', () => {
         expect(started({ mouthPucker: 0.8, jawOpen: 0 })).toEqual([
             GestureType.MouthPucker,
+        ]);
+    });
+});
+
+describe('boca', () => {
+    const lips = (value: number) => ({ [LIPS_APART_KEY]: value });
+    const startedAt = (blendshapes: Record<string, number>, t: number) =>
+        classify(blendshapes, t)
+            .filter((event) => event.phase === 'start')
+            .map((event) => event.gesture);
+
+    test('los labios separados cuentan aunque la mandíbula no baje', () => {
+        expect(started({ ...lips(MOUTH + 0.1), jawOpen: 0 })).toEqual([
+            GestureType.MouthOpen,
+        ]);
+    });
+
+    test('con una sonrisa grande la mandíbula abierta no empieza la boca', () => {
+        expect(
+            started({
+                jawOpen: 0.9,
+                mouthSmileLeft: MOUTH_OPEN_MAX_SMILE + 0.3,
+            }),
+        ).toEqual([GestureType.Smile]);
+    });
+
+    test('los labios que se separan al empezar a sonreír no abren la boca', () => {
+        expect(
+            started({ ...lips(0.8), mouthSmileRight: LIPS_MUTE_SMILE + 0.05 }),
+        ).toEqual([]);
+    });
+
+    test('al sonreír la boca activa termina si solo la sostenían los labios', () => {
+        classify(lips(0.8), 0);
+        classify({ ...lips(0.8), mouthSmileLeft: 0.8 }, 100);
+
+        expect(classify({ ...lips(0.8), mouthSmileLeft: 0.8 }, 200)).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    gesture: GestureType.MouthOpen,
+                    phase: 'end',
+                }),
+            ]),
+        );
+    });
+
+    test('al dejar de sonreír los labios tardan en volver a contar', () => {
+        classify({ ...lips(0.8), mouthSmileLeft: 0.8 }, 0);
+
+        expect(startedAt(lips(0.8), 100)).toEqual([]);
+        expect(startedAt(lips(0.8), LIPS_MUTE_HOLD_MS - 10)).toEqual([]);
+        expect(startedAt(lips(0.8), LIPS_MUTE_HOLD_MS + 10)).toEqual([
+            GestureType.MouthOpen,
+        ]);
+    });
+
+    test('mientras los labios no cuentan, la mandíbula sí', () => {
+        classify({ mouthSmileLeft: LIPS_MUTE_SMILE + 0.05 }, 0);
+
+        expect(startedAt({ ...lips(0.8), jawOpen: MOUTH + 0.1 }, 100)).toEqual([
+            GestureType.MouthOpen,
+        ]);
+    });
+
+    test('al guiñar se tuerce la boca: los labios no cuentan', () => {
+        expect(
+            started({
+                ...lips(0.8),
+                eyeBlinkLeft: 0,
+                eyeBlinkRight: 0.8,
+            }),
+        ).toEqual([GestureType.BlinkRight]);
+    });
+
+    test('reset olvida el silencio de los labios', () => {
+        classify({ ...lips(0.8), mouthSmileLeft: 0.8 }, 0);
+        classifier.reset();
+
+        expect(startedAt(lips(0.8), 100)).toEqual([GestureType.MouthOpen]);
+    });
+});
+
+describe('ceño y sonrisa', () => {
+    test('las cejas que baja una sonrisa grande no son fruncir el ceño', () => {
+        expect(
+            started({
+                browDownLeft: 0.6,
+                browDownRight: 0.6,
+                mouthSmileLeft: FROWN_MAX_SMILE + 0.1,
+            }),
+        ).toEqual([GestureType.Smile]);
+    });
+
+    test('sin sonrisa sí lo son', () => {
+        expect(started({ browDownLeft: 0.6, browDownRight: 0.6 })).toEqual([
+            GestureType.BrowFrown,
         ]);
     });
 });

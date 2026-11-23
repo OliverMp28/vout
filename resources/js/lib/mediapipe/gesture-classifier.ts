@@ -86,6 +86,9 @@ export class GestureClassifier {
     /** Tiempos de subida (ms) de los `start` emitidos desde el último drenado. */
     private riseSamples: number[] = [];
 
+    /** Hasta cuándo está silenciada la parte `mute` de cada gesto. */
+    private readonly mutedUntil = new Map<GestureType, number>();
+
     /**
      * Clasifica un fotograma.
      *
@@ -116,7 +119,13 @@ export class GestureClassifier {
                     baseline?.headPose ?? null,
                     rule.poseTolerance,
                 );
-            const value = reliable ? gestureSignal(rule, signal) : 0;
+            const value = reliable
+                ? gestureSignal(
+                      rule,
+                      signal,
+                      this.isMuted(gesture, rule, signal, timestamp),
+                  )
+                : 0;
             const threshold = activationThreshold(gesture, sensitivity);
             const event = this.track(
                 gesture,
@@ -158,6 +167,7 @@ export class GestureClassifier {
     reset(): void {
         this.active.clear();
         this.risingSince.clear();
+        this.mutedUntil.clear();
         this.riseSamples = [];
     }
 
@@ -231,6 +241,29 @@ export class GestureClassifier {
             timestamp: tracking.belowSince,
             phase: 'end',
         };
+    }
+
+    /**
+     * Si la parte `mute` del gesto está silenciada en este fotograma: mientras
+     * se cumple su condición y `holdMs` después.
+     */
+    private isMuted(
+        gesture: GestureType,
+        rule: GestureRule,
+        signal: SignalReader,
+        timestamp: number,
+    ): boolean {
+        if (rule.mute === undefined) {
+            return false;
+        }
+
+        if (rule.mute.when(signal)) {
+            this.mutedUntil.set(gesture, timestamp + rule.mute.holdMs);
+
+            return true;
+        }
+
+        return timestamp < (this.mutedUntil.get(gesture) ?? -Infinity);
     }
 
     /** Anota el inicio de la subida de un gesto inactivo, o lo olvida si cae. */

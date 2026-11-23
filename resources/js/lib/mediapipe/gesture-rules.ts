@@ -25,6 +25,14 @@
  *     ni se ponen morritos (0 en la grabación); con una sonrisa enseñando los
  *     dientes o con las "o" al hablar (morritos de 0.5-0.8), los labios se
  *     separan sin querer abrir la boca.
+ *   - Al sonreír, los labios se separan antes de que la sonrisa pase de 0.3
+ *     (0.18-0.27 en el fotograma en que se abren) y siguen separados un
+ *     momento al relajarla: la boca empezaba con la sonrisa, se mantenía
+ *     durante toda ella y el dino se agachaba al dejar de sonreír. Al guiñar
+ *     también se tuerce la boca. Mientras se sonríe o se guiña, y un rato
+ *     después, la separación de los labios no cuenta; la mandíbula sí.
+ *   - Una sonrisa muy grande achina los ojos y baja las dos cejas (0.5 sobre
+ *     la cara neutra): disparaba el ceño.
  *
  * Worker-safe: sin DOM ni React.
  */
@@ -77,8 +85,18 @@ export type GestureRule = {
      * músculos.
      */
     canStart?: (signal: SignalReader) => boolean;
-    /** Blendshapes que usa `canStart` además de `keys`. */
+    /** Blendshapes que usan `canStart` y `mute` además de `keys`. */
     contextKeys?: readonly string[];
+    /**
+     * Parte de la señal que otro gesto mueve sin querer: mientras se cumple
+     * `when`, y `holdMs` después, esas `keys` cuentan como 0 (ni para empezar
+     * ni para mantener el gesto). El resto de `keys` sigue contando.
+     */
+    mute?: {
+        keys: readonly string[];
+        when: (signal: SignalReader) => boolean;
+        holdMs: number;
+    };
 };
 
 // ---------------------------------------------------------------------------
@@ -106,6 +124,27 @@ export const PUCKER_MAX_JAW_OPEN = 0.05;
  */
 export const MOUTH_OPEN_MAX_SMILE = 0.3;
 export const MOUTH_OPEN_MAX_PUCKER = 0.35;
+
+/**
+ * Sonrisa a partir de la cual los labios separados no cuentan como abrir la
+ * boca. Abriéndola a propósito o hablando la sonrisa está en 0 (< 0.01 en la
+ * grabación); al empezar a sonreír ya pasa de 0.15 cuando los labios se
+ * separan.
+ */
+export const LIPS_MUTE_SMILE = 0.1;
+
+/**
+ * Tiempo que los labios siguen sin contar después de sonreír o guiñar: lo que
+ * tardan en volver a juntarse al relajar la cara (~150 ms en la grabación).
+ */
+export const LIPS_MUTE_HOLD_MS = 350;
+
+/**
+ * Sonrisa por encima de la cual unas cejas bajadas no son fruncir el ceño: la
+ * sonrisa grande las baja sola (con 0.9 de sonrisa). Frunciendo el ceño no se
+ * sonríe.
+ */
+export const FROWN_MAX_SMILE = 0.5;
 
 /** Tolerancia de postura de los gestos sin una medida propia. */
 const DEFAULT_POSE_TOLERANCE: PoseTolerance = {
@@ -142,7 +181,21 @@ export const GESTURE_RULES: Readonly<Record<GestureType, GestureRule>> = {
         canStart: (signal) =>
             smile(signal) < MOUTH_OPEN_MAX_SMILE &&
             signal('mouthPucker') < MOUTH_OPEN_MAX_PUCKER,
-        contextKeys: ['mouthSmileLeft', 'mouthSmileRight', 'mouthPucker'],
+        contextKeys: [
+            'mouthSmileLeft',
+            'mouthSmileRight',
+            'mouthPucker',
+            'eyeBlinkLeft',
+            'eyeBlinkRight',
+        ],
+        // Sonreír y guiñar separan los labios sin abrir la boca.
+        mute: {
+            keys: [LIPS_APART_KEY],
+            when: (signal) =>
+                smile(signal) >= LIPS_MUTE_SMILE ||
+                Math.abs(eyeAsymmetry(signal)) >= WINK_MIN_ASYMMETRY,
+            holdMs: LIPS_MUTE_HOLD_MS,
+        },
     },
     [GestureType.BlinkLeft]: {
         keys: ['eyeBlinkLeft'],
@@ -172,10 +225,17 @@ export const GESTURE_RULES: Readonly<Record<GestureType, GestureRule>> = {
         combine: 'min',
         thresholdScale: 0.85,
         poseTolerance: DEFAULT_POSE_TOLERANCE,
-        // Con un guiño en marcha la ceja de ese lado baja sola.
+        // Con un guiño en marcha la ceja de ese lado baja sola, y con una
+        // sonrisa grande las dos.
         canStart: (signal) =>
-            Math.abs(eyeAsymmetry(signal)) < WINK_MIN_ASYMMETRY,
-        contextKeys: ['eyeBlinkLeft', 'eyeBlinkRight'],
+            Math.abs(eyeAsymmetry(signal)) < WINK_MIN_ASYMMETRY &&
+            smile(signal) < FROWN_MAX_SMILE,
+        contextKeys: [
+            'eyeBlinkLeft',
+            'eyeBlinkRight',
+            'mouthSmileLeft',
+            'mouthSmileRight',
+        ],
     },
     [GestureType.MouthPucker]: {
         keys: ['mouthPucker'],
@@ -203,9 +263,19 @@ export const USED_BLENDSHAPE_KEYS: ReadonlySet<string> = new Set(
 // Evaluación
 // ---------------------------------------------------------------------------
 
-/** Señal del gesto: sus blendshapes combinados según la regla. */
-export function gestureSignal(rule: GestureRule, signal: SignalReader): number {
-    const values = rule.keys.map(signal);
+/**
+ * Señal del gesto: sus blendshapes combinados según la regla.
+ *
+ * @param muted Si las `keys` de `rule.mute` cuentan como 0.
+ */
+export function gestureSignal(
+    rule: GestureRule,
+    signal: SignalReader,
+    muted = false,
+): number {
+    const values = rule.keys.map((key) =>
+        muted && rule.mute?.keys.includes(key) ? 0 : signal(key),
+    );
 
     return rule.combine === 'min' ? Math.min(...values) : Math.max(...values);
 }
