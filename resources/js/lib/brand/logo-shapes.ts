@@ -1,6 +1,6 @@
 /**
  * Formas del logo de Vout, calcadas de los PNG originales
- * (public/logos/vout-wordmark.png y vout-icon@2x.png) a rectángulos sobre su
+ * (docs/planes/d-muestras/logos/vout-wordmark.png y vout-icon@2x.png) a rectángulos sobre su
  * rejilla de píxeles. Cada rectángulo es [x, y, ancho, alto]. Se regeneran
  * con los scripts de docs/planes/d-muestras (word_clean.py, icon_build.py y
  * logo_ts.py).

@@ -57,7 +57,6 @@ class HandleInertiaRequests extends Middleware
                     'settings' => $request->user()->settings,
                 ] : null,
             ],
-            'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
             'admin' => $this->adminContext($request),
             'flash' => [
                 'status' => $request->session()->get('status'),

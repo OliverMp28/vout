@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { describe, expect, test } from 'bun:test';
 
@@ -13,15 +13,12 @@ import { describe, expect, test } from 'bun:test';
  *   `animate-float`, `animate-glow-pulse`), degradados (`bg-linear-to`,
  *   `radial-gradient`, `--vout-gradient`) y `transition-all`.
  *
- * El JSON de partida guarda cuántos había al empezar el rediseño. La cuenta de
- * un archivo solo puede bajar y un archivo nuevo tiene que llegar con cero.
- * Tras limpiar un archivo, actualiza el JSON con:
- *
- *   UPDATE_STYLE_BASELINE=1 vendor/bin/sail bun test tests/js/design/style-guard.test.ts
+ * Al empezar el rediseño había cientos; ahora no queda ninguno y ningún
+ * archivo nuevo puede traerlos. Para un color fijo justificado (una marca
+ * ajena), añade el archivo a `ALLOWED` con el motivo.
  */
 
 const ROOT = join(import.meta.dir, '../../..');
-const BASELINE_PATH = join(import.meta.dir, 'style-baseline.json');
 
 const PALETTE =
     'slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose';
@@ -74,28 +71,20 @@ function scan(): Counts {
     );
 }
 
-const current = scan();
-
-if (process.env.UPDATE_STYLE_BASELINE) {
-    writeFileSync(BASELINE_PATH, `${JSON.stringify(current, null, 4)}\n`);
-}
-
-const baseline: Counts = JSON.parse(readFileSync(BASELINE_PATH, 'utf8'));
-
 describe('estilo: sin volver al diseño anterior', () => {
-    test('ningún archivo usa más clases prohibidas que al empezar', () => {
-        const regressions: string[] = [];
+    test('ningún archivo usa clases de paleta, cristal, halos ni transition-all', () => {
+        const found = Object.entries(scan()).flatMap(([file, rules]) =>
+            Object.entries(rules).map(
+                ([rule, count]) => `${file}: ${rule} ×${count}`,
+            ),
+        );
 
-        for (const [file, rules] of Object.entries(current)) {
-            for (const [rule, found] of Object.entries(rules)) {
-                const allowed = baseline[file]?.[rule] ?? 0;
+        expect(found).toEqual([]);
+    });
 
-                if (found > allowed) {
-                    regressions.push(`${file}: ${rule} ${found} (máximo ${allowed})`);
-                }
-            }
-        }
+    test('la paleta por defecto de Tailwind está bloqueada en app.css', () => {
+        const css = readFileSync(join(ROOT, 'resources/css/app.css'), 'utf8');
 
-        expect(regressions).toEqual([]);
+        expect(css).toMatch(/@theme\s*\{\s*--color-\*:\s*initial;/);
     });
 });

@@ -36,7 +36,7 @@ const emptySubscribe = () => () => {};
 
 /**
  * Render vía portal a <body> para escapar de cualquier ancestro con
- * `transform`/`filter`/`perspective` (p.ej. el <main> con animate-slide-up-fade),
+ * `transform`/`filter`/`perspective` (p.ej. un contenedor animado),
  * que convertiría el `position: fixed` en fixed respecto a ese ancestro.
  */
 export function Vou() {

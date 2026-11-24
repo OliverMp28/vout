@@ -15,10 +15,7 @@ export default function PortalLayout({
 
     return (
         <MascotProvider>
-            <AppShell
-                variant="header"
-                className="flex min-h-screen flex-col bg-background"
-            >
+            <AppShell className="bg-background">
                 <a
                     href="#main-content"
                     className="absolute top-4 left-4 z-100 -translate-y-[150%] rounded-control bg-primary px-4 py-2 font-semibold text-primary-foreground shadow-overlay transition-transform focus:translate-y-0"

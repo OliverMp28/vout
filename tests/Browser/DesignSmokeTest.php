@@ -136,14 +136,31 @@ test('las páginas clave no tienen problemas serios de accesibilidad', function 
     $page = visit(str_replace('{slug}', $game->slug, $path));
     $page = $dark ? $page->inDarkMode() : $page;
 
-    // Espera a que acaben las entradas animadas (el aviso de cookies aparece
-    // con un fundido): a medio fundido el contraste aún no es el final.
+    // Espera a que la página se asiente: el aviso de cookies aparece tras
+    // hidratar y con un fundido, y a medio fundido el contraste aún no es el
+    // final. Se da por asentada cuando no queda ninguna animación finita en
+    // marcha durante 600 ms seguidos.
     $page->assertScript(<<<'JS'
-        Promise.all(
-            document.getAnimations()
-                .filter((animation) => animation.effect?.getTiming().iterations !== Infinity)
-                .map((animation) => animation.finished.catch(() => null)),
-        ).then(() => true)
+        new Promise((resolve) => {
+            let calmSince = performance.now();
+            const deadline = performance.now() + 5000;
+            const tick = () => {
+                const running = document.getAnimations().some(
+                    (animation) => animation.playState === 'running'
+                        && animation.effect?.getTiming().iterations !== Infinity,
+                );
+                const now = performance.now();
+                if (running) {
+                    calmSince = now;
+                }
+                if (now - calmSince >= 600 || now > deadline) {
+                    resolve(true);
+                } else {
+                    requestAnimationFrame(tick);
+                }
+            };
+            tick();
+        })
     JS, true);
 
     $page->assertNoAccessibilityIssues();
