@@ -12,31 +12,28 @@ type StatusBadgeProps = {
 const VARIANT: Record<GameStatus, { icon: typeof Clock; className: string }> = {
     draft: {
         icon: FileText,
-        className: 'bg-muted text-muted-foreground border border-border/60',
+        className: 'border-border bg-surface-sunken text-muted-foreground',
     },
     pending_review: {
         icon: Clock,
-        className:
-            'bg-amber-500/15 text-amber-700 border border-amber-500/30 dark:text-amber-400',
+        className: 'border-warning bg-warning-soft text-warning-text',
     },
     published: {
         icon: ShieldCheck,
-        className:
-            'bg-emerald-500/15 text-emerald-700 border border-emerald-500/30 dark:text-emerald-400',
+        className: 'border-success bg-success-soft text-success-text',
     },
     rejected: {
         icon: XCircle,
-        className:
-            'bg-destructive/15 text-destructive border border-destructive/30',
+        className: 'border-danger bg-danger-soft text-danger-text',
     },
 };
 
 /**
  * Badge de estado de moderación de un juego (Fase 4.2).
  *
- * Etiqueta + icono + color por estado. Los colores respetan la paleta
- * semántica (muted/amber/emerald/destructive) para cumplir contraste AA
- * tanto en light como en dark mode.
+ * Etiqueta + icono + color por estado, con los tokens de estado
+ * (`*-soft` de fondo y `*-text` para el texto: contraste AA comprobado en
+ * claro y oscuro por tests/js/design/tokens-contrast.test.ts).
  */
 export function GameStatusBadge({ status, className }: StatusBadgeProps) {
     const { t } = useTranslation();
@@ -46,7 +43,7 @@ export function GameStatusBadge({ status, className }: StatusBadgeProps) {
     return (
         <Badge
             className={cn(
-                'inline-flex shrink-0 items-center gap-1 text-[10px] font-semibold tracking-wider uppercase',
+                'inline-flex shrink-0 items-center gap-1 text-xs font-semibold',
                 variant.className,
                 className,
             )}

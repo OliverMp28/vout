@@ -265,8 +265,8 @@ function CalibrationWizard({
                     {t('vision.calibration.title')}
                 </h3>
 
-                <div className="flex items-center gap-4 rounded-lg border border-green-500/30 bg-green-500/5 p-4">
-                    <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-green-500 text-white">
+                <div className="flex items-center gap-4 rounded-lg border border-success/30 bg-success-soft p-4">
+                    <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-success text-success-foreground">
                         <Check className="size-4" />
                     </div>
                     <div className="min-w-0 flex-1">
@@ -453,9 +453,9 @@ function CalibrationWizard({
                                     <div
                                         key={gesture}
                                         className={cn(
-                                            'flex items-center gap-3 rounded-lg border px-3 py-2 transition-all duration-200',
+                                            'flex items-center gap-3 rounded-lg border px-3 py-2 transition-[color,background-color,border-color,box-shadow,transform,opacity] duration-200',
                                             detected
-                                                ? 'border-green-500/50 bg-green-500/5'
+                                                ? 'border-success/50 bg-success-soft'
                                                 : 'border-border/50 bg-background/50',
                                         )}
                                     >
@@ -463,7 +463,7 @@ function CalibrationWizard({
                                             className={cn(
                                                 'flex size-5 items-center justify-center rounded-full transition-colors',
                                                 detected
-                                                    ? 'bg-green-500 text-white'
+                                                    ? 'bg-success text-success-foreground'
                                                     : 'bg-muted',
                                             )}
                                         >

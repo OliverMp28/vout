@@ -14,7 +14,7 @@ export function CategoryFilterPanel({ categories, selected, onToggle }: Props) {
 
     return (
         <div className="space-y-2">
-            <h3 className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+            <h3 className="font-pixel-label text-base leading-none text-muted-foreground">
                 {t('catalog.filter.categories')}
             </h3>
             <div className="flex flex-wrap gap-2">
@@ -25,21 +25,22 @@ export function CategoryFilterPanel({ categories, selected, onToggle }: Props) {
                             key={category.id}
                             type="button"
                             onClick={() => onToggle(category.slug)}
+                            aria-pressed={isActive}
                             className={cn(
-                                'inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-medium transition-all duration-200',
+                                'inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-control border px-3 text-sm font-semibold transition-[transform,box-shadow,background-color,border-color,color] active:translate-y-[2px] active:shadow-none',
                                 isActive
-                                    ? 'border-primary/50 bg-primary/10 text-primary'
-                                    : 'border-border bg-background text-muted-foreground hover:border-primary/30 hover:text-foreground',
+                                    ? 'border-primary bg-primary text-primary-foreground shadow-[0_2px_0_0_var(--key-edge)]'
+                                    : 'border-border bg-surface-1 text-foreground shadow-[0_2px_0_0_var(--border)] hover:border-border-strong',
                             )}
                         >
                             {category.name}
                             {category.games_count !== undefined && (
                                 <span
                                     className={cn(
-                                        'text-[10px]',
+                                        'font-mono text-xs font-normal',
                                         isActive
-                                            ? 'text-primary/70'
-                                            : 'text-muted-foreground/60',
+                                            ? 'opacity-75'
+                                            : 'text-muted-foreground',
                                     )}
                                 >
                                     {category.games_count}
@@ -59,7 +60,7 @@ export function CategoryFilterSkeleton() {
             <Skeleton className="h-3 w-20" />
             <div className="flex flex-wrap gap-2">
                 {Array.from({ length: 6 }).map((_, i) => (
-                    <Skeleton key={i} className="h-7 w-20" />
+                    <Skeleton key={i} className="h-8 w-24" />
                 ))}
             </div>
         </div>

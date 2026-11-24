@@ -38,26 +38,22 @@ export function AppearanceSwitcher() {
                     variant="ghost"
                     size="icon"
                     aria-label={t('appearance.switcher.label')}
-                    className="h-9 w-9 text-muted-foreground hover:bg-primary/5 hover:text-primary"
+                    className="text-muted-foreground hover:text-foreground"
                 >
-                    <TriggerIcon className="h-5 w-5" />
+                    <TriggerIcon className="size-5" />
                 </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent
-                align="end"
-                className="glass-card-light mt-2 border-white/20 p-1"
-            >
+            <DropdownMenuContent align="end" className="w-44 p-1">
                 {OPTIONS.map(({ value, icon: Icon, labelKey }) => (
                     <DropdownMenuItem
                         key={value}
                         onClick={() => updateAppearance(value)}
                         className={cn(
                             'gap-2',
-                            appearance === value &&
-                                'bg-primary/10 font-bold text-primary',
+                            appearance === value && 'bg-signal-soft font-bold',
                         )}
                     >
-                        <Icon className="h-4 w-4" />
+                        <Icon className="size-4" />
                         <span>{t(labelKey)}</span>
                     </DropdownMenuItem>
                 ))}

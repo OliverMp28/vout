@@ -58,7 +58,7 @@ export function FirstPartyAction({ app }: { app: AdminAppDetail }) {
                     <Crown
                         className={cn(
                             'size-4',
-                            app.is_first_party && 'text-amber-500',
+                            app.is_first_party && 'text-warning-text',
                         )}
                         aria-hidden
                     />
@@ -259,9 +259,9 @@ export function ReactivateAction({ app }: { app: AdminAppDetail }) {
 
                             <Alert
                                 variant="default"
-                                className="border-amber-500/40"
+                                className="border-warning/40"
                             >
-                                <CheckCircle2 className="size-4 text-amber-500" />
+                                <CheckCircle2 className="size-4 text-warning-text" />
                                 <AlertTitle>
                                     {t(
                                         'admin.apps.show.actions.reactivate.note_title',

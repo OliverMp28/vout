@@ -33,7 +33,7 @@ type NativeSelectProps = Omit<
  * `react-remove-scroll`, sin `@floating-ui`.
  *
  * Hereda el mismo ADN visual que `SelectTrigger`: `border-input`,
- * `bg-transparent`, `shadow-xs`, anillo de foco `ring-ring/50`,
+ * `bg-surface-2`, sombra interior suave, foco con `outline`,
  * `aria-invalid` con borde destructivo y chevron alineado a la derecha.
  */
 function NativeSelect({
@@ -66,12 +66,11 @@ function NativeSelect({
                 value={value}
                 disabled={disabled}
                 className={cn(
-                    'peer flex w-full appearance-none items-center justify-between gap-2 rounded-md border border-input bg-transparent pr-8 pl-3 text-sm shadow-xs transition-[color,box-shadow] outline-none',
-                    'focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50',
-                    'aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40',
-                    'dark:bg-input/30 dark:hover:bg-input/50',
+                    'peer flex w-full appearance-none items-center justify-between gap-2 rounded-control border border-input bg-surface-2 pr-8 pl-3 text-sm shadow-[inset_0_1px_2px_oklch(0.2_0.01_245/0.07)] transition-[color,border-color] outline-none',
+                    'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
+                    'aria-invalid:border-danger',
                     'disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50',
-                    size === 'default' ? 'h-9 py-2' : 'h-8 py-1.5',
+                    size === 'default' ? 'h-10 py-2' : 'h-8 py-1.5',
                     !value && placeholder ? 'text-muted-foreground' : '',
                     className,
                 )}

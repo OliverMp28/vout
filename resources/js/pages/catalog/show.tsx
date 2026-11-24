@@ -3,7 +3,6 @@ import {
     ArrowLeft,
     Bookmark,
     Calendar,
-    Gamepad2,
     Globe,
     Heart,
     Play,
@@ -11,10 +10,10 @@ import {
 } from 'lucide-react';
 import { useCallback, useState } from 'react';
 import { FacialControlBadge } from '@/components/catalog/facial-control-badge';
+import { GameCover } from '@/components/catalog/game-cover';
 import { GameGrid } from '@/components/catalog/game-grid';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
 import {
     useDeferredEngineWarmup,
     usePreloadDecision,
@@ -37,7 +36,7 @@ export default function CatalogShow({
 }: CatalogShowProps) {
     const game = gameWrapper.data;
     const { auth } = usePage().props;
-    const { t } = useTranslation();
+    const { t, locale } = useTranslation();
     const isAuthenticated = !!auth?.user;
 
     // Desde aquí se entra a jugar: quien usa el control facial descarga ya
@@ -90,170 +89,201 @@ export default function CatalogShow({
         );
     }, [game.slug, isAuthenticated]);
 
+    const category = game.categories[0];
+
     return (
         <PortalLayout>
             <Head title={game.name} />
 
-            <div className="space-y-8">
-                {/* Back */}
-                <Link
-                    href={catalogIndex.url()}
-                    className="group/back inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
+            <div className="grid gap-10">
+                <nav
+                    aria-label={t('catalog.title')}
+                    className="flex items-center gap-1.5 text-sm text-muted-foreground"
                 >
-                    <ArrowLeft className="size-4 transition-transform duration-200 group-hover/back:-translate-x-0.5" />
-                    {t('catalog.title')}
-                </Link>
+                    <Link
+                        href={catalogIndex.url()}
+                        className="inline-flex items-center gap-1.5 rounded-xs font-semibold hover:text-foreground"
+                    >
+                        <ArrowLeft className="size-4" aria-hidden />
+                        {t('catalog.title')}
+                    </Link>
+                    {category && (
+                        <>
+                            <span aria-hidden="true">/</span>
+                            <span>{category.name}</span>
+                        </>
+                    )}
+                </nav>
 
-                {/* Hero */}
-                <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
-                    {/* Cover */}
-                    <div className="relative aspect-video overflow-hidden rounded-xl bg-muted shadow-[0_20px_60px_-24px_rgba(0,0,0,0.35)] ring-1 ring-border/60">
-                        {game.cover_image ? (
-                            <img
-                                src={game.cover_image}
-                                alt={game.name}
-                                className="size-full object-cover"
-                            />
-                        ) : (
-                            <div className="flex size-full items-center justify-center bg-linear-to-br from-primary/10 via-muted to-accent/10">
-                                <Gamepad2 className="size-20 text-primary/30" />
-                            </div>
-                        )}
+                <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]">
+                    <div className="aspect-video overflow-hidden rounded-media border shadow-surface">
+                        <GameCover
+                            slug={game.slug}
+                            name={game.name}
+                            image={game.cover_image}
+                            lazy={false}
+                        />
                     </div>
 
-                    {/* Info sidebar */}
-                    <div className="flex flex-col gap-4">
-                        <div>
-                            <h1 className="text-2xl font-semibold">
+                    <div className="flex flex-col gap-5">
+                        <div className="space-y-3">
+                            <h1 className="text-3xl leading-tight font-extrabold tracking-tight text-balance sm:text-4xl">
                                 {game.name}
                             </h1>
+                            <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-sm text-muted-foreground">
+                                <span className="inline-flex items-center gap-1.5 tabular-nums">
+                                    <Users className="size-4" aria-hidden />
+                                    {t('catalog.play_count', {
+                                        count: game.play_count.toLocaleString(
+                                            locale,
+                                        ),
+                                    })}
+                                </span>
+                                {game.release_date && (
+                                    <span className="inline-flex items-center gap-1.5">
+                                        <Calendar
+                                            className="size-4"
+                                            aria-hidden
+                                        />
+                                        {new Date(
+                                            game.release_date,
+                                        ).toLocaleDateString(locale)}
+                                    </span>
+                                )}
+                            </div>
                             {game.description && (
-                                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                                <p className="text-base leading-relaxed">
                                     {game.description}
                                 </p>
                             )}
                         </div>
 
-                        {/* Control facial */}
-                        {game.facial_control_support !== 'none' && (
-                            <div
-                                id="game-facial-control"
-                                className="space-y-1.5"
-                            >
-                                <FacialControlBadge
-                                    support={game.facial_control_support}
-                                />
-                                <p className="text-xs text-muted-foreground">
-                                    {t(
-                                        `facial_control.detail.${game.facial_control_support}`,
-                                    )}
-                                </p>
-                            </div>
-                        )}
-
-                        {/* Categories */}
-                        {game.categories.length > 0 && (
-                            <div className="flex flex-wrap gap-1.5">
-                                {game.categories.map((cat) => (
-                                    <Badge key={cat.id} variant="secondary">
-                                        {cat.name}
-                                    </Badge>
-                                ))}
-                            </div>
-                        )}
-
-                        {/* Meta */}
-                        <div className="space-y-2 text-sm text-muted-foreground">
-                            <div className="flex items-center gap-2">
-                                <Users className="size-4" />
-                                {t('catalog.play_count', {
-                                    count: game.play_count.toLocaleString(),
-                                })}
-                            </div>
-                            {game.release_date && (
-                                <div className="flex items-center gap-2">
-                                    <Calendar className="size-4" />
-                                    {new Date(
-                                        game.release_date,
-                                    ).toLocaleDateString()}
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Actions */}
-                        <div className="mt-auto flex flex-col gap-2">
+                        <div className="flex flex-wrap items-center gap-3">
                             {game.embed_url && (
-                                <Button size="lg" className="w-full" asChild>
+                                <Button asChild variant="play" size="lg">
                                     <Link href={playShow.url(game.slug)}>
-                                        <Play className="mr-2 size-4" />
+                                        <Play className="fill-current" />
                                         {t('catalog.play')}
                                     </Link>
                                 </Button>
                             )}
 
                             {isAuthenticated && (
-                                <div className="flex gap-2">
+                                <>
                                     <Button
-                                        variant="outline"
-                                        className="flex-1"
+                                        variant="secondary"
+                                        size="icon-lg"
                                         onClick={handleToggleFavorite}
+                                        aria-pressed={isFavorite}
+                                        aria-label={
+                                            isFavorite
+                                                ? t('catalog.favorite.remove')
+                                                : t('catalog.favorite.add')
+                                        }
+                                        title={
+                                            isFavorite
+                                                ? t('catalog.favorite.remove')
+                                                : t('catalog.favorite.add')
+                                        }
                                     >
                                         <Heart
                                             className={cn(
-                                                'mr-2 size-4',
                                                 isFavorite &&
-                                                    'fill-red-500 text-red-500',
+                                                    'fill-current text-(--vou-pink)',
                                             )}
                                         />
-                                        {isFavorite
-                                            ? t('catalog.favorite.remove')
-                                            : t('catalog.favorite.add')}
                                     </Button>
                                     <Button
-                                        variant="outline"
-                                        className="flex-1"
+                                        variant="secondary"
+                                        size="icon-lg"
                                         onClick={handleToggleSaved}
+                                        aria-pressed={isSaved}
+                                        aria-label={
+                                            isSaved
+                                                ? t('catalog.saved.remove')
+                                                : t('catalog.saved.add')
+                                        }
+                                        title={
+                                            isSaved
+                                                ? t('catalog.saved.remove')
+                                                : t('catalog.saved.add')
+                                        }
                                     >
                                         <Bookmark
                                             className={cn(
-                                                'mr-2 size-4',
                                                 isSaved &&
-                                                    'fill-primary text-primary',
+                                                    'fill-current text-signal-edge',
                                             )}
                                         />
-                                        {isSaved
-                                            ? t('catalog.saved.remove')
-                                            : t('catalog.saved.add')}
                                     </Button>
-                                </div>
+                                </>
                             )}
                         </div>
 
-                        {/* Developers */}
-                        {game.developers.length > 0 && (
-                            <>
-                                <Separator />
-                                <div className="space-y-2">
-                                    <h3 className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+                        <dl className="divide-y rounded-surface border bg-surface-1 text-sm shadow-surface">
+                            {game.facial_control_support !== 'none' && (
+                                <div
+                                    id="game-facial-control"
+                                    className="grid gap-2 px-4 py-3"
+                                >
+                                    <dt className="font-pixel-label text-base leading-none text-muted-foreground">
+                                        {t('facial_control.support.label')}
+                                    </dt>
+                                    <dd className="space-y-1.5">
+                                        <FacialControlBadge
+                                            support={
+                                                game.facial_control_support
+                                            }
+                                        />
+                                        <p className="text-muted-foreground">
+                                            {t(
+                                                `facial_control.detail.${game.facial_control_support}`,
+                                            )}
+                                        </p>
+                                    </dd>
+                                </div>
+                            )}
+
+                            {game.categories.length > 0 && (
+                                <div className="grid gap-2 px-4 py-3">
+                                    <dt className="font-pixel-label text-base leading-none text-muted-foreground">
+                                        {t('catalog.categories_label')}
+                                    </dt>
+                                    <dd className="flex flex-wrap gap-1.5">
+                                        {game.categories.map((cat) => (
+                                            <Badge key={cat.id}>
+                                                {cat.name}
+                                            </Badge>
+                                        ))}
+                                    </dd>
+                                </div>
+                            )}
+
+                            {game.developers.length > 0 && (
+                                <div className="grid gap-2 px-4 py-3">
+                                    <dt className="font-pixel-label text-base leading-none text-muted-foreground">
                                         {t('catalog.developers_label')}
-                                    </h3>
+                                    </dt>
                                     {game.developers.map((dev) => (
-                                        <div
+                                        <dd
                                             key={dev.id}
                                             className="flex items-center gap-2"
                                         >
                                             {dev.logo_url ? (
                                                 <img
                                                     src={dev.logo_url}
-                                                    alt={dev.name}
-                                                    className="size-6 rounded"
+                                                    alt=""
+                                                    className="size-6 rounded-xs"
                                                 />
                                             ) : (
-                                                <div className="flex size-6 items-center justify-center rounded bg-muted text-xs font-bold">
+                                                <span
+                                                    aria-hidden="true"
+                                                    className="flex size-6 items-center justify-center rounded-xs bg-surface-sunken text-xs font-bold"
+                                                >
                                                     {dev.name[0]}
-                                                </div>
+                                                </span>
                                             )}
-                                            <span className="text-sm font-medium">
+                                            <span className="font-semibold">
                                                 {dev.name}
                                             </span>
                                             {dev.website_url && (
@@ -261,28 +291,36 @@ export default function CatalogShow({
                                                     href={dev.website_url}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
-                                                    className="text-muted-foreground hover:text-primary"
+                                                    className="rounded-xs text-muted-foreground hover:text-foreground"
+                                                    aria-label={t(
+                                                        'catalog.developer_website',
+                                                        { name: dev.name },
+                                                    )}
                                                 >
-                                                    <Globe className="size-3.5" />
+                                                    <Globe className="size-4" />
                                                 </a>
                                             )}
-                                        </div>
+                                        </dd>
                                     ))}
                                 </div>
-                            </>
-                        )}
+                            )}
+                        </dl>
                     </div>
                 </div>
 
-                {/* Related */}
                 {related.data.length > 0 && (
-                    <div className="space-y-4">
-                        <Separator />
-                        <h2 className="text-lg font-semibold">
+                    <section
+                        aria-labelledby="related-title"
+                        className="grid gap-3"
+                    >
+                        <h2
+                            id="related-title"
+                            className="text-xl font-bold tracking-tight"
+                        >
                             {t('catalog.related')}
                         </h2>
                         <GameGrid games={related.data} />
-                    </div>
+                    </section>
                 )}
             </div>
         </PortalLayout>

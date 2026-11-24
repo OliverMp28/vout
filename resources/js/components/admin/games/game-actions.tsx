@@ -219,7 +219,7 @@ export function FeaturedAction({ game }: { game: AdminGameDetail }) {
                     <Sparkles
                         className={cn(
                             'size-4',
-                            game.is_featured && 'text-amber-500',
+                            game.is_featured && 'text-warning-text',
                         )}
                         aria-hidden
                     />

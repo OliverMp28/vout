@@ -38,7 +38,7 @@ export function FullscreenToolbar({
         <div
             id="play-fullscreen-toolbar"
             className={cn(
-                'flex h-full shrink-0 flex-col gap-3 border-l border-white/10 bg-black p-3 text-white',
+                'flex h-full shrink-0 flex-col gap-3 border-l border-on-media/10 bg-media p-3 text-on-media',
                 'w-60',
             )}
         >
@@ -50,7 +50,7 @@ export function FullscreenToolbar({
                 onClick={onExit}
                 aria-label={t('play.fullscreen.exit')}
                 title={t('play.fullscreen.exit')}
-                className="h-9 justify-start gap-2 rounded-lg px-3 text-white hover:bg-white/10 hover:text-white"
+                className="h-9 justify-start gap-2 rounded-lg px-3 text-on-media hover:bg-on-media/10 hover:text-on-media"
             >
                 <Minimize2 aria-hidden="true" className="size-4" />
                 <span>{t('play.fullscreen.exit')}</span>

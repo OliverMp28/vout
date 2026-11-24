@@ -246,13 +246,13 @@ function TriggerRow({
     return (
         <div
             className={cn(
-                'rounded-lg border px-3 py-2 transition-all duration-200',
+                'rounded-lg border px-3 py-2 transition-[color,background-color,border-color,box-shadow,transform,opacity] duration-200',
                 disabled
                     ? 'border-border/30 bg-muted/30 opacity-50'
                     : hasConflict
-                      ? 'border-amber-500/40 bg-amber-500/5'
+                      ? 'border-warning/40 bg-warning-soft'
                       : expanded
-                        ? 'border-primary/40 bg-primary/5'
+                        ? 'border-border-strong bg-surface-sunken'
                         : 'border-border/50 bg-background/50 hover:border-border',
             )}
         >
@@ -266,7 +266,7 @@ function TriggerRow({
                 <span className="flex items-center gap-1.5 text-sm font-medium">
                     {hasConflict && (
                         <AlertTriangle
-                            className="size-3.5 text-amber-500"
+                            className="size-3.5 text-warning-text"
                             aria-hidden="true"
                         />
                     )}
@@ -432,7 +432,7 @@ function GestureMappingEditor({ config }: GestureMappingEditorProps) {
 
             {/* Aviso de conflictos (no bloqueante) */}
             {conflictTriggers.size > 0 && (
-                <div className="flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-xs text-amber-700 dark:text-amber-400">
+                <div className="flex items-start gap-2 rounded-lg border border-warning/30 bg-warning-soft px-3 py-2 text-xs text-warning-text">
                     <AlertTriangle className="mt-0.5 size-3.5 shrink-0" />
                     <span>{t('vision.mapping.conflict_warning')}</span>
                 </div>

@@ -3,14 +3,24 @@ import * as React from "react"
 
 import { cn } from "@/lib/utils"
 
+/**
+ * Aviso: bandeja con una barra de color a la izquierda según el estado. El
+ * título toma el color del estado (con contraste comprobado); el texto sigue
+ * siendo el normal. Mantiene `data-slot="alert"` (lo usan los tests).
+ */
 const alertVariants = cva(
-  "relative w-full rounded-lg border px-4 py-3 text-sm grid has-[>svg]:grid-cols-[calc(var(--spacing)*4)_1fr] grid-cols-[0_1fr] has-[>svg]:gap-x-3 gap-y-0.5 items-start [&>svg]:size-4 [&>svg]:translate-y-0.5 [&>svg]:text-current",
+  "relative grid w-full grid-cols-[0_1fr] items-start gap-y-0.5 overflow-hidden rounded-surface border bg-surface-1 py-3 pr-4 pl-5 text-sm text-foreground shadow-surface before:absolute before:inset-y-2.5 before:left-2 before:w-1 before:rounded-full before:bg-border-strong has-[>svg]:grid-cols-[calc(var(--spacing)*4)_1fr] has-[>svg]:gap-x-3 [&>svg]:size-4 [&>svg]:translate-y-0.5 [&>svg]:text-current",
   {
     variants: {
       variant: {
-        default: "bg-background text-foreground",
+        default: "",
+        info: "before:bg-info [&>svg]:text-info-text *:data-[slot=alert-title]:text-info-text",
+        success:
+          "before:bg-success [&>svg]:text-success-text *:data-[slot=alert-title]:text-success-text",
+        warning:
+          "before:bg-warning [&>svg]:text-warning-text *:data-[slot=alert-title]:text-warning-text",
         destructive:
-          "text-destructive-foreground [&>svg]:text-current *:data-[slot=alert-description]:text-destructive-foreground/80",
+          "before:bg-danger [&>svg]:text-danger-text *:data-[slot=alert-title]:text-danger-text",
       },
     },
     defaultVariants: {
@@ -39,7 +49,7 @@ function AlertTitle({ className, ...props }: React.ComponentProps<"div">) {
     <div
       data-slot="alert-title"
       className={cn(
-        "col-start-2 line-clamp-1 min-h-4 font-medium tracking-tight",
+        "col-start-2 line-clamp-1 min-h-4 font-bold tracking-tight",
         className
       )}
       {...props}
@@ -55,7 +65,7 @@ function AlertDescription({
     <div
       data-slot="alert-description"
       className={cn(
-        "text-muted-foreground col-start-2 grid justify-items-start gap-1 text-sm [&_p]:leading-relaxed",
+        "col-start-2 grid justify-items-start gap-1 text-sm text-muted-foreground [&_p]:leading-relaxed",
         className
       )}
       {...props}

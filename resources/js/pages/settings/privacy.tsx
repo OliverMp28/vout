@@ -97,7 +97,7 @@ export default function Privacy({ consent, has_password }: Props) {
                     {/* Consent status */}
                     <section className="rounded-xl border border-border/60 bg-card p-6 shadow-sm md:p-8">
                         <div className="flex items-start gap-4">
-                            <div className="shrink-0 rounded-lg bg-primary/10 p-3">
+                            <div className="shrink-0 rounded-lg bg-surface-sunken p-3">
                                 <ShieldCheck className="h-6 w-6 text-primary" />
                             </div>
                             <div className="flex-1">
@@ -150,7 +150,7 @@ export default function Privacy({ consent, has_password }: Props) {
                                 </dl>
 
                                 {consent.needs_reacceptance && (
-                                    <div className="mt-4 flex items-start gap-3 rounded-lg border border-amber-500/40 bg-amber-500/5 p-3 text-xs text-amber-700 dark:text-amber-200">
+                                    <div className="mt-4 flex items-start gap-3 rounded-lg border border-warning/40 bg-warning-soft p-3 text-xs text-warning-text">
                                         <AlertTriangle
                                             className="mt-0.5 size-4 shrink-0"
                                             aria-hidden="true"
@@ -196,8 +196,8 @@ export default function Privacy({ consent, has_password }: Props) {
                     {/* Export data (portabilidad RGPD art. 20) */}
                     <section className="rounded-xl border border-border/60 bg-card p-6 shadow-sm md:p-8">
                         <div className="flex items-start gap-4">
-                            <div className="shrink-0 rounded-lg bg-blue-500/10 p-3">
-                                <Download className="h-6 w-6 text-blue-500" />
+                            <div className="shrink-0 rounded-lg bg-info-soft p-3">
+                                <Download className="h-6 w-6 text-info-text" />
                             </div>
                             <div className="flex-1">
                                 <Heading
@@ -230,8 +230,8 @@ export default function Privacy({ consent, has_password }: Props) {
                     {/* Cookies */}
                     <section className="rounded-xl border border-border/60 bg-card p-6 shadow-sm md:p-8">
                         <div className="flex items-start gap-4">
-                            <div className="shrink-0 rounded-lg bg-amber-500/10 p-3">
-                                <Cookie className="h-6 w-6 text-amber-500" />
+                            <div className="shrink-0 rounded-lg bg-warning-soft p-3">
+                                <Cookie className="h-6 w-6 text-warning-text" />
                             </div>
                             <div className="flex-1">
                                 <Heading
@@ -265,10 +265,10 @@ export default function Privacy({ consent, has_password }: Props) {
                     </section>
 
                     {/* Delete account (RGPD art. 17) */}
-                    <section className="rounded-xl border border-red-200/60 bg-red-50/40 p-6 shadow-sm md:p-8 dark:border-red-500/20 dark:bg-red-500/5">
+                    <section className="rounded-xl border border-danger bg-danger-soft p-6 shadow-sm md:p-8">
                         <div className="flex items-start gap-4">
-                            <div className="shrink-0 rounded-lg bg-red-500/10 p-3">
-                                <AlertTriangle className="h-6 w-6 text-red-500" />
+                            <div className="shrink-0 rounded-lg bg-danger-soft p-3">
+                                <AlertTriangle className="h-6 w-6 text-danger-text" />
                             </div>
                             <div className="flex-1 space-y-4">
                                 <Heading
@@ -280,7 +280,7 @@ export default function Privacy({ consent, has_password }: Props) {
                                 <ul className="space-y-2 text-sm text-muted-foreground">
                                     <li className="flex items-start gap-2">
                                         <CheckCircle2
-                                            className="mt-0.5 size-4 shrink-0 text-red-500"
+                                            className="mt-0.5 size-4 shrink-0 text-danger-text"
                                             aria-hidden="true"
                                         />
                                         <span>
@@ -289,7 +289,7 @@ export default function Privacy({ consent, has_password }: Props) {
                                     </li>
                                     <li className="flex items-start gap-2">
                                         <CheckCircle2
-                                            className="mt-0.5 size-4 shrink-0 text-amber-500"
+                                            className="mt-0.5 size-4 shrink-0 text-warning-text"
                                             aria-hidden="true"
                                         />
                                         <span>
@@ -300,7 +300,7 @@ export default function Privacy({ consent, has_password }: Props) {
                                     </li>
                                 </ul>
 
-                                <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 text-xs text-amber-700 dark:text-amber-200">
+                                <div className="rounded-lg border border-warning/30 bg-warning-soft p-3 text-xs text-warning-text">
                                     {t('privacy.delete.export_first')}
                                 </div>
 

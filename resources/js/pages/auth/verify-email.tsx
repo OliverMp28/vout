@@ -17,14 +17,14 @@ export default function VerifyEmail({ status }: { status?: string }) {
 
             <div className="space-y-6">
                 {status === 'verification-link-sent' && (
-                    <div className="rounded-md bg-green-50 px-3 py-2 text-center text-sm font-medium text-green-700 dark:bg-green-900/20 dark:text-green-400">
+                    <div className="rounded-control border border-success bg-success-soft px-3 py-2 text-center text-sm font-semibold text-success-text">
                         Se ha enviado un nuevo enlace de verificación a tu
                         correo.
                     </div>
                 )}
 
                 <div className="flex justify-center">
-                    <div className="flex size-16 items-center justify-center rounded-full bg-primary/10">
+                    <div className="flex size-16 items-center justify-center rounded-surface border bg-surface-sunken">
                         <MailCheck className="size-8 text-primary" />
                     </div>
                 </div>

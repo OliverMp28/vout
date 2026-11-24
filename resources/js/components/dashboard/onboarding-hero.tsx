@@ -5,7 +5,6 @@ import {
     Circle,
     Compass,
     Hand,
-    Sparkles,
     User,
     X,
 } from 'lucide-react';
@@ -59,20 +58,8 @@ export function OnboardingHero({ steps }: Props) {
             id="dashboard-onboarding"
             role="region"
             aria-labelledby="dashboard-onboarding-title"
-            className={cn(
-                'glass-card relative overflow-hidden p-6 md:p-8',
-                'bg-linear-to-br from-primary/10 via-card to-accent/10',
-            )}
+            className="relative overflow-hidden rounded-surface border bg-surface-1 p-6 shadow-surface md:p-8"
         >
-            <div
-                className="pointer-events-none absolute -top-10 -right-10 size-40 rounded-full bg-primary/20 blur-3xl"
-                aria-hidden="true"
-            />
-            <div
-                className="pointer-events-none absolute -bottom-12 -left-6 size-32 rounded-full bg-accent/20 blur-3xl"
-                aria-hidden="true"
-            />
-
             <Button
                 variant="ghost"
                 size="icon"
@@ -84,13 +71,12 @@ export function OnboardingHero({ steps }: Props) {
             </Button>
 
             <div className="relative space-y-1 pr-10">
-                <div className="flex items-center gap-2 text-xs font-medium tracking-wide text-primary uppercase">
-                    <Sparkles className="size-3.5" aria-hidden="true" />
+                <p className="font-pixel-label text-lg leading-none text-muted-foreground">
                     {t('dashboard.onboarding.eyebrow')}
-                </div>
+                </p>
                 <h2
                     id="dashboard-onboarding-title"
-                    className="text-xl font-semibold md:text-2xl"
+                    className="text-xl font-extrabold tracking-tight md:text-2xl"
                 >
                     {t('dashboard.onboarding.title')}
                 </h2>
@@ -144,22 +130,20 @@ function OnboardingStepCard({
         <li
             data-current={current || undefined}
             className={cn(
-                'group relative flex flex-col gap-3 rounded-xl border bg-card p-4 transition-all duration-200',
-                step.done && 'border-primary/30',
-                !step.done &&
-                    !current &&
-                    'hover:border-primary/40 hover:shadow-md',
+                'group relative flex flex-col gap-3 rounded-control border bg-background p-4 transition-[border-color,box-shadow]',
+                step.done && 'border-success',
+                !step.done && !current && 'hover:border-border-strong',
                 current &&
-                    'border-primary/50 shadow-md ring-2 ring-primary/20 ring-offset-2 ring-offset-card',
+                    'border-signal-edge shadow-[0_3px_0_0_var(--signal-edge)]',
             )}
         >
             <div className="flex items-start justify-between gap-2">
                 <div
                     className={cn(
-                        'flex size-10 items-center justify-center rounded-lg',
+                        'flex size-10 items-center justify-center rounded-control',
                         step.done
-                            ? 'bg-primary/20 text-primary'
-                            : 'bg-muted text-muted-foreground',
+                            ? 'bg-success-soft text-success-text'
+                            : 'bg-surface-sunken text-muted-foreground',
                     )}
                     aria-hidden="true"
                 >
@@ -168,32 +152,31 @@ function OnboardingStepCard({
                 <span className="flex items-center gap-1 text-xs">
                     {step.done ? (
                         <CheckCircle2
-                            className="size-4 text-primary"
+                            className="size-4 text-success-text"
                             aria-hidden="true"
                         />
                     ) : (
                         <Circle
-                            className="size-4 text-muted-foreground/50"
+                            className="size-4 text-muted-foreground"
                             aria-hidden="true"
                         />
                     )}
                     <span className="sr-only">{statusLabel}</span>
                     <span
-                        className="text-muted-foreground"
+                        className="font-mono text-muted-foreground"
                         aria-hidden="true"
                     >{`0${index}`}</span>
                 </span>
             </div>
             <div className="space-y-1">
-                <h3 className="text-sm font-semibold">{label}</h3>
+                <h3 className="text-sm font-bold">{label}</h3>
                 <p className="text-xs text-muted-foreground">{description}</p>
             </div>
             <Link
                 href={href}
                 className={cn(
-                    'mt-auto inline-flex items-center gap-1 text-xs font-medium text-primary',
-                    'transition-colors hover:text-primary/80',
-                    'focus-visible:rounded-sm focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none',
+                    'mt-auto inline-flex items-center gap-1 rounded-xs text-sm font-semibold text-foreground underline decoration-border-strong underline-offset-4',
+                    'transition-colors hover:decoration-signal-strong',
                 )}
             >
                 {cta}

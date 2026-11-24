@@ -34,7 +34,7 @@ export function EcosystemCard({
         <section
             id="dashboard-ecosystem"
             aria-labelledby="dashboard-ecosystem-title"
-            className="rounded-xl border bg-card p-5 shadow-sm"
+            className="rounded-surface border bg-card p-5 shadow-surface"
         >
             <div className="space-y-1">
                 <h2
@@ -43,14 +43,14 @@ export function EcosystemCard({
                 >
                     {t('dashboard.ecosystem.title')}
                 </h2>
-                <p className="text-xs text-muted-foreground/80">
+                <p className="text-xs text-muted-foreground">
                     {t('dashboard.ecosystem.subtitle')}
                 </p>
             </div>
 
             <div className="mt-4 flex items-center gap-3 rounded-lg border bg-muted/40 p-3">
                 <div
-                    className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10"
+                    className="flex size-9 shrink-0 items-center justify-center rounded-control bg-surface-sunken"
                     aria-hidden="true"
                 >
                     <Fingerprint className="size-4 text-primary" />
@@ -143,7 +143,7 @@ function RoleLink({ icon, badge, label, helper, href }: RoleLinkProps) {
         >
             <Link href={href}>
                 <div
-                    className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10"
+                    className="flex size-9 shrink-0 items-center justify-center rounded-control bg-surface-sunken"
                     aria-hidden="true"
                 >
                     {icon}

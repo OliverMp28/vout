@@ -64,7 +64,7 @@ export function FlowDiagram({ variant }: FlowDiagramProps) {
                     <li key={step.title} className="flex gap-3">
                         <div className="flex flex-col items-center">
                             <span
-                                className="flex size-8 items-center justify-center rounded-lg border border-primary/30 bg-primary/10 text-primary"
+                                className="flex size-8 items-center justify-center rounded-lg border border-border-strong bg-surface-sunken text-primary"
                                 aria-hidden
                             >
                                 <Icon className="size-4" />

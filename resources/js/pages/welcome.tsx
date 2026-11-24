@@ -1,149 +1,284 @@
 import { Head, Link, usePage } from '@inertiajs/react';
-import { ArrowRight, Gamepad2, Sparkles, Zap } from 'lucide-react';
-import { FeaturedCarousel } from '@/components/catalog/featured-carousel';
+import { ArrowRight } from 'lucide-react';
+import { FeaturedLead } from '@/components/catalog/featured-lead';
 import { GameCard } from '@/components/catalog/game-card';
+import { GesturesHowto } from '@/components/catalog/gestures-howto';
+import { VouSvg } from '@/components/mascot/vou-svg';
 import { Button } from '@/components/ui/button';
-
 import { useTranslation } from '@/hooks/use-translation';
 import PortalLayout from '@/layouts/portal-layout';
+import { login, register } from '@/routes';
 import { index as catalogIndex } from '@/routes/catalog';
-import type { WelcomeProps } from '@/types';
+import { landing as developersLanding } from '@/routes/developers';
+import type { Category, Game, WelcomeProps } from '@/types';
 
+function ViewAll({ href, label }: { href: string; label: string }) {
+    return (
+        <Link
+            href={href}
+            className="inline-flex shrink-0 items-center gap-1 rounded-xs text-sm font-semibold underline decoration-border-strong underline-offset-4 hover:decoration-signal-strong"
+        >
+            {label}
+            <ArrowRight className="size-3.5" aria-hidden />
+        </Link>
+    );
+}
+
+function Shelf({
+    id,
+    title,
+    games,
+    viewAllHref,
+    viewAllLabel,
+}: {
+    id: string;
+    title: string;
+    games: Game[];
+    viewAllHref?: string;
+    viewAllLabel?: string;
+}) {
+    return (
+        <section id={id} aria-labelledby={`${id}-title`}>
+            <div className="mb-3 flex items-baseline justify-between gap-3">
+                <h2
+                    id={`${id}-title`}
+                    className="text-xl font-bold tracking-tight"
+                >
+                    {title}
+                </h2>
+                {viewAllHref && viewAllLabel && (
+                    <ViewAll href={viewAllHref} label={viewAllLabel} />
+                )}
+            </div>
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+                {games.map((game) => (
+                    <GameCard key={game.id} game={game} />
+                ))}
+            </div>
+        </section>
+    );
+}
+
+function CategoryKeys({ categories }: { categories: Category[] }) {
+    const { t } = useTranslation();
+
+    return (
+        <section
+            id="section-categories"
+            aria-labelledby="section-categories-title"
+        >
+            <div className="mb-3 flex items-baseline justify-between gap-3">
+                <h2
+                    id="section-categories-title"
+                    className="text-xl font-bold tracking-tight"
+                >
+                    {t('welcome.categories.title')}
+                </h2>
+                <ViewAll
+                    href={catalogIndex.url()}
+                    label={t('welcome.categories.all')}
+                />
+            </div>
+            <ul className="flex flex-wrap gap-2.5">
+                {categories.map((category) => (
+                    <li key={category.id}>
+                        <Link
+                            href={catalogIndex.url({
+                                query: { categories: [category.slug] },
+                            })}
+                            className="inline-flex h-10 items-center gap-2 rounded-control border border-border-strong bg-key-light px-4 font-semibold shadow-[0_3px_0_0_var(--key-light-edge)] transition-[transform,box-shadow,background-color] hover:bg-surface-hover active:translate-y-[3px] active:shadow-none"
+                        >
+                            {category.name}
+                            {category.games_count !== undefined && (
+                                <span className="font-mono text-xs font-normal text-muted-foreground">
+                                    {category.games_count}
+                                </span>
+                            )}
+                        </Link>
+                    </li>
+                ))}
+            </ul>
+        </section>
+    );
+}
+
+/**
+ * Portada. Para quien llega por primera vez: qué es Vout en una línea, los
+ * destacados, las categorías, los juegos con gestos y cómo funcionan. Para
+ * quien ya tiene cuenta: sus últimas partidas arriba y lo nuevo debajo.
+ * Funciona con un juego, con cuarenta y sin ninguno.
+ */
 export default function Welcome({
     featured,
     popular,
+    gestureGames,
+    newest,
+    recentGames,
+    categories,
     canRegister,
 }: WelcomeProps) {
     const { auth } = usePage().props;
     const { t } = useTranslation();
     const isGuest = !auth?.user;
 
-    const hasFeatured = featured.data.length > 0;
-    const hasPopular = popular.data.length > 0;
+    // La pieza grande es el primer destacado (o el más jugado); al lado, más
+    // destacados o, si faltan, los más jugados que no estén ya.
+    const lead = featured.data[0] ?? popular.data[0];
+    const sides = [...featured.data, ...popular.data]
+        .filter(
+            (game, index, all) =>
+                game.id !== lead?.id &&
+                all.findIndex((other) => other.id === game.id) === index,
+        )
+        .slice(0, 2);
+    const hasGames = lead !== undefined;
+
+    // Con un catálogo pequeño las filas se repiten: "Más jugados" se salta lo
+    // que ya está en destacados y "Recién llegados" solo sale si trae al
+    // menos dos juegos que no se hayan visto más arriba.
+    const shownIds = new Set(
+        [lead, ...sides].flatMap((game) => (game ? [game.id] : [])),
+    );
+    const popularRest = popular.data.filter((game) => !shownIds.has(game.id));
+    const popularShelf = popularRest.slice(0, popularRest.length >= 8 ? 8 : 4);
+    const showPopular = popularShelf.length >= 4;
+
+    if (showPopular) {
+        popularShelf.forEach((game) => shownIds.add(game.id));
+    }
+
+    const showNewest =
+        newest.data.length >= 4 &&
+        newest.data.filter((game) => !shownIds.has(game.id)).length >= 2;
+    const firstName = auth?.user?.name.split(' ')[0] ?? '';
 
     return (
         <PortalLayout>
             <Head title={t('portal.title')} />
 
-            <div className="space-y-10">
-                {/* Netflix-style carousel — primary hero */}
-                {hasFeatured && <FeaturedCarousel games={featured.data} />}
+            <div className="grid gap-12">
+                <header className="flex flex-wrap items-end justify-between gap-4">
+                    <div className="max-w-2xl space-y-1.5">
+                        <h1 className="text-2xl leading-tight font-extrabold tracking-tight text-balance sm:text-3xl">
+                            {isGuest
+                                ? t('welcome.hero.title')
+                                : t('welcome.greeting.title', {
+                                      name: firstName,
+                                  })}
+                        </h1>
+                        <p className="text-base text-muted-foreground">
+                            {isGuest
+                                ? t('welcome.hero.subtitle')
+                                : t('welcome.greeting.subtitle')}
+                        </p>
+                    </div>
+                    <Button
+                        asChild
+                        variant="secondary"
+                        id="btn-welcome-explore"
+                    >
+                        <Link href={catalogIndex.url()}>
+                            {t('welcome.hero.cta')}
+                            <ArrowRight />
+                        </Link>
+                    </Button>
+                </header>
 
-                {/* Fallback hero when no featured games */}
-                {!hasFeatured && (
-                    <section className="relative overflow-hidden rounded-2xl bg-linear-to-br from-(--vout-gradient-start) to-(--vout-gradient-end) px-6 py-16 text-center text-white shadow-[0_20px_60px_-20px_rgba(0,0,0,0.45)] md:py-20">
-                        <div className="animate-float-slow absolute top-8 left-12 opacity-20">
-                            <Gamepad2 className="size-16" />
+                {recentGames.data.length > 0 && (
+                    <Shelf
+                        id="section-recent"
+                        title={t('welcome.recent.title')}
+                        games={recentGames.data}
+                    />
+                )}
+
+                {hasGames ? (
+                    <FeaturedLead lead={lead} others={sides} />
+                ) : (
+                    <section
+                        id="welcome-empty"
+                        className="flex flex-col items-center gap-4 rounded-surface border bg-surface-1 px-6 py-12 text-center shadow-surface"
+                    >
+                        <div className="size-24" aria-hidden="true">
+                            <VouSvg />
                         </div>
-                        <div
-                            className="animate-float absolute right-16 bottom-10 opacity-20"
-                            style={{ animationDelay: '2s' }}
-                        >
-                            <Zap className="size-12" />
-                        </div>
-                        <div
-                            className="animate-float absolute top-16 right-1/4 opacity-15"
-                            style={{ animationDelay: '1s' }}
-                        >
-                            <Sparkles className="size-10" />
-                        </div>
-                        <div className="relative z-10 mx-auto max-w-2xl space-y-6">
-                            <h1 className="text-3xl font-bold tracking-tight md:text-4xl lg:text-5xl">
-                                {t('welcome.hero.title')}
-                            </h1>
-                            <p className="mx-auto max-w-lg text-base text-white/80 md:text-lg">
-                                {t('welcome.hero.subtitle')}
-                            </p>
-                            <Button
-                                asChild
-                                id="btn-welcome-explore"
-                                size="lg"
-                                className="bg-white font-semibold text-primary hover:bg-white/90"
-                            >
-                                <Link href={catalogIndex.url()}>
-                                    {t('welcome.hero.cta')}
-                                    <ArrowRight className="ml-2 size-4" />
-                                </Link>
-                            </Button>
-                        </div>
+                        <h2 className="text-xl font-bold">
+                            {t('welcome.empty.title')}
+                        </h2>
+                        <p className="max-w-md text-muted-foreground">
+                            {t('welcome.empty.desc')}
+                        </p>
+                        <Button asChild variant="secondary">
+                            <Link href={developersLanding.url()}>
+                                {t('welcome.empty.action')}
+                            </Link>
+                        </Button>
                     </section>
                 )}
 
-                {/* Register CTA strip — only for guests */}
-                {canRegister && isGuest && (
-                    <div className="relative overflow-hidden rounded-2xl border border-primary/25 bg-card/70 px-6 py-5 shadow-sm backdrop-blur-sm">
-                        {/* Subtle brand glow on the right edge */}
-                        <div
-                            className="pointer-events-none absolute inset-y-0 right-0 w-2/3 opacity-60"
-                            style={{
-                                background:
-                                    'radial-gradient(ellipse 60% 140% at 100% 50%, oklch(0.55 0.22 285 / 0.18) 0%, transparent 70%)',
-                            }}
-                            aria-hidden="true"
-                        />
-                        <div className="relative flex flex-col items-center justify-between gap-4 sm:flex-row">
-                            <div className="flex items-center gap-3 text-center sm:text-left">
-                                <div
-                                    className="hidden size-10 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary sm:flex"
-                                    aria-hidden="true"
-                                >
-                                    <Sparkles className="size-5" />
-                                </div>
-                                <div className="space-y-0.5">
-                                    <p className="text-sm font-semibold text-foreground">
-                                        {t('welcome.register_cta.title')}
-                                    </p>
-                                    <p className="text-xs text-muted-foreground">
-                                        {t('welcome.register_cta.subtitle')}
-                                    </p>
-                                </div>
-                            </div>
-                            <Button
-                                asChild
-                                id="btn-welcome-register"
-                                size="sm"
-                                className="shrink-0"
-                            >
-                                <Link href="/register">
-                                    {t('welcome.register_cta.action')}
-                                    <ArrowRight className="ml-1.5 size-3.5" />
-                                </Link>
-                            </Button>
-                        </div>
-                    </div>
+                {categories.data.length > 1 && (
+                    <CategoryKeys categories={categories.data} />
                 )}
 
-                {/* Popular Games */}
-                {hasPopular && (
+                {gestureGames.data.length > 0 && (
+                    <Shelf
+                        id="section-gestures"
+                        title={t('welcome.gestures.title')}
+                        games={gestureGames.data}
+                        viewAllHref={catalogIndex.url({ query: { face: 1 } })}
+                        viewAllLabel={t('welcome.view_all')}
+                    />
+                )}
+
+                {isGuest && <GesturesHowto />}
+
+                {showPopular && (
+                    <Shelf
+                        id="section-popular"
+                        title={t('welcome.popular.title')}
+                        games={popularShelf}
+                        viewAllHref={catalogIndex.url()}
+                        viewAllLabel={t('welcome.view_all')}
+                    />
+                )}
+
+                {showNewest && (
+                    <Shelf
+                        id="section-newest"
+                        title={t('welcome.newest.title')}
+                        games={newest.data}
+                        viewAllHref={catalogIndex.url({
+                            query: { sort: 'newest' },
+                        })}
+                        viewAllLabel={t('welcome.view_all')}
+                    />
+                )}
+
+                {canRegister && isGuest && (
                     <section
-                        className="space-y-4"
-                        aria-labelledby="section-popular"
+                        aria-label={t('welcome.register_cta.action')}
+                        className="flex flex-col gap-4 rounded-surface border bg-surface-sunken px-5 py-5 sm:flex-row sm:items-center sm:justify-between"
                     >
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2.5">
-                                <span
-                                    className="inline-block h-6 w-1 rounded-full bg-linear-to-b from-primary to-primary/40"
-                                    aria-hidden="true"
-                                />
-                                <h2
-                                    id="section-popular"
-                                    className="text-lg font-semibold tracking-tight"
-                                >
-                                    {t('welcome.popular.title')}
-                                </h2>
-                            </div>
-                            <Link
-                                href={catalogIndex.url()}
-                                className="group/link inline-flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-primary"
-                            >
-                                {t('welcome.view_all')}
-                                <ArrowRight className="size-3.5 transition-transform duration-200 group-hover/link:translate-x-0.5" />
-                            </Link>
+                        <div className="space-y-1">
+                            <p className="font-pixel-label text-lg leading-none text-muted-foreground">
+                                {t('welcome.register_cta.label')}
+                            </p>
+                            <p className="max-w-xl">
+                                {t('welcome.register_cta.subtitle')}
+                            </p>
                         </div>
-                        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
-                            {popular.data.slice(0, 8).map((game) => (
-                                <GameCard key={game.id} game={game} />
-                            ))}
+                        <div className="flex shrink-0 items-center gap-3">
+                            <Button asChild id="btn-welcome-register">
+                                <Link href={register()}>
+                                    {t('welcome.register_cta.action')}
+                                </Link>
+                            </Button>
+                            <Link
+                                href={login()}
+                                className="rounded-xs text-sm font-semibold underline decoration-border-strong underline-offset-4 hover:decoration-signal-strong"
+                            >
+                                {t('welcome.register_cta.login')}
+                            </Link>
                         </div>
                     </section>
                 )}

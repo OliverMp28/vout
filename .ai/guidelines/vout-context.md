@@ -12,7 +12,7 @@ Vout (evolución del proyecto anterior "Tout") es el corazón de un ecosistema d
 
 El problema principal que resuelve Vout es la fragmentación de identidad. En lugar de que cada juego sea una isla aislada, Vout ofrece un "Pasaporte Universal" soportado por estándares de la industria.
 
-La interfaz de Vout (Inertia/React) sigue los principios de **diseño premium y glassmorfismo** detallados en `vout-design.md`. El objetivo es transmitir confianza como Proveedor de Identidad, asegurando una transición fluida entre el portal y los juegos para eliminar la sensación de fragmentación.
+La interfaz de Vout (Inertia/React) sigue la identidad propia detallada en `vout-design.md`: teclas que se hunden, gris redondeado y el cian de Vout, sin la estética típica de las webs hechas con IA (violeta, glassmorfismo, halos). El objetivo es transmitir confianza como Proveedor de Identidad, asegurando una transición fluida entre el portal y los juegos para eliminar la sensación de fragmentación.
 
 - **Autenticación Centralizada:** Si el usuario usa Google (Socialite) o registro nativo, lo hace una sola vez en el portal central.
 - **Vout como Servidor OAuth2:** El ecosistema utiliza **Laravel Passport** para gestionar la emisión de tokens de acceso seguros.

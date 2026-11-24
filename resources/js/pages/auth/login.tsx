@@ -41,13 +41,13 @@ export default function Login({
             <Head title={t('auth.login.title')} />
 
             {status && (
-                <div className="mb-4 rounded-md bg-green-50 px-3 py-2 text-center text-sm font-medium text-green-700 dark:bg-green-900/20 dark:text-green-400">
+                <div className="mb-4 rounded-control border border-success bg-success-soft px-3 py-2 text-center text-sm font-semibold text-success-text">
                     {status}
                 </div>
             )}
 
             {Object.keys(pageErrors).length > 0 && pageErrors.email && (
-                <div className="mb-4 rounded-md border border-red-500/20 bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-500/10 dark:text-red-400">
+                <div className="mb-4 rounded-control border border-danger bg-danger-soft px-3 py-2 text-sm font-semibold text-danger-text">
                     {pageErrors.email}
                 </div>
             )}
@@ -70,7 +70,6 @@ export default function Login({
                                     name="email"
                                     required
                                     autoFocus
-                                    tabIndex={1}
                                     autoComplete="email"
                                     placeholder="tu@correo.com"
                                 />
@@ -86,7 +85,6 @@ export default function Login({
                                         <TextLink
                                             href={request()}
                                             className="text-xs"
-                                            tabIndex={5}
                                         >
                                             {t('auth.login.forgot')}
                                         </TextLink>
@@ -97,7 +95,6 @@ export default function Login({
                                     type="password"
                                     name="password"
                                     required
-                                    tabIndex={2}
                                     autoComplete="current-password"
                                     placeholder="••••••••"
                                 />
@@ -108,7 +105,6 @@ export default function Login({
                                 <Checkbox
                                     id="remember"
                                     name="remember"
-                                    tabIndex={3}
                                     checked={remember}
                                     onCheckedChange={(checked) =>
                                         setRemember(checked === true)
@@ -126,7 +122,6 @@ export default function Login({
                         <Button
                             type="submit"
                             className="w-full"
-                            tabIndex={4}
                             disabled={processing}
                             data-test="login-button"
                         >
@@ -148,7 +143,7 @@ export default function Login({
                         <Button
                             type="button"
                             variant="outline"
-                            className="w-full transition-all duration-200 hover:shadow-md"
+                            className="w-full"
                             onClick={() =>
                                 (window.location.href = googleRedirect.url(
                                     remember
@@ -164,7 +159,7 @@ export default function Login({
                         {canRegister && (
                             <p className="text-center text-sm text-muted-foreground">
                                 {t('auth.login.no_account')}{' '}
-                                <TextLink href={register()} tabIndex={5}>
+                                <TextLink href={register()}>
                                     {t('auth.login.register')}
                                 </TextLink>
                             </p>

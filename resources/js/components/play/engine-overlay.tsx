@@ -86,36 +86,23 @@ export function EngineOverlay({
         return null;
     }
 
-    const isError = kind === 'error' || kind === 'timeout';
-
     return (
         <div
             role="status"
             aria-live="polite"
             className={cn(
                 'pointer-events-none absolute inset-0 z-20 flex items-center justify-center p-4',
-                'bg-black/45 backdrop-blur-md transition-opacity duration-300',
+                'bg-scrim transition-opacity duration-300',
                 'animate-in fade-in',
             )}
         >
-            {/* Tarjeta principal: glass-card sobre fondo oscuro (iframe negro) — autorizado por el design system */}
+            {/* Tarjeta del aviso: superficie del tema sobre la capa oscura del juego */}
             <div
                 className={cn(
-                    'glass-card pointer-events-auto relative w-full max-w-md overflow-hidden rounded-2xl p-7 shadow-2xl',
+                    'pointer-events-auto relative w-full max-w-md overflow-hidden rounded-surface border bg-surface-2 p-7 text-foreground shadow-overlay',
                     'animate-in duration-300 zoom-in-95 fade-in',
                 )}
             >
-                {/* Acento decorativo: halo radial sutil que diferencia idle (invitador) de error (urgente) */}
-                <div
-                    aria-hidden="true"
-                    className={cn(
-                        'pointer-events-none absolute -top-24 left-1/2 size-64 -translate-x-1/2 rounded-full opacity-60 blur-3xl',
-                        isError
-                            ? 'bg-destructive/30'
-                            : 'bg-[radial-gradient(circle_at_center,var(--vout-gradient-start),transparent_70%)]',
-                    )}
-                />
-
                 <div className="relative flex flex-col items-center gap-4 text-center">
                     {kind === 'handshake' && (
                         <>
@@ -148,7 +135,7 @@ export function EngineOverlay({
                     {kind === 'timeout' && (
                         <>
                             <IconBubble tone="destructive">
-                                <RefreshCw className="size-7 text-destructive" />
+                                <RefreshCw className="size-7 text-danger-text" />
                             </IconBubble>
                             <OverlayHeading>
                                 {t('play.overlay.timeout.title')}
@@ -169,7 +156,7 @@ export function EngineOverlay({
                     {kind === 'error' && (
                         <>
                             <IconBubble tone="destructive">
-                                <AlertTriangle className="size-7 text-destructive" />
+                                <AlertTriangle className="size-7 text-danger-text" />
                             </IconBubble>
                             <OverlayHeading>
                                 {t('play.overlay.error.title')}
@@ -200,20 +187,17 @@ export function EngineOverlay({
 function IconBubble({
     children,
     tone,
-    glow = false,
 }: {
     children: React.ReactNode;
     tone: 'primary' | 'destructive';
-    glow?: boolean;
 }) {
     return (
         <div
             className={cn(
-                'relative flex size-14 items-center justify-center rounded-2xl',
+                'relative flex size-14 items-center justify-center rounded-surface',
                 tone === 'primary'
-                    ? 'bg-primary/12 ring-1 ring-primary/25'
-                    : 'bg-destructive/10 ring-1 ring-destructive/25',
-                glow && 'animate-glow-pulse',
+                    ? 'border bg-surface-sunken'
+                    : 'border border-danger bg-danger-soft',
             )}
         >
             {children}

@@ -12,27 +12,27 @@ const statusConfig: Record<
     { color: string; pulse: boolean; i18nKey: string }
 > = {
     running: {
-        color: 'bg-green-500',
+        color: 'bg-success',
         pulse: true,
         i18nKey: 'vision.status.active',
     },
     loading: {
-        color: 'bg-yellow-500',
+        color: 'bg-warning',
         pulse: true,
         i18nKey: 'vision.status.loading',
     },
     ready: {
-        color: 'bg-yellow-500',
+        color: 'bg-warning',
         pulse: false,
         i18nKey: 'vision.status.loading',
     },
     error: {
-        color: 'bg-red-500',
+        color: 'bg-danger',
         pulse: false,
         i18nKey: 'vision.status.error',
     },
     paused: {
-        color: 'bg-orange-400',
+        color: 'bg-warning',
         pulse: false,
         i18nKey: 'vision.status.paused',
     },
@@ -57,7 +57,7 @@ function GestureStatusIndicator({
     return (
         <div
             className={cn(
-                'inline-flex items-center gap-1.5 rounded-full border border-border/50 bg-background/80 px-2.5 py-1 backdrop-blur-sm',
+                'inline-flex items-center gap-1.5 rounded-full border border-border/50 bg-background/80 px-2.5 py-1',
                 className,
             )}
         >

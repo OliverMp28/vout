@@ -42,11 +42,11 @@ export function DashboardHeader({ name, hourOfDay }: Props) {
             aria-labelledby="dashboard-greeting-title"
             className="flex items-center gap-4"
         >
-            <Avatar className="size-14 ring-2 ring-primary/20 transition-all duration-200">
+            <Avatar className="size-14 rounded-control border border-border-strong">
                 {auth.user.avatar && (
                     <AvatarImage src={auth.user.avatar} alt={name} />
                 )}
-                <AvatarFallback className="bg-primary/10 text-base font-semibold text-primary">
+                <AvatarFallback className="rounded-none bg-surface-sunken text-base font-bold text-foreground">
                     {getInitials(name)}
                 </AvatarFallback>
             </Avatar>
@@ -54,11 +54,11 @@ export function DashboardHeader({ name, hourOfDay }: Props) {
             <div className="flex flex-col gap-0.5">
                 <h1
                     id="dashboard-greeting-title"
-                    className="text-2xl font-semibold tracking-tight"
+                    className="text-2xl font-extrabold tracking-tight"
                 >
                     {t(`dashboard.greeting.${greetingKey}`, { name })}
                 </h1>
-                <p className="text-sm text-muted-foreground capitalize">
+                <p className="text-sm text-muted-foreground first-letter:uppercase">
                     {subtitle}
                 </p>
             </div>

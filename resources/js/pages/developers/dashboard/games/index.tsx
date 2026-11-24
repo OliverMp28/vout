@@ -76,7 +76,7 @@ function EmptyState() {
 
     return (
         <div className="rounded-2xl border border-dashed border-border bg-card/40 p-10 text-center shadow-sm">
-            <div className="mx-auto flex size-14 items-center justify-center rounded-full bg-primary/10 text-primary">
+            <div className="mx-auto flex size-14 items-center justify-center rounded-full bg-surface-sunken text-primary">
                 <Gamepad2 className="size-7" aria-hidden />
             </div>
             <h2 className="mt-5 text-lg font-semibold tracking-tight">

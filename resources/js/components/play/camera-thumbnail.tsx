@@ -42,11 +42,11 @@ export function CameraThumbnail({
                 engine={engine}
                 mode="synced"
                 mesh="full"
-                className="aspect-[4/3] w-full rounded-lg border border-white/20 bg-black shadow-lg"
+                className="aspect-[4/3] w-full rounded-lg border border-on-media/20 bg-media shadow-lg"
             >
                 <Camera
                     aria-hidden="true"
-                    className="absolute top-1/2 left-1/2 size-5 -translate-x-1/2 -translate-y-1/2 text-white/30"
+                    className="absolute top-1/2 left-1/2 size-5 -translate-x-1/2 -translate-y-1/2 text-on-media-muted"
                 />
             </FaceMeshView>
             <button
@@ -54,7 +54,7 @@ export function CameraThumbnail({
                 id="play-camera-thumbnail-hide"
                 onClick={onHide}
                 aria-label={t('play.thumbnail.hide')}
-                className="absolute top-1 right-1 rounded-full bg-black/60 p-1 text-white transition-colors duration-200 hover:bg-black/80 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                className="absolute top-1 right-1 rounded-full bg-scrim p-1 text-on-media transition-colors duration-200 hover:bg-scrim focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
             >
                 <X aria-hidden="true" className="size-3.5" />
             </button>

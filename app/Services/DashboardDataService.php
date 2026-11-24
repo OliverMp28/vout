@@ -47,6 +47,24 @@ class DashboardDataService
     }
 
     /**
+     * Los últimos juegos a los que ha jugado el usuario (para "Seguir jugando"
+     * en la portada), del más reciente al más antiguo.
+     *
+     * @return Collection<int, Game>
+     */
+    public function recentlyPlayed(User $user, int $limit = 4): Collection
+    {
+        return Game::query()
+            ->active()
+            ->withUserInteraction($user->id)
+            ->whereRaw('user_pivot.last_played_at IS NOT NULL')
+            ->with(['categories:id,name,slug'])
+            ->orderByRaw('user_pivot.last_played_at DESC')
+            ->limit($limit)
+            ->get();
+    }
+
+    /**
      * Estadísticas agregadas para el widget "Quick Stats".
      *
      * - `gamesPlayed`: juegos distintos con `last_played_at NOT NULL`.

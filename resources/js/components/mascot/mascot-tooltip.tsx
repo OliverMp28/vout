@@ -51,9 +51,9 @@ export function MascotTooltip({
             data-tone={tone}
             data-variant={progress ? 'guide' : 'default'}
             className={cn(
-                'pointer-events-none absolute right-0 bottom-full mb-3 flex origin-bottom-right items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-medium whitespace-nowrap shadow-md transition-all duration-200 ease-out',
+                'pointer-events-none absolute right-0 bottom-full mb-3 flex origin-bottom-right items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-medium whitespace-nowrap shadow-md transition-[color,background-color,border-color,box-shadow,transform,opacity] duration-200 ease-out',
                 tone === 'success' &&
-                    'border-emerald-500/30 bg-emerald-500/10 text-emerald-900 dark:text-emerald-100',
+                    'border-success/30 bg-success-soft text-success-text',
                 tone === 'error' &&
                     'border-destructive/30 bg-destructive/10 text-destructive',
                 tone === 'info' &&
@@ -68,7 +68,7 @@ export function MascotTooltip({
             {progress ? (
                 <span
                     data-test="mascot-guide-progress"
-                    className="ml-1 rounded-full bg-primary/15 px-1.5 py-0.5 text-[10px] font-semibold text-primary tabular-nums"
+                    className="ml-1 rounded-full bg-surface-sunken px-1.5 py-0.5 text-[10px] font-semibold text-primary tabular-nums"
                     aria-label={`${progress.current} / ${progress.total}`}
                 >
                     {progress.current}/{progress.total}

@@ -37,7 +37,7 @@ export default function LibrarySaved({ games }: Props) {
 
             <div className="space-y-6">
                 <div>
-                    <h1 className="text-2xl font-semibold">
+                    <h1 className="text-2xl font-extrabold tracking-tight md:text-3xl">
                         {t('library.saved.title')}
                     </h1>
                 </div>

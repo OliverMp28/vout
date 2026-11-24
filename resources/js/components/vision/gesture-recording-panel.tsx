@@ -119,7 +119,7 @@ export function GestureRecordingPanel({
         <div className="space-y-3 rounded-lg border border-border/50 bg-background/50 p-3">
             <div className="flex items-center justify-between gap-2">
                 <h3 className="flex items-center gap-1.5 text-xs font-medium">
-                    <CircleDot className="size-3.5 text-red-500" />
+                    <CircleDot className="size-3.5 text-danger-text" />
                     Grabación guiada
                 </h3>
                 {active === null ? (
@@ -179,7 +179,7 @@ export function GestureRecordingPanel({
             )}
 
             {active === null && lastDownload !== null && (
-                <p className="flex items-center gap-1.5 text-[11px] text-green-600 dark:text-green-400">
+                <p className="flex items-center gap-1.5 text-[11px] text-success-text">
                     <Download className="size-3" />
                     {lastDownload.fileName} ({lastDownload.frames} fotogramas)
                 </p>

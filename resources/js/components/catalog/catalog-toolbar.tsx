@@ -60,7 +60,7 @@ export function CatalogToolbar({
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
-                {/* Solo los que se juegan con la cara */}
+                {/* Solo los que se manejan con gestos */}
                 <Toggle
                     id="catalog-filter-face"
                     variant="outline"
@@ -79,7 +79,10 @@ export function CatalogToolbar({
                         onSortChange(v as CatalogFilters['sort'])
                     }
                 >
-                    <SelectTrigger className="w-36">
+                    <SelectTrigger
+                        className="w-36"
+                        aria-label={t('catalog.sort.label')}
+                    >
                         <SelectValue />
                     </SelectTrigger>
                     <SelectContent>

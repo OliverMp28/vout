@@ -89,11 +89,11 @@ export function QuickStatsCard({ stats }: Props) {
         <section
             id="dashboard-quick-stats"
             aria-labelledby="dashboard-quick-stats-title"
-            className="rounded-xl border bg-card p-5 shadow-sm"
+            className="rounded-surface border bg-card p-5 shadow-surface"
         >
             <h2
                 id="dashboard-quick-stats-title"
-                className="text-sm font-semibold text-muted-foreground"
+                className="font-pixel-label text-lg leading-none text-muted-foreground"
             >
                 {t('dashboard.stats.title')}
             </h2>
@@ -109,22 +109,17 @@ export function QuickStatsCard({ stats }: Props) {
 
 function StatItem({ icon: Icon, label, value, srValue }: StatItem) {
     return (
-        <div className="flex items-start gap-3">
-            <div
-                className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10"
-                aria-hidden="true"
+        <div className="min-w-0 space-y-1">
+            <dt className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <Icon className="size-3.5 shrink-0" aria-hidden="true" />
+                {label}
+            </dt>
+            <dd
+                className="truncate font-mono text-lg font-semibold tabular-nums"
+                title={srValue ?? value}
             >
-                <Icon className="size-4 text-primary" />
-            </div>
-            <div className="min-w-0 space-y-0.5">
-                <dt className="text-xs text-muted-foreground">{label}</dt>
-                <dd
-                    className="truncate text-base font-semibold tabular-nums"
-                    title={srValue ?? value}
-                >
-                    {value}
-                </dd>
-            </div>
+                {value}
+            </dd>
         </div>
     );
 }

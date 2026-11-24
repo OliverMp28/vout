@@ -46,7 +46,6 @@ export default function Register() {
                                     type="text"
                                     required
                                     autoFocus
-                                    tabIndex={1}
                                     autoComplete="name"
                                     name="name"
                                     placeholder="Jane Doe"
@@ -62,7 +61,6 @@ export default function Register() {
                                     id="username"
                                     type="text"
                                     required
-                                    tabIndex={2}
                                     autoComplete="username"
                                     name="username"
                                     placeholder="jdoe"
@@ -78,7 +76,6 @@ export default function Register() {
                                     id="email"
                                     type="email"
                                     required
-                                    tabIndex={3}
                                     autoComplete="email"
                                     name="email"
                                     placeholder="correo@ejemplo.com"
@@ -95,7 +92,6 @@ export default function Register() {
                                         id="password"
                                         type="password"
                                         required
-                                        tabIndex={4}
                                         autoComplete="new-password"
                                         name="password"
                                         placeholder="••••••••"
@@ -111,7 +107,6 @@ export default function Register() {
                                         id="password_confirmation"
                                         type="password"
                                         required
-                                        tabIndex={5}
                                         autoComplete="new-password"
                                         name="password_confirmation"
                                         placeholder="••••••••"
@@ -137,7 +132,6 @@ export default function Register() {
                                                 ? 'accept_terms-error'
                                                 : undefined
                                         }
-                                        tabIndex={6}
                                         className="mt-0.5"
                                     />
                                     <div className="space-y-1">
@@ -194,7 +188,6 @@ export default function Register() {
                                             onCheckedChange={(value) => setConfirmAge(value === true)}
                                             aria-invalid={!!errors.confirm_age}
                                             aria-describedby={errors.confirm_age ? 'confirm_age-error' : undefined}
-                                            tabIndex={7}
                                             className="mt-0.5"
                                         />
                                         <div className="space-y-1">
@@ -220,7 +213,6 @@ export default function Register() {
                         <Button
                             type="submit"
                             className="w-full"
-                            tabIndex={8}
                             disabled={!consentReady || processing}
                             data-test="register-user-button"
                         >
@@ -242,11 +234,10 @@ export default function Register() {
                         <Button
                             type="button"
                             variant="outline"
-                            className="w-full transition-all duration-200 hover:shadow-md"
+                            className="w-full"
                             onClick={() =>
                                 (window.location.href = '/auth/google/redirect')
                             }
-                            tabIndex={9}
                         >
                             <GoogleIcon className="mr-2 size-4" />
                             {t('auth.login.google')}
@@ -254,7 +245,7 @@ export default function Register() {
 
                         <p className="text-center text-sm text-muted-foreground">
                             {t('auth.register.has_account')}{' '}
-                            <TextLink href={login()} tabIndex={10}>
+                            <TextLink href={login()}>
                                 {t('auth.register.login')}
                             </TextLink>
                         </p>

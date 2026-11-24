@@ -18,7 +18,7 @@ export default function ForgotPassword({ status }: { status?: string }) {
             <Head title="Recuperar contraseña" />
 
             {status && (
-                <div className="mb-4 rounded-md bg-green-50 px-3 py-2 text-center text-sm font-medium text-green-700 dark:bg-green-900/20 dark:text-green-400">
+                <div className="mb-4 rounded-control border border-success bg-success-soft px-3 py-2 text-center text-sm font-semibold text-success-text">
                     {status}
                 </div>
             )}

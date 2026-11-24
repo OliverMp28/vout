@@ -299,7 +299,7 @@ export default function VisionLab() {
                 {/* Header */}
                 <div className="flex flex-wrap items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
-                        <div className="rounded-lg bg-primary/10 p-2">
+                        <div className="rounded-lg bg-surface-sunken p-2">
                             <Brain className="size-5 text-primary" />
                         </div>
                         <div>
@@ -316,7 +316,7 @@ export default function VisionLab() {
 
                 {/* Camera / engine errors */}
                 {(camera.error || engine.error) && (
-                    <div className="rounded-lg border border-red-500/30 bg-red-500/5 px-4 py-3 text-sm text-red-600 dark:text-red-400">
+                    <div className="rounded-lg border border-danger/30 bg-danger-soft px-4 py-3 text-sm text-danger-text">
                         {camera.error ?? engine.error}
                     </div>
                 )}
@@ -507,7 +507,7 @@ export default function VisionLab() {
                                     mesh={meshLevel}
                                     className={cn(
                                         'absolute inset-0',
-                                        previewMode === 'synced' && 'bg-black',
+                                        previewMode === 'synced' && 'bg-media',
                                     )}
                                 />
                             </CameraPreview>
@@ -523,7 +523,7 @@ export default function VisionLab() {
                                                 top: `${engine.headTrackPosition.y * 100}%`,
                                             }}
                                         >
-                                            <div className="size-full rounded-full border-2 border-white bg-primary/60 shadow-[0_0_8px_rgba(168,85,247,0.6)]" />
+                                            <div className="size-full rounded-full border-2 border-on-media bg-signal/70" />
                                             <div className="absolute inset-0 animate-ping rounded-full bg-primary/30" />
                                         </div>
                                     </div>
@@ -610,9 +610,9 @@ export default function VisionLab() {
                                         <div className="relative h-2 flex-1 overflow-hidden rounded-full bg-muted">
                                             <div
                                                 className={cn(
-                                                    'h-full rounded-full transition-all duration-100',
+                                                    'h-full rounded-full transition-[color,background-color,border-color,box-shadow,transform,opacity] duration-100',
                                                     value > 0.5
-                                                        ? 'bg-green-500'
+                                                        ? 'bg-success'
                                                         : 'bg-primary/60',
                                                 )}
                                                 style={{
@@ -702,7 +702,7 @@ export default function VisionLab() {
                                                             key ===
                                                                 'inferenceMs' &&
                                                             stats.p50 > 30
-                                                                ? 'font-medium text-red-400'
+                                                                ? 'font-medium text-danger-text'
                                                                 : ''
                                                         }
                                                     >
@@ -713,7 +713,7 @@ export default function VisionLab() {
                                                             key ===
                                                                 'inferenceMs' &&
                                                             stats.p95 > 50
-                                                                ? 'font-medium text-red-400'
+                                                                ? 'font-medium text-danger-text'
                                                                 : ''
                                                         }
                                                     >
@@ -798,8 +798,8 @@ export default function VisionLab() {
 
                         {/* Baseline status */}
                         {engine.baseline && (
-                            <div className="rounded-lg border border-green-500/30 bg-green-500/5 p-3">
-                                <p className="text-xs text-green-600 dark:text-green-400">
+                            <div className="rounded-lg border border-success/30 bg-success-soft p-3">
+                                <p className="text-xs text-success-text">
                                     Neutral baseline captured at{' '}
                                     {new Date(
                                         engine.baseline.capturedAt,
@@ -859,7 +859,7 @@ export default function VisionLab() {
                 </div>
 
                 {/* ---- Action Dispatch Panel ---- */}
-                <div className="rounded-lg border border-primary/20 bg-primary/5 p-4">
+                <div className="rounded-lg border border-border-strong bg-surface-sunken p-4">
                     <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
                         <h2 className="flex items-center gap-2 text-sm font-medium">
                             <Zap className="size-4 text-primary" />
@@ -943,7 +943,9 @@ export default function VisionLab() {
                                     <span className="text-muted-foreground">
                                         {label}
                                     </span>
-                                    <span className="text-primary/60">→</span>
+                                    <span className="text-muted-foreground">
+                                        →
+                                    </span>
                                     <span className="font-mono">{aLabel}</span>
                                 </div>
                             );

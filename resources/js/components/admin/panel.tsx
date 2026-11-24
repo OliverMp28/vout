@@ -17,7 +17,7 @@ export function Panel({ title, children, tone = 'default' }: PanelProps) {
                 tone === 'danger'
                     ? 'border-destructive/30'
                     : tone === 'primary'
-                      ? 'border-primary/30'
+                      ? 'border-border-strong'
                       : 'border-border',
             )}
         >

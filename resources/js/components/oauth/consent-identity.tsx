@@ -27,7 +27,7 @@ export function ConsentIdentity({ name, email, avatar }: ConsentIdentityProps) {
         <div className="flex items-center gap-3 rounded-lg border border-border bg-muted/40 px-3 py-2.5">
             <Avatar className="size-10 shrink-0">
                 <AvatarImage src={avatar ?? undefined} alt={name} />
-                <AvatarFallback className="bg-primary/15 text-sm font-medium text-primary">
+                <AvatarFallback className="bg-surface-sunken text-sm font-medium text-primary">
                     {initials || '?'}
                 </AvatarFallback>
             </Avatar>
@@ -37,7 +37,7 @@ export function ConsentIdentity({ name, email, avatar }: ConsentIdentityProps) {
                     {email}
                 </p>
             </div>
-            <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">
+            <span className="rounded-full bg-surface-sunken px-2 py-0.5 text-[11px] font-medium text-primary">
                 {t('oauth.authorize.signed_in_badge')}
             </span>
         </div>

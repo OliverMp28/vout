@@ -417,11 +417,11 @@ export default function PlayGame({
                         engine={engine}
                         mode="synced"
                         mesh="full"
-                        className="aspect-[4/3] w-full rounded-xl border border-border/60 bg-black shadow-sm"
+                        className="aspect-[4/3] w-full rounded-control border bg-media"
                     >
                         <Camera
                             aria-hidden="true"
-                            className="absolute top-1/2 left-1/2 size-6 -translate-x-1/2 -translate-y-1/2 text-white/30"
+                            className="absolute top-1/2 left-1/2 size-6 -translate-x-1/2 -translate-y-1/2 text-on-media-muted"
                         />
                     </FaceMeshView>
                 ) : null
@@ -440,7 +440,7 @@ export default function PlayGame({
             {/* Enlace de salto para usuarios de teclado — visualmente oculto, visible al recibir foco */}
             <a
                 href="#game-frame"
-                className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:rounded-lg focus:bg-primary focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-primary-foreground focus:shadow-lg focus:ring-2 focus:ring-primary/50 focus:outline-none"
+                className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:rounded-control focus:bg-primary focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-primary-foreground focus:shadow-lg focus:ring-2 focus:ring-border-strong focus:outline-none"
             >
                 {t('play.skip_to_game')}
             </a>
@@ -470,8 +470,8 @@ export default function PlayGame({
                         side={isMobile ? 'bottom' : 'right'}
                         className={
                             isMobile
-                                ? 'max-h-[85vh] rounded-t-2xl border-t-border/60 bg-card/95 backdrop-blur-xl'
-                                : 'w-full border-l-border/60 bg-card/95 backdrop-blur-xl sm:max-w-sm'
+                                ? 'max-h-[85vh] rounded-t-2xl border-t-border/60 bg-card/95'
+                                : 'w-full border-l-border/60 bg-card/95 sm:max-w-sm'
                         }
                     >
                         <SheetHeader className="border-b border-border/50 pb-4">
@@ -504,7 +504,7 @@ export default function PlayGame({
                         'relative min-w-0',
                         // A pantalla completa: el juego y, a su lado (nunca
                         // encima de sus botones), la barra del portal.
-                        fullscreen.active && 'flex items-center bg-black',
+                        fullscreen.active && 'flex items-center bg-media',
                     )}
                 >
                     {/* ── Contenedor del iframe ───────────────────────────────── */}
@@ -516,36 +516,23 @@ export default function PlayGame({
                         data-suggested-preset={suggestedPreset ?? ''}
                         data-preset-choice={activeGamePreset ?? 'own'}
                         className={cn(
-                            'group relative mx-auto aspect-video w-full overflow-hidden bg-black transition-[border-color,box-shadow] duration-500',
+                            'group relative mx-auto aspect-video w-full overflow-hidden bg-media transition-[border-color,box-shadow] duration-200',
                             fullscreen.active
                                 ? 'max-w-[calc(100dvh*16/9)] min-w-0 flex-1'
-                                : 'max-w-[calc((100dvh-13rem)*16/9)] rounded-2xl border',
+                                : 'max-w-[calc((100dvh-13rem)*16/9)] rounded-media border',
                             !fullscreen.active &&
+                                // Con la cámara mandando, el borde se enciende
+                                // con la señal.
                                 (engine.status === 'running'
-                                    ? 'border-primary/40 shadow-2xl ring-1 shadow-primary/20 ring-primary/30'
-                                    : 'border-border/60 shadow-xl shadow-black/20'),
+                                    ? 'border-signal-edge shadow-[0_0_0_1px_var(--signal-edge)]'
+                                    : 'border-border shadow-surface'),
                         )}
                     >
-                        {/* Halo decorativo cuando el motor está activo */}
-                        {engine.status === 'running' && (
-                            <div
-                                aria-hidden="true"
-                                className={cn(
-                                    'pointer-events-none absolute inset-0 z-30',
-                                    !fullscreen.active && 'rounded-2xl',
-                                )}
-                                style={{
-                                    background:
-                                        'radial-gradient(circle at top left, color-mix(in oklch, var(--primary) 18%, transparent), transparent 35%), radial-gradient(circle at bottom right, color-mix(in oklch, var(--primary) 14%, transparent), transparent 35%)',
-                                }}
-                            />
-                        )}
-
-                        {/* Skeleton shimmer solo mientras esperamos el handshake READY */}
+                        {/* Esqueleto neutro mientras esperamos el READY del juego */}
                         {handshake.status === 'waiting' && (
                             <div
                                 aria-hidden="true"
-                                className="pointer-events-none absolute inset-0 z-10 bg-[radial-gradient(circle_at_center,color-mix(in_oklch,var(--primary)_10%,transparent),transparent_70%)]"
+                                className="pointer-events-none absolute inset-0 z-10"
                             >
                                 <div className="iframe-shimmer absolute inset-0" />
                             </div>
@@ -575,14 +562,14 @@ export default function PlayGame({
 
                         {/* Overlay debug de Telemetría */}
                         {showTelemetry && telemetryView && (
-                            <div className="pointer-events-none absolute top-4 left-4 z-50 rounded-lg border border-white/10 bg-black/80 p-3 text-white shadow-xl backdrop-blur-md">
-                                <div className="mb-2 flex items-center justify-between border-b border-white/20 pb-1 text-xs font-bold">
+                            <div className="pointer-events-none absolute top-4 left-4 z-50 rounded-control border border-on-media/10 bg-scrim p-3 text-on-media shadow-overlay">
+                                <div className="mb-2 flex items-center justify-between border-b border-on-media/20 pb-1 text-xs font-bold">
                                     <span>Telemetry</span>
                                     <span className="ml-4 font-normal opacity-50">
                                         Ctrl+M to hide
                                     </span>
                                 </div>
-                                <dl className="mb-2 grid grid-cols-[auto_1fr] gap-x-3 border-b border-white/20 pb-1 font-mono text-[10px]">
+                                <dl className="mb-2 grid grid-cols-[auto_1fr] gap-x-3 border-b border-on-media/20 pb-1 font-mono text-[10px]">
                                     {telemetryView.info.map(([name, value]) => (
                                         <div
                                             key={name}
@@ -694,16 +681,16 @@ export default function PlayGame({
                     <aside
                         id={DESKTOP_PANEL_ID}
                         aria-label={t('play.panel.title')}
-                        className="max-h-[calc(100dvh-13rem)] overflow-y-auto rounded-2xl"
+                        className="max-h-[calc(100dvh-13rem)] overflow-y-auto rounded-surface"
                     >
-                        <div className="relative min-h-full rounded-2xl border border-border/60 bg-card p-5 shadow-lg shadow-black/5 dark:shadow-black/20">
+                        <div className="relative min-h-full rounded-surface border bg-card p-5 shadow-surface">
                             {/* Pulso al detectar un gesto: solo se remonta esta capa
                             (reinicia la animación), no el panel entero. */}
                             {lastGesture && (
                                 <span
                                     key={lastGesture}
                                     aria-hidden="true"
-                                    className="motion-safe:animate-gesture-pulse pointer-events-none absolute inset-0 rounded-2xl"
+                                    className="motion-safe:animate-gesture-pulse pointer-events-none absolute inset-0 rounded-surface"
                                 />
                             )}
                             {panelContent}

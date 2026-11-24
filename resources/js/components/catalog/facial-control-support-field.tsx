@@ -44,7 +44,7 @@ export function FacialControlSupportField({
                 return (
                     <div
                         key={level}
-                        className="flex items-start gap-3 rounded-lg border border-border/60 p-3 has-data-[state=checked]:border-primary/50 has-data-[state=checked]:bg-primary/5"
+                        className="flex items-start gap-3 rounded-lg border border-border/60 p-3 has-data-[state=checked]:border-border-strong has-data-[state=checked]:bg-surface-sunken"
                     >
                         <RadioGroupItem
                             id={id}

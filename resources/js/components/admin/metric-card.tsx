@@ -13,26 +13,19 @@ type MetricCardProps = {
     action?: ReactNode;
 };
 
-const toneRing: Record<Tone, string> = {
-    default: 'ring-border/60',
-    primary: 'ring-primary/30',
-    success: 'ring-emerald-500/30',
-    warning: 'ring-amber-500/40',
-    danger: 'ring-destructive/40',
-};
-
-const toneIcon: Record<Tone, string> = {
-    default: 'bg-muted text-muted-foreground',
-    primary: 'bg-primary/10 text-primary',
-    success: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
-    warning: 'bg-amber-500/15 text-amber-700 dark:text-amber-400',
-    danger: 'bg-destructive/10 text-destructive',
+/** Luz de la esquina: el tono solo marca lo que pide atención. */
+const toneLight: Record<Tone, string> = {
+    default: 'bg-led-off',
+    primary: 'bg-signal-edge',
+    success: 'bg-success',
+    warning: 'bg-warning',
+    danger: 'bg-danger',
 };
 
 /**
- * Tarjeta compacta de métrica para el Dashboard admin. Muestra una
- * etiqueta, un valor grande tabular y un icono temático. Diseñada para
- * grids responsive — no intenta abarcar toda la altura del contenedor.
+ * Tarjeta compacta de métrica para el panel de admin: etiqueta pixel, cifra
+ * grande en mono y un icono. El tono se ve en la luz de la esquina, no en el
+ * fondo, para que el panel no se llene de colores.
  */
 export function MetricCard({
     label,
@@ -45,26 +38,26 @@ export function MetricCard({
     return (
         <div
             className={cn(
-                'group relative flex flex-col gap-3 rounded-2xl border border-border/60 bg-card p-5 shadow-sm ring-1 transition-colors',
-                'hover:border-border hover:shadow-md',
-                toneRing[tone],
+                'group relative flex flex-col gap-3 rounded-surface border bg-card p-5 shadow-surface transition-colors',
+                'hover:border-border-strong',
             )}
         >
             <div className="flex items-start justify-between gap-3">
-                <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+                <p className="flex items-center gap-2 font-pixel-label text-base leading-none text-muted-foreground">
+                    <span
+                        className={cn('size-2 rounded-[2px]', toneLight[tone])}
+                        aria-hidden
+                    />
                     {label}
                 </p>
                 <span
-                    className={cn(
-                        'inline-flex size-9 shrink-0 items-center justify-center rounded-xl',
-                        toneIcon[tone],
-                    )}
+                    className="inline-flex size-9 shrink-0 items-center justify-center rounded-control bg-surface-sunken text-muted-foreground"
                     aria-hidden
                 >
                     <Icon className="size-4" />
                 </span>
             </div>
-            <p className="text-3xl font-semibold tracking-tight tabular-nums">
+            <p className="font-mono text-3xl font-semibold tracking-tight tabular-nums">
                 {value}
             </p>
             {(hint || action) && (

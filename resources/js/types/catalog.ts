@@ -82,5 +82,13 @@ export type CatalogShowProps = {
 export type WelcomeProps = {
     featured: { data: Game[] };
     popular: { data: Game[] };
+    /** Juegos que se manejan con gestos (primero los hechos para ello). */
+    gestureGames: { data: Game[] };
+    /** Los últimos que se han publicado. */
+    newest: { data: Game[] };
+    /** Las últimas partidas de quien tiene cuenta (vacío para invitados). */
+    recentGames: { data: Game[] };
+    /** Categorías con juegos, con su número. */
+    categories: { data: Category[] };
     canRegister: boolean;
 };

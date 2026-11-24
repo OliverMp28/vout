@@ -75,8 +75,10 @@ export function PlayToolbar({
                         aria-expanded={panelOpen}
                         aria-controls={panelId}
                         className={cn(
-                            'gap-2 transition-all duration-200',
-                            panelOpen && 'shadow-inner',
+                            'gap-2',
+                            // Abierto: la tecla se queda hundida, con la señal.
+                            panelOpen &&
+                                'translate-y-(--depth) border-signal-edge bg-signal-soft shadow-none hover:bg-signal-soft',
                         )}
                     >
                         <ScanFace aria-hidden="true" className="size-4" />

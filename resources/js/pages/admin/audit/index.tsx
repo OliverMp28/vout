@@ -429,7 +429,7 @@ function AuditEntry({ entry, isExpanded, onToggle, locale }: AuditEntryProps) {
         <li className="overflow-hidden rounded-xl border border-border/60 bg-card shadow-sm">
             <div className="flex items-start gap-3 px-4 py-3 sm:px-5">
                 <span
-                    className="mt-0.5 inline-flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary"
+                    className="mt-0.5 inline-flex size-8 shrink-0 items-center justify-center rounded-full bg-surface-sunken text-primary"
                     aria-hidden
                 >
                     <UserRound className="size-4" />

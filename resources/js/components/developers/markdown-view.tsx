@@ -5,8 +5,6 @@ import rehypeHighlight from 'rehype-highlight';
 import remarkGfm from 'remark-gfm';
 import { cn } from '@/lib/utils';
 
-import 'highlight.js/styles/github-dark.css';
-
 type MarkdownViewProps = {
     content: string;
     className?: string;
@@ -142,7 +140,7 @@ const markdownComponents: Components = {
             <a
                 href={href}
                 className={cn(
-                    'font-medium text-primary underline decoration-primary/40 underline-offset-4 transition-colors hover:decoration-primary',
+                    'font-semibold text-foreground underline decoration-border-strong decoration-[1.5px] underline-offset-4 transition-colors hover:decoration-signal-strong',
                     className,
                 )}
                 target={isExternal ? '_blank' : undefined}
@@ -154,7 +152,7 @@ const markdownComponents: Components = {
     ul: ({ className, ...props }) => (
         <ul
             className={cn(
-                'mt-4 ml-6 list-disc space-y-2 marker:text-primary/60',
+                'mt-4 ml-6 list-disc space-y-2 marker:text-muted-foreground',
                 className,
             )}
             {...props}
@@ -163,7 +161,7 @@ const markdownComponents: Components = {
     ol: ({ className, ...props }) => (
         <ol
             className={cn(
-                'mt-4 ml-6 list-decimal space-y-2 marker:text-primary/60',
+                'mt-4 ml-6 list-decimal space-y-2 marker:text-muted-foreground',
                 className,
             )}
             {...props}
@@ -175,7 +173,7 @@ const markdownComponents: Components = {
     blockquote: ({ className, ...props }) => (
         <blockquote
             className={cn(
-                'mt-6 border-l-4 border-primary/60 bg-muted/40 px-4 py-2 text-muted-foreground italic',
+                'mt-6 rounded-r-control border-l-4 border-signal-edge bg-surface-sunken px-4 py-2 text-muted-foreground',
                 className,
             )}
             {...props}
@@ -248,7 +246,7 @@ const markdownComponents: Components = {
     pre: ({ className, ...props }) => (
         <pre
             className={cn(
-                'mt-6 overflow-x-auto rounded-xl border border-border/60 bg-[#0d1117] p-4 text-sm shadow-sm',
+                'code-block mt-6 overflow-x-auto rounded-surface border bg-(--code-bg) p-4 text-sm text-(--code-fg)',
                 className,
             )}
             {...props}

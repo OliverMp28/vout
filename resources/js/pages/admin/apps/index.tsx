@@ -209,7 +209,7 @@ function AppRow({ app }: { app: AdminAppListItem }) {
                     </Link>
                     {app.is_first_party && (
                         <Crown
-                            className="size-3.5 text-amber-500"
+                            className="size-3.5 text-warning-text"
                             aria-label={t('admin.apps.badge.first_party')}
                         />
                     )}
@@ -238,7 +238,7 @@ function AppRow({ app }: { app: AdminAppListItem }) {
                     className={cn(
                         'text-[10px]',
                         statusVariant === 'default' &&
-                            'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
+                            'bg-success-soft text-success-text',
                     )}
                 >
                     {app.suspended_at && (

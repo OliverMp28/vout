@@ -123,12 +123,11 @@ function LegalSidebar({
                                 prefetch
                                 aria-current={active ? 'page' : undefined}
                                 className={cn(
-                                    'inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
-                                    'focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
+                                    'inline-flex items-center gap-2 rounded-control border px-3 py-2 text-sm font-semibold transition-colors',
                                     'lg:w-full',
                                     active
-                                        ? 'bg-primary/10 text-primary'
-                                        : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+                                        ? 'border-border-strong bg-key-light text-foreground shadow-[0_2px_0_0_var(--key-light-edge)]'
+                                        : 'border-transparent text-muted-foreground hover:bg-surface-hover hover:text-foreground',
                                 )}
                             >
                                 <FileText

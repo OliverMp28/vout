@@ -252,7 +252,7 @@ export default function AdminDashboard({ metrics, recentActivity }: Props) {
                                     className="flex items-start gap-3 px-6 py-3 transition-colors hover:bg-muted/30"
                                 >
                                     <span
-                                        className="mt-1 inline-flex size-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary"
+                                        className="mt-1 inline-flex size-7 shrink-0 items-center justify-center rounded-full bg-surface-sunken text-primary"
                                         aria-hidden
                                     >
                                         <ScrollText className="size-3.5" />

@@ -1,5 +1,6 @@
 import { Link } from '@inertiajs/react';
 import { ArrowRight, Gamepad2, Play, Trophy } from 'lucide-react';
+import { GameCover } from '@/components/catalog/game-cover';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -51,31 +52,23 @@ export function ContinuePlayingCard({ game }: Props) {
             className={cn(
                 'relative overflow-hidden rounded-xl border border-border/60 bg-card shadow-sm',
                 'flex flex-col gap-0 md:flex-row md:items-stretch',
-                'transition-all duration-200 hover:shadow-md',
+                'transition-[color,background-color,border-color,box-shadow,transform,opacity] duration-200 hover:shadow-md',
             )}
         >
             <div
-                className="relative aspect-video w-full shrink-0 overflow-hidden bg-muted md:aspect-auto md:w-64"
+                className="relative aspect-video w-full shrink-0 overflow-hidden border-b md:aspect-auto md:w-64 md:border-r md:border-b-0"
                 aria-hidden="true"
             >
-                {game.cover_image ? (
-                    <img
-                        src={game.cover_image}
-                        alt=""
-                        className="size-full object-cover"
-                        loading="lazy"
-                    />
-                ) : (
-                    <div className="flex size-full items-center justify-center bg-primary/5">
-                        <Gamepad2 className="size-12 text-primary/30" />
-                    </div>
-                )}
-                <div className="absolute inset-0 bg-linear-to-t from-background/40 via-transparent to-transparent md:bg-linear-to-r md:from-transparent md:to-background/10" />
+                <GameCover
+                    slug={game.slug}
+                    name={game.name}
+                    image={game.cover_image}
+                />
             </div>
 
             <div className="flex flex-1 flex-col gap-3 p-5 md:p-6">
                 <div className="flex flex-col gap-2">
-                    <span className="text-xs font-medium tracking-wide text-primary uppercase">
+                    <span className="font-pixel-label text-base leading-none text-muted-foreground">
                         {t('dashboard.continue.eyebrow')}
                     </span>
                     <h2
@@ -112,7 +105,7 @@ export function ContinuePlayingCard({ game }: Props) {
                     {bestScore !== null && (
                         <div className="flex items-center gap-1.5">
                             <Trophy
-                                className="size-4 text-amber-500"
+                                className="size-4 text-warning-text"
                                 aria-hidden="true"
                             />
                             <dt className="sr-only">
@@ -147,9 +140,9 @@ function ContinuePlayingEmpty() {
         <section
             id="dashboard-continue-playing"
             aria-labelledby="dashboard-continue-playing-empty-title"
-            className="flex flex-col items-start gap-3 rounded-xl border border-border/60 bg-card p-6 shadow-sm"
+            className="flex flex-col items-start gap-3 rounded-surface border bg-card p-6 shadow-surface"
         >
-            <div className="flex size-12 items-center justify-center rounded-full bg-primary/10">
+            <div className="flex size-12 items-center justify-center rounded-control bg-surface-sunken">
                 <Gamepad2 className="size-6 text-primary" aria-hidden="true" />
             </div>
             <div className="space-y-1">

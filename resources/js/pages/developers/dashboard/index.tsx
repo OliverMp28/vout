@@ -83,7 +83,7 @@ function EmptyState() {
 
     return (
         <div className="rounded-2xl border border-dashed border-border bg-card/40 p-10 text-center shadow-sm">
-            <div className="mx-auto flex size-14 items-center justify-center rounded-full bg-primary/10 text-primary">
+            <div className="mx-auto flex size-14 items-center justify-center rounded-full bg-surface-sunken text-primary">
                 <Boxes className="size-7" aria-hidden />
             </div>
             <h2 className="mt-5 text-lg font-semibold tracking-tight">
@@ -183,7 +183,7 @@ function StatusBadge({ isActive }: { isActive: boolean }) {
             className={cn(
                 'shrink-0 text-[10px] font-semibold tracking-wider uppercase',
                 isActive
-                    ? 'bg-emerald-500/15 text-emerald-600 hover:bg-emerald-500/20 dark:text-emerald-400'
+                    ? 'bg-success-soft text-success-text hover:bg-success-soft'
                     : 'bg-muted text-muted-foreground',
             )}
         >
@@ -206,7 +206,7 @@ function ProfileBadge({ icon: Icon, label, tone }: ProfileBadgeProps) {
             className={cn(
                 'inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-medium tracking-wider uppercase',
                 tone === 'primary'
-                    ? 'bg-primary/10 text-primary'
+                    ? 'bg-surface-sunken text-primary'
                     : 'bg-muted text-muted-foreground',
             )}
         >

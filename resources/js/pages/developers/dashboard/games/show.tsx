@@ -110,8 +110,8 @@ export default function DevelopersGamesShow({
                 )}
 
                 {game.status === 'published' && (
-                    <Alert variant="default" className="border-emerald-500/40">
-                        <CheckCircle2 className="size-4 text-emerald-600 dark:text-emerald-400" />
+                    <Alert variant="default" className="border-success/40">
+                        <CheckCircle2 className="size-4 text-success-text" />
                         <AlertTitle>
                             {t('developers.games.show.published.title')}
                         </AlertTitle>
@@ -141,11 +141,8 @@ export default function DevelopersGamesShow({
                 {game.registered_app &&
                     !game.registered_app.is_suspended &&
                     game.registered_app.is_active === false && (
-                        <Alert
-                            variant="default"
-                            className="border-amber-500/40"
-                        >
-                            <AlertTriangle className="size-4 text-amber-600 dark:text-amber-400" />
+                        <Alert variant="default" className="border-warning/40">
+                            <AlertTriangle className="size-4 text-warning-text" />
                             <AlertTitle>
                                 {t('developers.games.show.app_paused.title')}
                             </AlertTitle>

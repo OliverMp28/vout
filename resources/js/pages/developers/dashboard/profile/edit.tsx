@@ -90,7 +90,7 @@ export default function DevelopersProfileEdit({
                                 {isClaimed && (
                                     <Badge
                                         variant="secondary"
-                                        className="gap-1 bg-emerald-500/15 text-emerald-600 hover:bg-emerald-500/20 dark:text-emerald-400"
+                                        className="gap-1 bg-success-soft text-success-text hover:bg-success-soft"
                                     >
                                         <BadgeCheck
                                             className="size-3"

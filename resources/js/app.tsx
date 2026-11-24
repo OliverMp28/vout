@@ -8,6 +8,10 @@ import { syncCsrfToken } from '@/lib/csrf';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
+// Las letras pasan por Vite (nombre con hash y caché larga) para que
+// app.blade.php pueda precargarlas con Vite::asset().
+import.meta.glob('../fonts/**/*.woff2');
+
 createInertiaApp({
     title: (title) => (title ? `${title} - ${appName}` : appName),
     resolve: (name) =>
@@ -25,7 +29,8 @@ createInertiaApp({
         );
     },
     progress: {
-        color: '#4B5563',
+        // El cian de la señal (--signal-edge): se ve en claro y en oscuro.
+        color: 'oklch(0.56 0.09 222)',
     },
 });
 

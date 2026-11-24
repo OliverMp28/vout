@@ -22,11 +22,11 @@ export function GameEmptyState({
 
     return (
         <div className="flex flex-col items-center justify-center gap-4 py-16 text-center">
-            <div className="flex size-16 items-center justify-center rounded-full bg-muted">
+            <div className="flex size-16 items-center justify-center rounded-surface bg-surface-sunken">
                 <Search className="size-7 text-muted-foreground" />
             </div>
             <div className="space-y-1">
-                <h3 className="text-lg font-semibold">{title}</h3>
+                <h3 className="text-lg font-bold">{title}</h3>
                 <p className="max-w-sm text-sm text-muted-foreground">
                     {description}
                 </p>

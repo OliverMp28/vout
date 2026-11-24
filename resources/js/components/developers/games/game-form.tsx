@@ -106,8 +106,8 @@ export function GameForm({
         >
             <div className="space-y-6">
                 {!hasApps && mode === 'create' && (
-                    <Alert variant="default" className="border-amber-500/40">
-                        <AlertCircle className="size-4 text-amber-500" />
+                    <Alert variant="default" className="border-warning/40">
+                        <AlertCircle className="size-4 text-warning-text" />
                         <AlertTitle>
                             {t('developers.games.create.no_apps.title')}
                         </AlertTitle>
@@ -452,7 +452,7 @@ export function GameForm({
                     />
 
                     {ownProfile ? (
-                        <div className="flex items-start gap-2 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 text-xs">
+                        <div className="flex items-start gap-2 rounded-lg border border-border-strong bg-surface-sunken px-3 py-2 text-xs">
                             <BadgeCheck
                                 className="mt-0.5 size-3.5 shrink-0 text-primary"
                                 aria-hidden
@@ -599,7 +599,7 @@ function ChipGroup({
                                     className={cn(
                                         'inline-flex cursor-pointer items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors',
                                         checked
-                                            ? 'border-primary bg-primary/10 text-primary'
+                                            ? 'border-primary bg-surface-sunken text-primary'
                                             : 'border-border bg-card text-muted-foreground hover:bg-muted',
                                         disabled &&
                                             'cursor-not-allowed opacity-60',

@@ -8,6 +8,7 @@
 import { Loader2, Video, VideoOff } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
+import { StatusLight } from '@/components/ui/status-light';
 import { useTranslation } from '@/hooks/use-translation';
 import type { EngineStatus } from '@/lib/mediapipe/types';
 import { cn } from '@/lib/utils';
@@ -43,16 +44,15 @@ export function CameraStatus({
                 id="play-camera-status"
                 data-camera-active="true"
                 className={cn(
-                    'flex items-center gap-1 rounded-full border border-red-500/30 bg-red-500/10 py-1 pr-1 pl-3 text-xs font-medium',
+                    'flex items-center gap-1 rounded-control border py-1 pr-1 pl-3 text-xs font-semibold',
                     tone === 'overlay'
-                        ? 'w-full justify-between text-white'
-                        : 'text-foreground',
+                        ? 'w-full justify-between border-on-media/20 text-on-media'
+                        : 'border-border bg-surface-sunken text-foreground',
                 )}
             >
-                <span className="relative flex size-2" aria-hidden="true">
-                    <span className="absolute inline-flex size-full rounded-full bg-red-500 opacity-60 motion-safe:animate-ping" />
-                    <span className="relative inline-flex size-2 rounded-full bg-red-500" />
-                </span>
+                <StatusLight
+                    state={engineStatus === 'loading' ? 'busy' : 'on'}
+                />
                 <span className="ml-1">
                     {engineStatus === 'loading'
                         ? t('play.camera_status.loading')
@@ -65,9 +65,9 @@ export function CameraStatus({
                     variant="ghost"
                     onClick={onToggleEngine}
                     className={cn(
-                        'ml-1 h-7 gap-1.5 rounded-full px-2.5 text-xs',
+                        'ml-1 h-7 gap-1.5 px-2.5 text-xs',
                         tone === 'overlay' &&
-                            'text-white hover:bg-white/10 hover:text-white',
+                            'text-on-media hover:bg-on-media/10 hover:text-on-media',
                     )}
                 >
                     <VideoOff aria-hidden="true" className="size-3.5" />

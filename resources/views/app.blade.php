@@ -20,26 +20,32 @@
             })();
         </script>
 
-        {{-- Inline style to set the HTML background color based on our theme in app.css --}}
+        {{-- Fondo y esquema de color antes de que cargue el CSS: los mismos valores que --background en app.css (un test lo comprueba) --}}
         <style>
             html {
-                background-color: oklch(1 0 0);
+                background-color: oklch(0.93 0.006 235);
+                color-scheme: light;
             }
 
             html.dark {
-                background-color: oklch(0.145 0 0);
+                background-color: oklch(0.19 0.008 245);
+                color-scheme: dark;
             }
         </style>
 
+        <meta name="theme-color" content="#e4e9eb" media="(prefers-color-scheme: light)">
+        <meta name="theme-color" content="#111417" media="(prefers-color-scheme: dark)">
+
         <title inertia>{{ config('app.name', 'Laravel') }}</title>
 
+        <link rel="icon" href="/favicon.svg" type="image/svg+xml">
         <link rel="icon" href="/favicon.ico" sizes="any">
         <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
         <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png">
         <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
 
-        <link rel="preconnect" href="https://fonts.bunny.net">
-        <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600" rel="stylesheet" />
+        {{-- La letra de lectura se pide antes que el CSS para que el texto no salte al cargar --}}
+        <link rel="preload" href="{{ Vite::asset('resources/fonts/atkinson-hyperlegible-next/latin-wght-normal.woff2') }}" as="font" type="font/woff2" crossorigin>
 
         @viteReactRefresh
         @vite(['resources/js/app.tsx', "resources/js/pages/{$page['component']}.tsx"])

@@ -88,7 +88,7 @@ export default function AdminGamesIndex({
                     {pendingCount > 0 && (
                         <Badge
                             variant="default"
-                            className="flex w-fit items-center gap-1.5 bg-amber-500/15 text-amber-700 dark:text-amber-400"
+                            className="flex w-fit items-center gap-1.5 bg-warning-soft text-warning-text"
                         >
                             <Clock className="size-3" aria-hidden />
                             {t('admin.games.index.pending_badge', {
@@ -248,7 +248,7 @@ function GameRow({ game }: { game: AdminGameListItem }) {
                     </Link>
                     {game.is_featured && (
                         <Sparkles
-                            className="size-3.5 text-amber-500"
+                            className="size-3.5 text-warning-text"
                             aria-label={t('admin.games.badge.featured')}
                         />
                     )}

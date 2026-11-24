@@ -33,7 +33,7 @@ export default function GoogleComplete({ name, email }: Props) {
 
             <div className="space-y-6">
                 <div className="flex justify-center">
-                    <div className="flex size-16 items-center justify-center rounded-full bg-primary/10">
+                    <div className="flex size-16 items-center justify-center rounded-surface border bg-surface-sunken">
                         <ShieldCheck className="size-8 text-primary" />
                     </div>
                 </div>

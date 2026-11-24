@@ -60,7 +60,7 @@ export default function AdminGamesShow({
                                 <GameStatusBadge status={game.status} />
                                 {game.is_featured && (
                                     <Sparkles
-                                        className="size-4 text-amber-500"
+                                        className="size-4 text-warning-text"
                                         aria-label={t(
                                             'admin.games.badge.featured',
                                         )}

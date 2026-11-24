@@ -36,7 +36,7 @@ export function NowPlayingHeader({
                     id="play-back-to-catalog"
                     variant="outline"
                     size="icon"
-                    className="size-10 shrink-0 rounded-full border-border/60 bg-background/60 shadow-sm backdrop-blur-sm transition-all duration-200 hover:border-primary/40 hover:bg-primary/5 hover:text-primary"
+                    className="shrink-0"
                     aria-label={t('play.back_to_catalog')}
                 >
                     <Link href={catalog.index.url()}>
@@ -45,10 +45,10 @@ export function NowPlayingHeader({
                 </Button>
 
                 <div className="min-w-0">
-                    <p className="text-[11px] font-semibold tracking-wider text-primary/80 uppercase">
+                    <p className="font-pixel-label text-base leading-none text-muted-foreground">
                         {t('play.now_playing')}
                     </p>
-                    <h1 className="truncate text-xl leading-tight font-semibold tracking-tight sm:text-2xl">
+                    <h1 className="truncate text-xl leading-tight font-extrabold tracking-tight sm:text-2xl">
                         {gameName}
                     </h1>
                     {gameDescription && (

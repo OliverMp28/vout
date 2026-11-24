@@ -64,7 +64,7 @@ export default function AdminAppsShow({ app, client }: Props) {
                                 <StatusBadge status={app.effective_status} />
                                 {app.is_first_party && (
                                     <Crown
-                                        className="size-4 text-amber-500"
+                                        className="size-4 text-warning-text"
                                         aria-label={t(
                                             'admin.apps.badge.first_party',
                                         )}
@@ -137,8 +137,7 @@ function StatusBadge({
     const config = {
         active: {
             variant: 'default' as const,
-            className:
-                'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
+            className: 'bg-success-soft text-success-text',
             label: t('admin.apps.status.active'),
         },
         paused: {
@@ -356,7 +355,7 @@ function ProfileChip({ icon: Icon, label, tone }: ProfileChipProps) {
             className={cn(
                 'inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-[11px] font-medium tracking-wider uppercase',
                 tone === 'primary'
-                    ? 'bg-primary/10 text-primary'
+                    ? 'bg-surface-sunken text-primary'
                     : 'bg-muted text-muted-foreground',
             )}
         >

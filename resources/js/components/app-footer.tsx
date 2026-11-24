@@ -39,17 +39,18 @@ export function AppFooter() {
     ];
 
     return (
-        <footer className="border-t border-border/40 bg-background/90">
+        <footer className="border-t bg-surface-1">
             <div className="mx-auto max-w-7xl px-4 py-12 md:px-6 lg:px-8">
-                <div className="grid gap-12 md:grid-cols-2 lg:grid-cols-[1.3fr_1fr_1fr_1fr]">
+                <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-[1.6fr_1fr_1fr_1fr]">
                     <div className="space-y-6">
                         <Link
                             href={home().url}
-                            className="flex items-center gap-2"
+                            className="inline-flex items-center gap-2.5 rounded-control"
+                            aria-label="Vout"
                         >
-                            <AppLogo />
+                            <AppLogo className="h-7" />
                         </Link>
-                        <p className="max-w-xs text-sm text-muted-foreground">
+                        <p className="max-w-sm text-sm leading-relaxed text-muted-foreground">
                             {t('footer.desc')}
                         </p>
                         <div className="flex items-center gap-4">
@@ -57,7 +58,7 @@ export function AppFooter() {
                                 href={GITHUB_REPO_URL}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="inline-flex size-9 items-center justify-center rounded-full border border-border/60 text-muted-foreground transition-colors hover:border-primary/50 hover:text-primary"
+                                className="inline-flex size-9 items-center justify-center rounded-control border border-border-strong bg-key-light text-muted-foreground shadow-[0_2px_0_0_var(--key-light-edge)] transition-[transform,box-shadow,color] hover:text-foreground active:translate-y-[2px] active:shadow-none"
                                 aria-label={t('footer.source_code')}
                             >
                                 <Github className="size-4" aria-hidden="true" />
@@ -66,7 +67,7 @@ export function AppFooter() {
                     </div>
 
                     <div>
-                        <h3 className="text-xs font-semibold tracking-wider text-foreground uppercase">
+                        <h3 className="font-pixel-label text-lg leading-none text-foreground">
                             {t('footer.platform')}
                         </h3>
                         <ul className="mt-4 space-y-3">
@@ -74,7 +75,7 @@ export function AppFooter() {
                                 <li key={link.href}>
                                     <Link
                                         href={link.href}
-                                        className="text-sm text-muted-foreground transition-colors hover:text-primary"
+                                        className="rounded-xs text-sm text-muted-foreground transition-colors hover:text-foreground hover:underline hover:decoration-signal-strong hover:underline-offset-4"
                                     >
                                         {link.label}
                                     </Link>
@@ -84,7 +85,7 @@ export function AppFooter() {
                     </div>
 
                     <div>
-                        <h3 className="text-xs font-semibold tracking-wider text-foreground uppercase">
+                        <h3 className="font-pixel-label text-lg leading-none text-foreground">
                             {t('footer.developers')}
                         </h3>
                         <ul className="mt-4 space-y-3">
@@ -92,7 +93,7 @@ export function AppFooter() {
                                 <li key={link.href}>
                                     <Link
                                         href={link.href}
-                                        className="text-sm text-muted-foreground transition-colors hover:text-primary"
+                                        className="rounded-xs text-sm text-muted-foreground transition-colors hover:text-foreground hover:underline hover:decoration-signal-strong hover:underline-offset-4"
                                     >
                                         {link.label}
                                     </Link>
@@ -103,7 +104,7 @@ export function AppFooter() {
                                     href={GITHUB_REPO_URL}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="text-sm text-muted-foreground transition-colors hover:text-primary"
+                                    className="rounded-xs text-sm text-muted-foreground transition-colors hover:text-foreground hover:underline hover:decoration-signal-strong hover:underline-offset-4"
                                 >
                                     {t('footer.source_code')}
                                 </a>
@@ -112,7 +113,7 @@ export function AppFooter() {
                     </div>
 
                     <div>
-                        <h3 className="text-xs font-semibold tracking-wider text-foreground uppercase">
+                        <h3 className="font-pixel-label text-lg leading-none text-foreground">
                             {t('footer.legal.title')}
                         </h3>
                         <ul className="mt-4 space-y-3">
@@ -120,7 +121,7 @@ export function AppFooter() {
                                 <li key={link.href}>
                                     <Link
                                         href={link.href}
-                                        className="text-sm text-muted-foreground transition-colors hover:text-primary"
+                                        className="rounded-xs text-sm text-muted-foreground transition-colors hover:text-foreground hover:underline hover:decoration-signal-strong hover:underline-offset-4"
                                     >
                                         {link.label}
                                     </Link>
@@ -130,15 +131,14 @@ export function AppFooter() {
                     </div>
                 </div>
 
-                <div className="mt-12 flex flex-col items-center justify-between gap-3 border-t border-border/40 pt-8 sm:flex-row">
+                <div className="mt-10 flex flex-col items-center justify-between gap-3 border-t pt-6 sm:flex-row">
                     <p className="text-center text-sm text-muted-foreground sm:text-left">
-                        &copy; {currentYear} Vout Ecosystem.{' '}
-                        {t('footer.rights')}
+                        &copy; {currentYear} Vout
                     </p>
                     <button
                         type="button"
                         onClick={reopen}
-                        className="text-sm text-muted-foreground transition-colors hover:text-primary"
+                        className="rounded-xs text-sm text-muted-foreground transition-colors hover:text-foreground hover:underline hover:decoration-signal-strong hover:underline-offset-4"
                     >
                         {t('footer.legal.manage_cookies')}
                     </button>

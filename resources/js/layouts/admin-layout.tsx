@@ -104,7 +104,7 @@ export default function AdminLayout({
         <PortalLayout breadcrumbs={breadcrumbs as BreadcrumbItem[] | undefined}>
             <nav
                 aria-label={t('admin.nav.aria')}
-                className="mb-8 flex flex-wrap gap-1 rounded-xl border border-border/60 bg-card/80 p-1"
+                className="mb-8 flex flex-wrap gap-1 rounded-surface border bg-surface-sunken p-1"
             >
                 {subnavItems.map((item) => {
                     const Icon = item.icon;
@@ -120,11 +120,10 @@ export default function AdminLayout({
                             href={item.href}
                             prefetch
                             className={cn(
-                                'inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
-                                'focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
+                                'inline-flex items-center gap-2 rounded-control border px-3 py-2 text-sm font-semibold transition-colors',
                                 active
-                                    ? 'bg-primary text-primary-foreground shadow-sm'
-                                    : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+                                    ? 'border-border-strong bg-key-light text-foreground shadow-[0_2px_0_0_var(--key-light-edge)]'
+                                    : 'border-transparent text-muted-foreground hover:bg-surface-hover hover:text-foreground',
                             )}
                             aria-current={active ? 'page' : undefined}
                         >
@@ -138,9 +137,7 @@ export default function AdminLayout({
                                     )}
                                     className={cn(
                                         'inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[10px] font-semibold tabular-nums',
-                                        active
-                                            ? 'bg-primary-foreground/20 text-primary-foreground'
-                                            : 'bg-amber-500/15 text-amber-700 dark:text-amber-400',
+                                        'bg-warning text-warning-foreground',
                                     )}
                                 >
                                     {item.badge}

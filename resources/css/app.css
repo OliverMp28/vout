@@ -1,5 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-
 @import 'tailwindcss';
 
 @import 'tw-animate-css';
@@ -11,46 +9,223 @@
 
 /*
  * ─── Tipografía ──────────────────────────────────────────────
- * Inter: moderna, legible, excelente para interfaces.
- * Cargada desde Google Fonts con display=swap para rendimiento.
+ * Servidas por Vout (sin Google Fonts: no se comparte la IP del usuario).
+ * - Atkinson Hyperlegible Next: la de leer. La diseñó el Braille Institute
+ *   para que cada letra se distinga, también con baja visión.
+ * - Atkinson Hyperlegible Mono: cifras, código y telemetría.
+ * - Jersey 10: el acento pixel. Solo titulares cortos, etiquetas y estados;
+ *   nunca párrafos ni campos de formulario.
+ * Licencia OFL junto a cada familia en resources/fonts/.
  */
+@font-face {
+    font-family: 'Atkinson Hyperlegible Next';
+    font-style: normal;
+    font-weight: 200 800;
+    font-display: swap;
+    src: url('../fonts/atkinson-hyperlegible-next/latin-wght-normal.woff2')
+        format('woff2');
+    unicode-range:
+        U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+        U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+        U+2212, U+2215, U+FEFF, U+FFFD;
+}
 
-@theme {
+@font-face {
+    font-family: 'Atkinson Hyperlegible Next';
+    font-style: normal;
+    font-weight: 200 800;
+    font-display: swap;
+    src: url('../fonts/atkinson-hyperlegible-next/latin-ext-wght-normal.woff2')
+        format('woff2');
+    unicode-range:
+        U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304,
+        U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020,
+        U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+    font-family: 'Atkinson Hyperlegible Next';
+    font-style: italic;
+    font-weight: 200 800;
+    font-display: swap;
+    src: url('../fonts/atkinson-hyperlegible-next/latin-wght-italic.woff2')
+        format('woff2');
+    unicode-range:
+        U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+        U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+        U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+    font-family: 'Atkinson Hyperlegible Next';
+    font-style: italic;
+    font-weight: 200 800;
+    font-display: swap;
+    src: url('../fonts/atkinson-hyperlegible-next/latin-ext-wght-italic.woff2')
+        format('woff2');
+    unicode-range:
+        U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304,
+        U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020,
+        U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+    font-family: 'Atkinson Hyperlegible Mono';
+    font-style: normal;
+    font-weight: 200 800;
+    font-display: swap;
+    src: url('../fonts/atkinson-hyperlegible-mono/latin-wght-normal.woff2')
+        format('woff2');
+    unicode-range:
+        U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+        U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+        U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+    font-family: 'Atkinson Hyperlegible Mono';
+    font-style: normal;
+    font-weight: 200 800;
+    font-display: swap;
+    src: url('../fonts/atkinson-hyperlegible-mono/latin-ext-wght-normal.woff2')
+        format('woff2');
+    unicode-range:
+        U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304,
+        U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020,
+        U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+    font-family: 'Jersey 10';
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    font-synthesis: none;
+    src: url('../fonts/jersey-10/latin-400-normal.woff2') format('woff2');
+    unicode-range:
+        U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+        U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+        U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+    font-family: 'Jersey 10';
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    font-synthesis: none;
+    src: url('../fonts/jersey-10/latin-ext-400-normal.woff2') format('woff2');
+    unicode-range:
+        U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304,
+        U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020,
+        U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+/*
+ * ─── Tema ────────────────────────────────────────────────────
+ * `inline`: las utilidades usan el token tal cual, así que una zona con
+ * `.dark` (o con tokens propios) se pinta con sus valores.
+ *
+ * Radios por papel: control (botones, campos), surface (bandejas, tarjetas),
+ * media (portadas, juego). La escala de Tailwind (sm…3xl) se reasigna a esos
+ * valores para que el código existente cambie a la vez.
+ */
+@theme inline {
     --font-sans:
-        'Inter', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji',
-        'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+        'Atkinson Hyperlegible Next', ui-sans-serif, system-ui, sans-serif,
+        'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
+        'Noto Color Emoji';
+    --font-mono:
+        'Atkinson Hyperlegible Mono', ui-monospace, SFMono-Regular, Menlo,
+        Consolas, monospace;
+    --font-pixel:
+        'Jersey 10', 'Atkinson Hyperlegible Next', ui-sans-serif, system-ui,
+        sans-serif;
 
-    --radius-lg: var(--radius);
-    --radius-md: calc(var(--radius) - 2px);
-    --radius-sm: calc(var(--radius) - 4px);
+    --radius-control: 7px;
+    --radius-surface: 12px;
+    --radius-media: 8px;
+    --radius-xs: 3px;
+    --radius-sm: 5px;
+    --radius-md: 7px;
+    --radius-lg: 9px;
+    --radius-xl: 12px;
+    --radius-2xl: 12px;
+    --radius-3xl: 16px;
+
+    --shadow-surface: var(--surface-shadow);
+    --shadow-overlay: var(--overlay-shadow);
+
+    --ease-out: cubic-bezier(0.215, 0.61, 0.355, 1);
+    --default-transition-duration: 160ms;
+    --default-transition-timing-function: cubic-bezier(0.215, 0.61, 0.355, 1);
+
+    --color-white: var(--white);
+    --color-black: var(--black);
 
     --color-background: var(--background);
     --color-foreground: var(--foreground);
 
+    --color-surface-1: var(--surface-1);
+    --color-surface-2: var(--surface-2);
+    --color-surface-sunken: var(--surface-sunken);
+    --color-surface-hover: var(--surface-hover);
+    --color-border-strong: var(--border-strong);
+
     --color-card: var(--card);
     --color-card-foreground: var(--card-foreground);
-
     --color-popover: var(--popover);
     --color-popover-foreground: var(--popover-foreground);
 
     --color-primary: var(--primary);
     --color-primary-foreground: var(--primary-foreground);
+    --color-key-edge: var(--key-edge);
+    --color-key-light: var(--key-light);
+    --color-key-light-edge: var(--key-light-edge);
+
+    --color-signal: var(--signal);
+    --color-signal-foreground: var(--signal-foreground);
+    --color-signal-edge: var(--signal-edge);
+    --color-signal-strong: var(--signal-strong);
+    --color-signal-soft: var(--signal-soft);
+    --color-signal-soft-border: var(--signal-soft-border);
 
     --color-secondary: var(--secondary);
     --color-secondary-foreground: var(--secondary-foreground);
-
     --color-muted: var(--muted);
     --color-muted-foreground: var(--muted-foreground);
-
     --color-accent: var(--accent);
     --color-accent-foreground: var(--accent-foreground);
 
+    --color-success: var(--success);
+    --color-success-foreground: var(--success-foreground);
+    --color-success-text: var(--success-text);
+    --color-success-soft: var(--success-soft);
+    --color-warning: var(--warning);
+    --color-warning-foreground: var(--warning-foreground);
+    --color-warning-text: var(--warning-text);
+    --color-warning-soft: var(--warning-soft);
+    --color-danger: var(--danger);
+    --color-danger-foreground: var(--danger-foreground);
+    --color-danger-text: var(--danger-text);
+    --color-danger-soft: var(--danger-soft);
+    --color-danger-edge: var(--danger-edge);
+    --color-info: var(--info);
+    --color-info-foreground: var(--info-foreground);
+    --color-info-text: var(--info-text);
+    --color-info-soft: var(--info-soft);
     --color-destructive: var(--destructive);
     --color-destructive-foreground: var(--destructive-foreground);
 
     --color-border: var(--border);
     --color-input: var(--input);
     --color-ring: var(--ring);
+    --color-led-off: var(--led-off);
+
+    --color-scrim: var(--scrim);
+    --color-media: var(--media);
+    --color-on-media: var(--on-media);
+    --color-on-media-muted: var(--on-media-muted);
 
     --color-chart-1: var(--chart-1);
     --color-chart-2: var(--chart-2);
@@ -69,114 +244,238 @@
 }
 
 /*
- * ─── Light Mode ──────────────────────────────────────────────
- * Paleta violeta/púrpura como accent de marca Vout.
- * oklch para mayor percepción de color uniforme.
- * El background tiene un tinte lavanda sutil para que las cards
- * blancas destaquen con personalidad (evita la "página sosa").
+ * ─── Colores: tema claro ─────────────────────────────────────
+ * Neutros grises con un punto frío para que el cian de la señal case.
+ * Nunca blanco ni negro puros. Los nombres dicen la función:
+ *   superficies → background, surface-1 (bandejas), surface-2 (lo que flota),
+ *                 surface-sunken (hundido), surface-hover.
+ *   teclas      → primary (tecla oscura), key-light (tecla clara) y sus bordes.
+ *   señal       → el cian de Vout: "Jugar", lo activo y el foco.
+ *   estados     → success, warning, danger, info (+ -text y -soft).
+ *   sobre media → scrim y on-media: avisos encima del juego o de portadas.
+ * Los alias de shadcn (card, popover, muted, accent, destructive, ring,
+ * input) apuntan a estos tokens.
  */
 :root {
-    --background: oklch(0.965 0.012 285);
-    --foreground: oklch(0.17 0.02 285);
-    --card: oklch(1 0 0);
-    --card-foreground: oklch(0.17 0.02 285);
-    --popover: oklch(1 0 0);
-    --popover-foreground: oklch(0.17 0.02 285);
-    --primary: oklch(0.47 0.22 285);
-    --primary-foreground: oklch(0.985 0.005 285);
-    --secondary: oklch(0.94 0.015 285);
-    --secondary-foreground: oklch(0.25 0.06 285);
-    --muted: oklch(0.93 0.013 285);
-    --muted-foreground: oklch(0.48 0.03 285);
-    --accent: oklch(0.93 0.025 285);
-    --accent-foreground: oklch(0.28 0.1 285);
-    --destructive: oklch(0.577 0.245 27.325);
-    --destructive-foreground: oklch(0.577 0.245 27.325);
-    --border: oklch(0.89 0.013 285);
-    --input: oklch(0.89 0.013 285);
-    --ring: oklch(0.55 0.18 285);
-    --chart-1: oklch(0.55 0.2 285);
-    --chart-2: oklch(0.6 0.118 184.704);
-    --chart-3: oklch(0.398 0.07 227.392);
-    --chart-4: oklch(0.828 0.189 84.429);
-    --chart-5: oklch(0.769 0.188 70.08);
-    --radius: 0.625rem;
-    --sidebar: oklch(0.98 0.008 285);
-    --sidebar-foreground: oklch(0.17 0.02 285);
-    --sidebar-primary: oklch(0.47 0.22 285);
-    --sidebar-primary-foreground: oklch(0.985 0.005 285);
-    --sidebar-accent: oklch(0.93 0.025 285);
-    --sidebar-accent-foreground: oklch(0.28 0.1 285);
-    --sidebar-border: oklch(0.89 0.013 285);
-    --sidebar-ring: oklch(0.55 0.18 285);
+    --white: oklch(0.985 0.003 235);
+    --black: oklch(0.16 0.01 245);
 
-    /* Marca Vout — gradientes decorativos */
-    --vout-gradient-start: oklch(0.5 0.22 280);
-    --vout-gradient-end: oklch(0.45 0.18 310);
+    --background: oklch(0.93 0.006 235);
+    --surface-1: oklch(0.966 0.004 235);
+    --surface-2: oklch(0.985 0.003 235);
+    --surface-sunken: oklch(0.9 0.008 235);
+    --surface-hover: oklch(0.91 0.008 235);
+    --foreground: oklch(0.22 0.014 245);
+    --muted-foreground: oklch(0.45 0.014 245);
+    --border: oklch(0.85 0.008 235);
+    --border-strong: oklch(0.6 0.012 240);
+    --surface-shadow:
+        0 1px 0 0 oklch(0.82 0.008 235),
+        0 3px 10px -4px oklch(0.25 0.03 245 / 0.16);
+    --overlay-shadow:
+        0 1px 0 0 oklch(0.82 0.008 235),
+        0 12px 28px -10px oklch(0.25 0.03 245 / 0.28);
 
-    /* Mascota Vou — paleta retro-tech (cíclope amigable) */
-    --vou-body: oklch(0.99 0.002 285);
-    --vou-stroke: oklch(0.18 0.02 285);
-    --vou-cyan: oklch(0.85 0.13 200);
-    --vou-pink: oklch(0.78 0.19 340);
+    --primary: oklch(0.27 0.016 245);
+    --primary-foreground: oklch(0.97 0.004 235);
+    --key-edge: oklch(0.13 0.012 245);
+    --key-light: oklch(0.985 0.003 235);
+    --key-light-edge: oklch(0.7 0.012 240);
+
+    --signal: oklch(0.8 0.1 210);
+    --signal-foreground: oklch(0.22 0.03 225);
+    --signal-edge: oklch(0.56 0.09 222);
+    --signal-strong: oklch(0.5 0.09 225);
+    --signal-soft: oklch(0.93 0.035 210);
+    --signal-soft-border: oklch(0.78 0.07 215);
+
+    --success: oklch(0.52 0.13 150);
+    --success-foreground: oklch(0.985 0.005 150);
+    --success-text: oklch(0.46 0.12 150);
+    --success-soft: oklch(0.94 0.04 150);
+    --warning: oklch(0.84 0.15 90);
+    --warning-foreground: oklch(0.25 0.04 90);
+    --warning-text: oklch(0.48 0.1 75);
+    --warning-soft: oklch(0.95 0.05 95);
+    --danger: oklch(0.53 0.19 27);
+    --danger-foreground: oklch(0.985 0.005 27);
+    --danger-text: oklch(0.5 0.19 27);
+    --danger-soft: oklch(0.95 0.022 25);
+    --danger-edge: oklch(0.38 0.15 27);
+    --info: oklch(0.5 0.11 240);
+    --info-foreground: oklch(0.985 0.005 240);
+    --info-text: oklch(0.47 0.11 240);
+    --info-soft: oklch(0.94 0.03 240);
+
+    --led-off: oklch(0.72 0.01 240);
+    --scrim: oklch(0.15 0.01 245 / 0.82);
+    --media: oklch(0.12 0.01 245);
+
+    /* Bloques de código: oscuros en los dos temas */
+    --code-bg: oklch(0.24 0.016 245);
+    --code-fg: oklch(0.93 0.006 235);
+    --code-muted: oklch(0.72 0.012 240);
+    --code-border: oklch(0.34 0.014 245);
+    --code-key: oklch(0.82 0.1 210);
+    --code-string: oklch(0.84 0.1 150);
+    --code-number: oklch(0.86 0.12 85);
+    --code-keyword: oklch(0.8 0.12 355);
+    --on-media: oklch(0.97 0.004 235);
+    --on-media-muted: oklch(0.82 0.008 235);
+
+    /* Alias de shadcn */
+    --card: var(--surface-1);
+    --card-foreground: var(--foreground);
+    --popover: var(--surface-2);
+    --popover-foreground: var(--foreground);
+    --secondary: var(--surface-2);
+    --secondary-foreground: var(--foreground);
+    --muted: var(--surface-sunken);
+    --accent: var(--surface-hover);
+    --accent-foreground: var(--foreground);
+    --destructive: var(--danger);
+    --destructive-foreground: var(--danger-foreground);
+    --input: var(--border-strong);
+    --ring: var(--signal-strong);
+
+    --chart-1: oklch(0.56 0.09 222);
+    --chart-2: oklch(0.6 0.12 160);
+    --chart-3: oklch(0.7 0.14 75);
+    --chart-4: oklch(0.6 0.16 355);
+    --chart-5: oklch(0.5 0.03 245);
+
+    --sidebar: var(--surface-1);
+    --sidebar-foreground: var(--foreground);
+    --sidebar-primary: var(--primary);
+    --sidebar-primary-foreground: var(--primary-foreground);
+    --sidebar-accent: var(--surface-hover);
+    --sidebar-accent-foreground: var(--foreground);
+    --sidebar-border: var(--border);
+    --sidebar-ring: var(--signal-strong);
+
+    /* Logo: degradado cian → azul, contorno fino y relieve */
+    --logo-from: oklch(0.86 0.1 195);
+    --logo-to: oklch(0.6 0.13 245);
+    --logo-outline: oklch(0.25 0.04 250);
+    --logo-depth: oklch(0.38 0.09 250);
+    --logo-ring: oklch(0.25 0.04 250);
+
+    /* Mascota Vou: su cian y su rosa de siempre */
+    --vou-body: oklch(0.985 0.004 235);
+    --vou-stroke: oklch(0.22 0.014 245);
+    --vou-cyan: oklch(0.8 0.12 210);
+    --vou-pink: oklch(0.7 0.18 355);
+
+    /* Portadas generadas: luz y croma por tema; el tono lo pone cada juego */
+    --cover-sky-l: 0.9;
+    --cover-sky-c: 0.03;
+    --cover-land-l: 0.52;
+    --cover-land-c: 0.07;
+    --cover-edge-l: 0.68;
+    --cover-edge-c: 0.07;
+    --cover-cloud-l: 0.975;
+    --cover-cloud-c: 0.008;
+    --cover-plat-l: 0.42;
+    --cover-plat-c: 0.06;
 
     /*
      * Máscara facial sobre la imagen de la cámara (la dibuja el worker:
-     * face-mesh-drawing.ts): la malla tenue, el perfil (óvalo y labios) claro
-     * y los rasgos (ojos, cejas e iris) con el acento. Igual en claro y
-     * oscuro: va sobre el vídeo, no sobre la interfaz.
+     * face-mesh-drawing.ts). Valores simples, sin var(): el worker los recibe
+     * como texto. Igual en claro y oscuro: va sobre el vídeo.
      */
-    --face-mesh: oklch(0.9 0.01 285 / 0.45);
-    --face-mesh-outline: oklch(0.95 0.01 285 / 0.85);
-    --face-mesh-feature: oklch(0.72 0.17 285);
+    --face-mesh: oklch(0.92 0.01 220 / 0.45);
+    --face-mesh-outline: oklch(0.96 0.01 220 / 0.85);
+    --face-mesh-feature: oklch(0.8 0.12 205);
 }
 
 /*
- * ─── Dark Mode ───────────────────────────────────────────────
+ * ─── Colores: tema oscuro ────────────────────────────────────
+ * La profundidad la dan superficies más claras, no sombras. Los acentos
+ * suben de luz. Mismos nombres que en claro.
  */
 .dark {
-    --background: oklch(0.19 0.015 285);
-    --foreground: oklch(0.96 0.005 285);
-    --card: oklch(0.22 0.02 285);
-    --card-foreground: oklch(0.96 0.005 285);
-    --popover: oklch(0.22 0.02 285);
-    --popover-foreground: oklch(0.96 0.005 285);
-    --primary: oklch(0.7 0.18 285);
-    --primary-foreground: oklch(0.19 0.015 285);
-    --secondary: oklch(0.27 0.03 285);
-    --secondary-foreground: oklch(0.96 0.005 285);
-    --muted: oklch(0.27 0.03 285);
-    --muted-foreground: oklch(0.7 0.02 285);
-    --accent: oklch(0.27 0.03 285);
-    --accent-foreground: oklch(0.96 0.005 285);
-    --destructive: oklch(0.396 0.141 25.723);
-    --destructive-foreground: oklch(0.637 0.237 25.331);
-    --border: oklch(0.3 0.025 285);
-    --input: oklch(0.3 0.025 285);
-    --ring: oklch(0.6 0.15 285);
-    --chart-1: oklch(0.65 0.2 285);
-    --chart-2: oklch(0.696 0.17 162.48);
-    --chart-3: oklch(0.769 0.188 70.08);
-    --chart-4: oklch(0.627 0.265 303.9);
-    --chart-5: oklch(0.645 0.246 16.439);
-    --sidebar: oklch(0.22 0.02 285);
-    --sidebar-foreground: oklch(0.96 0.005 285);
-    --sidebar-primary: oklch(0.7 0.18 285);
-    --sidebar-primary-foreground: oklch(0.96 0.005 285);
-    --sidebar-accent: oklch(0.27 0.03 285);
-    --sidebar-accent-foreground: oklch(0.96 0.005 285);
-    --sidebar-border: oklch(0.3 0.025 285);
-    --sidebar-ring: oklch(0.6 0.15 285);
+    --white: oklch(0.985 0.003 235);
+    --black: oklch(0.16 0.01 245);
 
-    /* Marca Vout — gradientes decorativos (dark) */
-    --vout-gradient-start: oklch(0.4 0.2 280);
-    --vout-gradient-end: oklch(0.35 0.15 310);
+    --background: oklch(0.19 0.008 245);
+    --surface-1: oklch(0.225 0.008 245);
+    --surface-2: oklch(0.26 0.009 245);
+    --surface-sunken: oklch(0.165 0.008 245);
+    --surface-hover: oklch(0.275 0.01 245);
+    --foreground: oklch(0.93 0.006 235);
+    --muted-foreground: oklch(0.71 0.012 240);
+    --border: oklch(0.31 0.01 245);
+    --border-strong: oklch(0.54 0.014 240);
+    --surface-shadow: 0 1px 0 0 oklch(0.3 0.01 245);
+    --overlay-shadow:
+        0 1px 0 0 oklch(0.34 0.01 245),
+        0 14px 30px -12px oklch(0.05 0.01 245 / 0.6);
 
-    /* Mascota Vou — dark mode (cuerpo se mantiene claro para lectura) */
-    --vou-body: oklch(0.92 0.008 285);
-    --vou-stroke: oklch(0.14 0.02 285);
-    --vou-cyan: oklch(0.78 0.14 200);
-    --vou-pink: oklch(0.72 0.2 340);
+    --primary: oklch(0.9 0.008 235);
+    --primary-foreground: oklch(0.2 0.01 245);
+    --key-edge: oklch(0.62 0.012 240);
+    --key-light: oklch(0.3 0.01 245);
+    --key-light-edge: oklch(0.13 0.01 245);
+
+    --signal: oklch(0.8 0.1 210);
+    --signal-foreground: oklch(0.2 0.03 225);
+    --signal-edge: oklch(0.55 0.09 220);
+    --signal-strong: oklch(0.82 0.09 210);
+    --signal-soft: oklch(0.3 0.04 215);
+    --signal-soft-border: oklch(0.45 0.07 215);
+
+    --success: oklch(0.72 0.15 150);
+    --success-foreground: oklch(0.18 0.03 150);
+    --success-text: oklch(0.76 0.14 150);
+    --success-soft: oklch(0.28 0.05 150);
+    --warning: oklch(0.86 0.13 90);
+    --warning-foreground: oklch(0.22 0.04 90);
+    --warning-text: oklch(0.85 0.12 90);
+    --warning-soft: oklch(0.3 0.05 90);
+    --danger: oklch(0.68 0.17 25);
+    --danger-foreground: oklch(0.17 0.03 25);
+    --danger-text: oklch(0.74 0.15 25);
+    --danger-soft: oklch(0.29 0.06 25);
+    --danger-edge: oklch(0.46 0.14 25);
+    --info: oklch(0.74 0.1 240);
+    --info-foreground: oklch(0.18 0.03 240);
+    --info-text: oklch(0.76 0.1 240);
+    --info-soft: oklch(0.29 0.04 240);
+
+    --led-off: oklch(0.38 0.01 245);
+    --code-bg: oklch(0.155 0.01 245);
+    --code-border: oklch(0.3 0.012 245);
+    --scrim: oklch(0.12 0.01 245 / 0.84);
+    --on-media: oklch(0.96 0.004 235);
+    --on-media-muted: oklch(0.8 0.008 235);
+
+    --chart-1: oklch(0.78 0.1 212);
+    --chart-2: oklch(0.72 0.13 160);
+    --chart-3: oklch(0.8 0.13 80);
+    --chart-4: oklch(0.72 0.14 355);
+    --chart-5: oklch(0.7 0.02 240);
+
+    --logo-from: oklch(0.92 0.08 190);
+    --logo-to: oklch(0.7 0.12 235);
+    --logo-outline: oklch(0.16 0.02 250);
+    --logo-depth: oklch(0.42 0.1 250);
+    --logo-ring: oklch(0.7 0.12 235);
+
+    --vou-body: oklch(0.93 0.006 235);
+    --vou-stroke: oklch(0.16 0.01 245);
+    --vou-cyan: oklch(0.72 0.11 210);
+    --vou-pink: oklch(0.64 0.17 355);
+
+    --cover-sky-l: 0.3;
+    --cover-sky-c: 0.03;
+    --cover-land-l: 0.47;
+    --cover-land-c: 0.06;
+    --cover-edge-l: 0.6;
+    --cover-edge-c: 0.07;
+    --cover-cloud-l: 0.37;
+    --cover-cloud-c: 0.015;
+    --cover-plat-l: 0.62;
+    --cover-plat-c: 0.06;
 }
 
 @layer base {
@@ -184,41 +483,130 @@
         @apply border-border;
     }
 
+    html {
+        color-scheme: light;
+    }
+
+    html.dark {
+        color-scheme: dark;
+    }
+
     body {
         @apply bg-background text-foreground;
+        font-variant-numeric: normal;
+    }
+
+    /*
+     * Foco: un contorno grueso y separado, visible en claro, oscuro, sobre
+     * portadas y en modo de alto contraste (un box-shadow desaparece ahí).
+     */
+    :focus-visible {
+        outline: 2px solid var(--ring);
+        outline-offset: 2px;
     }
 }
 
 /*
- * ─── Glassmorfismo ───────────────────────────────────────────
- * Uso natural, solo en paneles decorativos y cards flotantes.
- * NO usar en inputs ni en botones de acción.
+ * Resaltado de código (highlight.js) con los tokens --code-*: sustituye al
+ * tema github-dark y mantiene el contraste comprobado por los tests.
  */
+.code-block .hljs {
+    color: var(--code-fg);
+    background: transparent;
+}
+
+.code-block :is(.hljs-comment, .hljs-quote, .hljs-meta) {
+    color: var(--code-muted);
+}
+
+.code-block
+    :is(.hljs-keyword, .hljs-selector-tag, .hljs-built_in, .hljs-literal) {
+    color: var(--code-keyword);
+}
+
+.code-block :is(.hljs-string, .hljs-regexp, .hljs-addition) {
+    color: var(--code-string);
+}
+
+.code-block
+    :is(.hljs-number, .hljs-symbol, .hljs-variable, .hljs-template-variable) {
+    color: var(--code-number);
+}
+
+.code-block
+    :is(
+        .hljs-attr,
+        .hljs-attribute,
+        .hljs-property,
+        .hljs-title,
+        .hljs-name,
+        .hljs-type,
+        .hljs-section
+    ) {
+    color: var(--code-key);
+}
+
+.code-block .hljs-deletion {
+    color: var(--code-keyword);
+}
+
+.code-block .hljs-emphasis {
+    font-style: italic;
+}
+
+.code-block .hljs-strong {
+    font-weight: 700;
+}
+
+/*
+ * Rejilla de plano: fondo técnico para zonas de desarrolladores. Líneas del
+ * color del borde que se desvanecen hacia abajo (sin brillos ni color).
+ */
+.bg-blueprint {
+    background-image:
+        linear-gradient(
+            to right,
+            color-mix(in oklch, var(--border) 70%, transparent) 1px,
+            transparent 1px
+        ),
+        linear-gradient(
+            to bottom,
+            color-mix(in oklch, var(--border) 70%, transparent) 1px,
+            transparent 1px
+        );
+    background-size: 32px 32px;
+    mask-image: linear-gradient(to bottom, black 30%, transparent 95%);
+}
+
+/* Etiqueta pixel: textos cortos en mayúsculas (estados, secciones). */
+@utility font-pixel-label {
+    font-family: var(--font-pixel);
+    font-weight: 400;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+/*
+ * ─── Restos del diseño anterior (se borran en la fase 8) ─────
+ * Ya sin desenfoque ni brillos: superficies planas con los tokens nuevos,
+ * para que las páginas que aún no se han rediseñado sigan legibles.
+ */
+:root {
+    --vout-gradient-start: oklch(0.32 0.05 235);
+    --vout-gradient-end: oklch(0.22 0.03 250);
+}
+
 .glass-card {
-    background: rgba(255, 255, 255, 0.08);
-    backdrop-filter: blur(12px) saturate(1.4);
-    -webkit-backdrop-filter: blur(12px) saturate(1.4);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: var(--radius);
+    background: color-mix(in oklch, var(--on-media) 10%, transparent);
+    border: 1px solid color-mix(in oklch, var(--on-media) 18%, transparent);
+    border-radius: var(--radius-surface);
 }
 
 .glass-card-light {
-    background: color-mix(in oklch, var(--card) 88%, transparent);
-    backdrop-filter: blur(16px) saturate(1.3);
-    -webkit-backdrop-filter: blur(16px) saturate(1.3);
-    border: 1px solid color-mix(in oklch, var(--border) 80%, transparent);
-    border-radius: var(--radius);
-    box-shadow:
-        0 1px 3px rgba(0, 0, 0, 0.04),
-        0 4px 12px rgba(0, 0, 0, 0.04);
-}
-
-:is(.dark) .glass-card-light {
-    background: color-mix(in oklch, var(--card) 82%, transparent);
-    border-color: color-mix(in oklch, var(--border) 70%, transparent);
-    box-shadow:
-        0 1px 3px rgba(0, 0, 0, 0.25),
-        0 6px 16px rgba(0, 0, 0, 0.18);
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-surface);
+    box-shadow: var(--overlay-shadow);
 }
 
 /*
@@ -281,6 +669,13 @@
     animation: slide-up-fade 0.5s ease-out both;
 }
 
+/* Luz de estado "arrancando" (StatusLight). */
+@keyframes status-blink {
+    50% {
+        opacity: 0.25;
+    }
+}
+
 /*
  * ─── Gesture feedback pulse ──────────────────────────────────
  * Brief border flash on the control panel when a gesture fires.
@@ -290,13 +685,14 @@
 @keyframes gesture-pulse {
     0% {
         box-shadow:
-            0 0 0 0 color-mix(in oklch, var(--primary) 55%, transparent),
-            0 0 0 0 color-mix(in oklch, var(--primary) 25%, transparent);
+            0 0 0 0 color-mix(in oklch, var(--signal-edge) 55%, transparent),
+            0 0 0 0 color-mix(in oklch, var(--signal-edge) 25%, transparent);
     }
     60% {
         box-shadow:
-            0 0 0 4px color-mix(in oklch, var(--primary) 0%, transparent),
-            0 0 24px 6px color-mix(in oklch, var(--primary) 18%, transparent);
+            0 0 0 4px color-mix(in oklch, var(--signal-edge) 0%, transparent),
+            0 0 24px 6px
+                color-mix(in oklch, var(--signal-edge) 18%, transparent);
     }
     100% {
         box-shadow:
@@ -331,8 +727,8 @@
 
 /*
  * ─── Iframe shimmer skeleton ─────────────────────────────────
- * Subtle diagonal sheen for the iframe loading state — premium
- * feel without the clinical gray of typical skeletons.
+ * Brillo diagonal tenue sobre el fondo oscuro del juego mientras
+ * carga: dice "cargando" sin color de marca.
  */
 @keyframes iframe-shimmer {
     0% {
@@ -347,9 +743,9 @@
     background-image: linear-gradient(
         110deg,
         transparent 30%,
-        color-mix(in oklch, var(--primary) 10%, transparent) 45%,
-        color-mix(in oklch, var(--primary) 18%, transparent) 50%,
-        color-mix(in oklch, var(--primary) 10%, transparent) 55%,
+        color-mix(in oklch, var(--on-media) 5%, transparent) 45%,
+        color-mix(in oklch, var(--on-media) 9%, transparent) 50%,
+        color-mix(in oklch, var(--on-media) 5%, transparent) 55%,
         transparent 70%
     );
     background-size: 200% 100%;
@@ -632,139 +1028,7 @@
     }
 }
 
-/*
- * ─── Mesh Gradient Background ────────────────────────────────
- * Dot grid pattern + radial gradient blobs for visual depth.
- * Noticeable but professional — adds personality without noise.
- * Apply to page wrappers (PortalLayout).
- */
+/* Fondo de página: liso (se borra en la fase 8). */
 .mesh-gradient-bg {
     background-color: var(--background);
-    background-image:
-        /* Dot grid sutil — menor intensidad para no competir con cards */
-        radial-gradient(circle, oklch(0.5 0.22 280 / 0.1) 1px, transparent 1px),
-        /* Top-left violet bloom — más amplio y vivo en light mode */
-        radial-gradient(
-                ellipse 80% 65% at 5% -5%,
-                oklch(0.55 0.22 280 / 0.22) 0%,
-                transparent 65%
-            ),
-        /* Bottom-right purple bloom */
-        radial-gradient(
-                ellipse 70% 55% at 105% 110%,
-                oklch(0.5 0.2 310 / 0.18) 0%,
-                transparent 60%
-            ),
-        /* Center soft glow */
-        radial-gradient(
-                ellipse 60% 50% at 55% 45%,
-                oklch(0.55 0.18 295 / 0.07) 0%,
-                transparent 70%
-            );
-    background-size:
-        28px 28px,
-        100% 100%,
-        100% 100%,
-        100% 100%;
-}
-
-:is(.dark) .mesh-gradient-bg {
-    background-color: var(--background);
-    background-image:
-        /* Dot grid — dots tenues para evitar el efecto "pantalla ruidosa" */
-        radial-gradient(
-            circle,
-            oklch(0.65 0.2 280 / 0.14) 1px,
-            transparent 1px
-        ),
-        /* Top-left violet bloom */
-        radial-gradient(
-                ellipse 70% 55% at 10% 0%,
-                oklch(0.4 0.2 280 / 0.28) 0%,
-                transparent 65%
-            ),
-        /* Bottom-right purple bloom */
-        radial-gradient(
-                ellipse 60% 45% at 95% 105%,
-                oklch(0.35 0.15 310 / 0.22) 0%,
-                transparent 60%
-            ),
-        /* Center soft glow */
-        radial-gradient(
-                ellipse 50% 40% at 55% 45%,
-                oklch(0.4 0.18 285 / 0.12) 0%,
-                transparent 70%
-            );
-    background-size:
-        28px 28px,
-        100% 100%,
-        100% 100%,
-        100% 100%;
-}
-
-/*
- * ─── Featured Carousel ───────────────────────────────────────
- * Crossfade slide transitions for the Netflix-style carousel.
- */
-@keyframes carousel-fade-in {
-    from {
-        opacity: 0;
-        transform: scale(1.02);
-    }
-    to {
-        opacity: 1;
-        transform: scale(1);
-    }
-}
-
-.carousel-slide-enter {
-    animation: carousel-fade-in 0.7s ease-out both;
-}
-
-@keyframes carousel-progress {
-    from {
-        transform: scaleX(0);
-    }
-    to {
-        transform: scaleX(1);
-    }
-}
-
-.carousel-progress-bar {
-    transform-origin: left center;
-    animation: carousel-progress 6.5s linear both;
-}
-
-/*
- * Ken Burns — lento zoom + pan sobre la imagen activa del carrusel.
- * Da sensación de cine a una cover estática. Escala mínima para no
- * degradar la imagen (máx 1.08). Se reproduce una única vez por slide
- * (duración idéntica al timer de auto-advance).
- */
-@keyframes carousel-ken-burns {
-    0% {
-        transform: scale(1.04) translate3d(0, 0, 0);
-    }
-    100% {
-        transform: scale(1.1) translate3d(-0.8%, -1.2%, 0);
-    }
-}
-
-.carousel-ken-burns {
-    animation: carousel-ken-burns 7s ease-out both;
-    will-change: transform;
-}
-
-@media (prefers-reduced-motion: reduce) {
-    .carousel-ken-burns {
-        animation: none !important;
-        transform: scale(1.04);
-    }
-    .carousel-slide-enter {
-        animation-duration: 0.01ms !important;
-    }
-    .carousel-progress-bar {
-        animation: none !important;
-        transform: scaleX(1);
-    }
 }

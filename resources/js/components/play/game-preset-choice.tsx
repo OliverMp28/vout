@@ -40,7 +40,7 @@ export function GamePresetChoice({
                 data-preset-ask="true"
                 role="status"
                 aria-live="polite"
-                className="space-y-3 rounded-xl border border-primary/30 bg-primary/5 p-3.5"
+                className="space-y-3 rounded-control border border-signal-soft-border bg-signal-soft p-3.5"
             >
                 <p className="flex items-start gap-2 text-sm text-foreground">
                     <Gamepad2
@@ -78,7 +78,7 @@ export function GamePresetChoice({
         <section
             id="play-preset-choice"
             data-preset-ask="false"
-            className="flex items-center justify-between gap-2 rounded-xl border border-border/60 bg-background/50 px-3 py-2.5"
+            className="flex items-center justify-between gap-2 rounded-control border bg-background px-3 py-2.5"
         >
             <span className="text-xs text-muted-foreground">
                 {usingGame

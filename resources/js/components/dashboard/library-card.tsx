@@ -24,7 +24,7 @@ export function LibraryCard({ library }: Props) {
         <section
             id="dashboard-library"
             aria-labelledby="dashboard-library-title"
-            className="rounded-xl border bg-card p-5 shadow-sm"
+            className="rounded-surface border bg-card p-5 shadow-surface"
         >
             <div className="space-y-1">
                 <h2
@@ -33,7 +33,7 @@ export function LibraryCard({ library }: Props) {
                 >
                     {t('dashboard.library.title')}
                 </h2>
-                <p className="text-xs text-muted-foreground/80">
+                <p className="text-xs text-muted-foreground">
                     {t('dashboard.library.subtitle')}
                 </p>
             </div>
@@ -85,7 +85,7 @@ function LibraryLink({
         >
             <Link href={href} prefetch>
                 <div
-                    className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10"
+                    className="flex size-9 shrink-0 items-center justify-center rounded-control bg-surface-sunken"
                     aria-hidden="true"
                 >
                     <Icon className="size-4 text-primary" />

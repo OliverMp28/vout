@@ -119,7 +119,7 @@ export default function DevelopersDashboardShow({
                                         app.suspended_at
                                             ? ''
                                             : app.is_active
-                                              ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
+                                              ? 'bg-success-soft text-success-text'
                                               : 'bg-muted text-muted-foreground',
                                     )}
                                 >
@@ -942,7 +942,7 @@ function ProfileChip({ icon: Icon, label, tone }: ProfileChipProps) {
             className={cn(
                 'inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-[11px] font-medium tracking-wider uppercase',
                 tone === 'primary'
-                    ? 'bg-primary/10 text-primary'
+                    ? 'bg-surface-sunken text-primary'
                     : 'bg-muted text-muted-foreground',
             )}
         >

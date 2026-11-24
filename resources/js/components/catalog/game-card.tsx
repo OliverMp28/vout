@@ -1,15 +1,9 @@
 import { Link, router, usePage } from '@inertiajs/react';
-import { Bookmark, Heart, Gamepad2 } from 'lucide-react';
+import { Bookmark, Heart } from 'lucide-react';
 import { useCallback, useState } from 'react';
 import { FacialControlBadge } from '@/components/catalog/facial-control-badge';
+import { GameCover } from '@/components/catalog/game-cover';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import {
-    Tooltip,
-    TooltipContent,
-    TooltipProvider,
-    TooltipTrigger,
-} from '@/components/ui/tooltip';
 import { useTranslation } from '@/hooks/use-translation';
 import { cn } from '@/lib/utils';
 import { show } from '@/routes/catalog';
@@ -21,9 +15,41 @@ type Props = {
     game: Game;
 };
 
+/** Botón de favorito o guardar sobre la portada: siempre visible. */
+function CoverAction({
+    pressed,
+    label,
+    onClick,
+    children,
+}: {
+    pressed: boolean;
+    label: string;
+    onClick: (event: React.MouseEvent) => void;
+    children: React.ReactNode;
+}) {
+    return (
+        <button
+            type="button"
+            aria-pressed={pressed}
+            aria-label={label}
+            title={label}
+            onClick={onClick}
+            className="flex size-8 cursor-pointer items-center justify-center rounded-control bg-scrim text-on-media transition-transform outline-none hover:scale-105 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring active:scale-95"
+        >
+            {children}
+        </button>
+    );
+}
+
+/**
+ * Tarjeta de un juego: portada (real o generada), nombre, insignias y
+ * partidas. Toda la tarjeta lleva a la ficha (el enlace del nombre se estira
+ * sobre ella); favorito y guardar son botones aparte, siempre visibles, así
+ * que funcionan con teclado y en pantallas táctiles.
+ */
 export function GameCard({ game }: Props) {
     const { auth } = usePage().props;
-    const { t } = useTranslation();
+    const { t, locale } = useTranslation();
     const isAuthenticated = !!auth?.user;
 
     const [isFavorite, setIsFavorite] = useState(
@@ -74,96 +100,24 @@ export function GameCard({ game }: Props) {
     );
 
     return (
-        <Link
-            href={show.url(game.slug)}
-            className="group relative flex flex-col overflow-hidden rounded-lg border border-border/50 bg-card shadow-sm transition-all duration-200 hover:border-primary/30 hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none"
-        >
-            {/* Cover */}
-            <div className="relative aspect-4/3 overflow-hidden bg-muted">
-                {game.cover_image ? (
-                    <img
-                        src={game.cover_image}
-                        alt={game.name}
-                        className="size-full object-cover transition-transform duration-300 group-hover:scale-105"
-                        loading="lazy"
-                    />
-                ) : (
-                    <div className="flex size-full items-center justify-center bg-primary/5">
-                        <Gamepad2 className="size-12 text-primary/30" />
-                    </div>
-                )}
-
-                {/* Overlay con acciones */}
-                <div className="absolute inset-0 bg-linear-to-t from-black/60 via-transparent to-transparent opacity-0 transition-opacity duration-200 group-hover:opacity-100" />
-
-                {isAuthenticated && (
-                    <div className="absolute top-2 right-2 flex gap-1 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
-                        <TooltipProvider delayDuration={0}>
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="size-8 bg-black/40 text-white backdrop-blur-sm hover:bg-black/60 hover:text-white"
-                                        onClick={handleToggleFavorite}
-                                    >
-                                        <Heart
-                                            className={cn(
-                                                'size-4 transition-all',
-                                                isFavorite &&
-                                                    'fill-red-500 text-red-500',
-                                            )}
-                                        />
-                                    </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                    {isFavorite
-                                        ? t('catalog.favorite.remove')
-                                        : t('catalog.favorite.add')}
-                                </TooltipContent>
-                            </Tooltip>
-                        </TooltipProvider>
-
-                        <TooltipProvider delayDuration={0}>
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="size-8 bg-black/40 text-white backdrop-blur-sm hover:bg-black/60 hover:text-white"
-                                        onClick={handleToggleSaved}
-                                    >
-                                        <Bookmark
-                                            className={cn(
-                                                'size-4 transition-all',
-                                                isSaved &&
-                                                    'fill-primary text-primary',
-                                            )}
-                                        />
-                                    </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                    {isSaved
-                                        ? t('catalog.saved.remove')
-                                        : t('catalog.saved.add')}
-                                </TooltipContent>
-                            </Tooltip>
-                        </TooltipProvider>
-                    </div>
-                )}
-
-                {/* Featured badge */}
-                {game.is_featured && (
-                    <Badge className="absolute top-2 left-2 bg-primary/90 text-xs">
-                        ★
-                    </Badge>
-                )}
+        <article className="group relative flex flex-col overflow-hidden rounded-surface border bg-card shadow-surface transition-[transform,box-shadow,border-color] duration-200 ease-out hover:-translate-y-0.5 hover:border-border-strong hover:shadow-overlay has-[a:active]:translate-y-px has-[a:active]:shadow-none has-[a:focus-visible]:outline-2 has-[a:focus-visible]:outline-offset-2 has-[a:focus-visible]:outline-ring">
+            <div className="relative aspect-4/3 overflow-hidden border-b">
+                <GameCover
+                    slug={game.slug}
+                    name={game.name}
+                    image={game.cover_image}
+                    showInitials
+                />
             </div>
 
-            {/* Info */}
-            <div className="flex flex-1 flex-col gap-1.5 p-3">
-                <h3 className="line-clamp-1 text-sm leading-tight font-semibold text-foreground transition-colors group-hover:text-primary">
-                    {game.name}
+            <div className="flex flex-1 flex-col gap-2 p-3">
+                <h3 className="line-clamp-1 text-[15px] leading-tight font-bold text-foreground">
+                    <Link
+                        href={show.url(game.slug)}
+                        className="outline-none after:absolute after:inset-0 after:content-['']"
+                    >
+                        {game.name}
+                    </Link>
                 </h3>
 
                 {(game.categories.length > 0 ||
@@ -171,26 +125,59 @@ export function GameCard({ game }: Props) {
                     <div className="flex flex-wrap gap-1">
                         <FacialControlBadge
                             support={game.facial_control_support}
-                            className="px-1.5 py-0 text-[10px]"
+                            short
                         />
                         {game.categories.slice(0, 2).map((cat) => (
-                            <Badge
-                                key={cat.id}
-                                variant="secondary"
-                                className="px-1.5 py-0 text-[10px]"
-                            >
+                            <Badge key={cat.id} variant="default">
                                 {cat.name}
                             </Badge>
                         ))}
                     </div>
                 )}
 
-                <p className="mt-auto text-xs text-muted-foreground">
+                <p className="mt-auto text-xs text-muted-foreground tabular-nums">
                     {t('catalog.plays', {
-                        count: game.play_count.toLocaleString(),
+                        count: game.play_count.toLocaleString(locale),
                     })}
                 </p>
             </div>
-        </Link>
+
+            {isAuthenticated && (
+                <div className="absolute top-2 right-2 z-10 flex gap-1.5">
+                    <CoverAction
+                        pressed={isFavorite}
+                        label={
+                            isFavorite
+                                ? t('catalog.favorite.remove')
+                                : t('catalog.favorite.add')
+                        }
+                        onClick={handleToggleFavorite}
+                    >
+                        <Heart
+                            className={cn(
+                                'size-4',
+                                isFavorite && 'fill-current text-(--vou-pink)',
+                            )}
+                        />
+                    </CoverAction>
+                    <CoverAction
+                        pressed={isSaved}
+                        label={
+                            isSaved
+                                ? t('catalog.saved.remove')
+                                : t('catalog.saved.add')
+                        }
+                        onClick={handleToggleSaved}
+                    >
+                        <Bookmark
+                            className={cn(
+                                'size-4',
+                                isSaved && 'fill-current text-signal',
+                            )}
+                        />
+                    </CoverAction>
+                </div>
+            )}
+        </article>
     );
 }

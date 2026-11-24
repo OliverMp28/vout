@@ -77,25 +77,25 @@ export function StageNotice({
             <div
                 role="status"
                 aria-live="polite"
-                className="relative w-full max-w-md animate-in overflow-hidden rounded-xl border border-white/15 bg-black/80 p-3.5 text-white shadow-xl backdrop-blur-md duration-300 fade-in slide-in-from-bottom-2 motion-reduce:animate-none"
+                className="relative w-full max-w-md animate-in overflow-hidden rounded-surface border border-on-media/15 bg-scrim p-3.5 text-on-media shadow-overlay duration-300 fade-in slide-in-from-bottom-2 motion-reduce:animate-none"
             >
                 <div className="flex items-start gap-3">
                     {kind === 'countdown' ? (
                         <span
                             aria-hidden="true"
-                            className="flex size-8 shrink-0 items-center justify-center rounded-full bg-white/10 font-mono text-sm font-semibold tabular-nums"
+                            className="flex size-8 shrink-0 items-center justify-center rounded-full bg-on-media/10 font-mono text-sm font-semibold tabular-nums"
                         >
                             {remaining}
                         </span>
                     ) : kind === 'blocked' || kind === 'hidden-stop' ? (
                         <Info
                             aria-hidden="true"
-                            className="mt-0.5 size-5 shrink-0 text-white/70"
+                            className="mt-0.5 size-5 shrink-0 text-on-media-muted"
                         />
                     ) : (
                         <Camera
                             aria-hidden="true"
-                            className="mt-0.5 size-5 shrink-0 text-white/70"
+                            className="mt-0.5 size-5 shrink-0 text-on-media-muted"
                         />
                     )}
 
@@ -103,12 +103,12 @@ export function StageNotice({
                         <p className="text-sm font-medium">
                             {t(`play.stage_notice.${kind}.title`)}
                         </p>
-                        <p className="text-xs text-white/70">
+                        <p className="text-xs text-on-media-muted">
                             {t(`play.stage_notice.${kind}.desc`)}{' '}
                             {kind === 'countdown' && (
                                 <Link
                                     href={appearance.edit.url()}
-                                    className="font-medium text-white underline-offset-2 hover:underline"
+                                    className="font-medium text-on-media underline-offset-2 hover:underline"
                                 >
                                     {t('play.stage_notice.settings')}
                                 </Link>
@@ -153,7 +153,7 @@ export function StageNotice({
                             id="play-stage-notice-close"
                             onClick={dismiss}
                             aria-label={t('play.stage_notice.close')}
-                            className="rounded-full p-1 text-white/70 transition-colors duration-200 hover:bg-white/10 hover:text-white focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                            className="rounded-full p-1 text-on-media-muted transition-colors duration-200 hover:bg-on-media/10 hover:text-on-media focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
                         >
                             <X aria-hidden="true" className="size-4" />
                         </button>
@@ -163,7 +163,7 @@ export function StageNotice({
                 {kind === 'countdown' && (
                     <div
                         aria-hidden="true"
-                        className="absolute inset-x-0 bottom-0 h-0.5 bg-white/10"
+                        className="absolute inset-x-0 bottom-0 h-0.5 bg-on-media/10"
                     >
                         <div className="animate-autostart-progress h-full w-full bg-primary" />
                     </div>

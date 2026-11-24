@@ -135,12 +135,12 @@ type ControlPanelProps = {
 // ---------------------------------------------------------------------------
 
 const ENGINE_BADGE: Record<EngineStatus, { color: string; key: string }> = {
-    idle: { color: 'bg-muted-foreground/40', key: 'play.engine.idle' },
-    loading: { color: 'bg-yellow-500', key: 'play.engine.loading' },
-    ready: { color: 'bg-yellow-500', key: 'play.engine.loading' },
-    running: { color: 'bg-green-500', key: 'play.engine.running' },
-    paused: { color: 'bg-orange-400', key: 'play.engine.paused' },
-    error: { color: 'bg-red-500', key: 'play.engine.error' },
+    idle: { color: 'bg-led-off', key: 'play.engine.idle' },
+    loading: { color: 'bg-warning', key: 'play.engine.loading' },
+    ready: { color: 'bg-warning', key: 'play.engine.loading' },
+    running: { color: 'bg-success', key: 'play.engine.running' },
+    paused: { color: 'bg-warning', key: 'play.engine.paused' },
+    error: { color: 'bg-danger', key: 'play.engine.error' },
 };
 
 const HEAD_MODE_KEY: Record<HeadTrackingMode, string> = {
@@ -188,8 +188,8 @@ function TrialPanel({
 
     return (
         <div className="flex h-full flex-col items-center justify-center gap-5 p-1 text-center">
-            <div className="flex size-14 items-center justify-center rounded-2xl bg-primary/10 ring-1 ring-primary/20">
-                <Hand className="size-7 text-primary" />
+            <div className="flex size-14 items-center justify-center rounded-surface border bg-surface-sunken">
+                <Hand className="size-7 text-muted-foreground" />
             </div>
 
             <div className="space-y-2">
@@ -230,7 +230,7 @@ function TrialPanel({
                         href={legalShow('privacidad').url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="font-medium text-primary underline-offset-2 hover:underline"
+                        className="font-semibold text-foreground underline decoration-border-strong underline-offset-2 hover:decoration-signal-strong"
                     >
                         {t('play.panel.unconfigured.privacy_link')}
                     </Link>
@@ -302,7 +302,7 @@ function IdlePanel(props: ControlPanelProps) {
                 <SectionLabel id="play-status-heading">
                     {t('play.panel.status')}
                 </SectionLabel>
-                <div className="relative overflow-hidden rounded-xl border border-border/60 bg-linear-to-b from-background/80 to-background/40 p-3.5 shadow-sm">
+                <div className="relative overflow-hidden rounded-control border bg-background p-3.5">
                     <StatusRow
                         label={t('play.panel.engine')}
                         color={engineBadge.color}
@@ -313,7 +313,7 @@ function IdlePanel(props: ControlPanelProps) {
 
             {/* CTA de activación — hero con anillo primario */}
             <section className="space-y-2">
-                <div className="rounded-xl bg-linear-to-b from-primary/40 to-primary/10 p-px shadow-lg shadow-primary/10">
+                <div>
                     <Button
                         type="button"
                         id="play-engine-toggle"
@@ -323,7 +323,8 @@ function IdlePanel(props: ControlPanelProps) {
                         size="lg"
                         disabled={cameraBusy}
                         aria-busy={cameraBusy}
-                        className="h-12 w-full gap-2 text-sm font-semibold shadow-md shadow-primary/20 transition-all duration-200 hover:shadow-lg hover:shadow-primary/30 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                        variant="play"
+                        className="h-12 w-full gap-2 text-sm font-bold"
                     >
                         {cameraBusy ? (
                             <>
@@ -412,7 +413,7 @@ function RunningPanel(props: ControlPanelProps) {
                 <SectionLabel id="play-status-heading">
                     {t('play.panel.status')}
                 </SectionLabel>
-                <div className="relative overflow-hidden rounded-xl border border-border/60 bg-linear-to-b from-background/80 to-background/40 p-3.5 shadow-sm">
+                <div className="relative overflow-hidden rounded-control border bg-background p-3.5">
                     <StatusRow
                         label={t('play.panel.engine')}
                         color={engineBadge.color}
@@ -430,7 +431,7 @@ function RunningPanel(props: ControlPanelProps) {
                         {t('play.panel.trial_notice')}{' '}
                         <Link
                             href={appearance.edit.url()}
-                            className="font-medium text-primary underline-offset-2 hover:underline"
+                            className="font-semibold text-foreground underline decoration-border-strong underline-offset-2 hover:decoration-signal-strong"
                         >
                             {t('play.panel.unconfigured.cta')}
                         </Link>
@@ -447,7 +448,7 @@ function RunningPanel(props: ControlPanelProps) {
                     variant={isRunning || isPaused ? 'destructive' : 'default'}
                     size="lg"
                     aria-pressed={isRunning || isPaused}
-                    className="h-12 w-full gap-2 text-sm font-semibold transition-all duration-200 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    className="h-12 w-full gap-2 text-sm font-bold"
                 >
                     {isLoading ? (
                         <>
@@ -553,7 +554,7 @@ function RunningPanel(props: ControlPanelProps) {
                                 htmlFor="play-camera"
                                 className="flex items-center gap-2 text-sm font-medium"
                             >
-                                <Camera className="size-4 text-primary/70" />
+                                <Camera className="size-4 text-muted-foreground" />
                                 {t('play.panel.camera')}
                             </Label>
                             <NativeSelect
@@ -586,9 +587,9 @@ function RunningPanel(props: ControlPanelProps) {
 
             {/* ── Modo de cabeza + centrar cursor ──────────────────────────── */}
             <section className="space-y-3">
-                <div className="flex items-center justify-between gap-2 rounded-xl border border-border/60 bg-background/50 px-3 py-2.5">
+                <div className="flex items-center justify-between gap-2 rounded-control border bg-background px-3 py-2.5">
                     <span className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
-                        <Crosshair className="size-3.5 text-primary/70" />
+                        <Crosshair className="size-3.5 text-muted-foreground" />
                         {t('play.panel.head_mode')}
                     </span>
                     <Badge variant="secondary" className="text-[11px]">
@@ -639,16 +640,16 @@ function RunningPanel(props: ControlPanelProps) {
                 <div
                     aria-live="polite"
                     className={cn(
-                        'relative flex min-h-13 items-center justify-center overflow-hidden rounded-xl border px-3 py-3 text-center transition-all duration-300',
+                        'relative flex min-h-13 items-center justify-center overflow-hidden rounded-control border px-3 py-3 text-center transition-[background-color,border-color] duration-200',
                         lastGesture
-                            ? 'border-primary/40 bg-primary/8 shadow-inner shadow-primary/10'
+                            ? 'border-signal-edge bg-signal-soft'
                             : 'border-dashed border-border/60 bg-background/30',
                     )}
                 >
                     {lastGesture ? (
                         <span
                             key={lastGesture}
-                            className="animate-in font-mono text-sm font-medium tracking-wide text-primary zoom-in-95 fade-in"
+                            className="animate-in font-mono text-sm font-semibold tracking-wide text-foreground zoom-in-95 fade-in"
                         >
                             {lastGesture}
                         </span>
@@ -664,14 +665,14 @@ function RunningPanel(props: ControlPanelProps) {
             {isRunning && fps !== null && (
                 <section className="space-y-2">
                     <details
-                        className="group rounded-xl border border-border/60 bg-background/40 transition-colors open:bg-background/60 hover:bg-background/60"
+                        className="group rounded-control border bg-background transition-colors open:bg-surface-2 hover:bg-background/60"
                         onToggle={(e) =>
                             setAdvancedOpen(
                                 (e.target as HTMLDetailsElement).open,
                             )
                         }
                     >
-                        <summary className="flex cursor-pointer list-none items-center justify-between gap-2 rounded-xl px-3 py-2.5 text-xs font-medium text-muted-foreground transition-all focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none">
+                        <summary className="flex cursor-pointer list-none items-center justify-between gap-2 rounded-control px-3 py-2.5 text-xs font-medium text-muted-foreground transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none">
                             <span className="flex items-center gap-1.5">
                                 <Gauge className="size-3.5" />
                                 {t('play.panel.advanced')}
@@ -793,7 +794,7 @@ function SectionLabel({
     return (
         <h3
             id={id}
-            className="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase"
+            className="font-pixel-label text-base leading-none text-muted-foreground"
         >
             {children}
         </h3>

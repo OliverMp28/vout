@@ -695,7 +695,7 @@ function ClientTypeOption({
                 'group flex flex-col gap-3 rounded-xl border p-4 text-left transition-[box-shadow,background-color,border-color] duration-200',
                 'focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
                 selected
-                    ? 'border-primary bg-primary/5 shadow-sm'
+                    ? 'border-primary bg-surface-sunken shadow-sm'
                     : 'border-border bg-card hover:bg-accent/30',
             )}
         >
@@ -704,7 +704,7 @@ function ClientTypeOption({
                     className={cn(
                         'flex size-8 shrink-0 items-center justify-center rounded-lg border',
                         selected
-                            ? 'border-primary/40 bg-primary/10 text-primary'
+                            ? 'border-border-strong bg-surface-sunken text-primary'
                             : 'border-border bg-muted text-muted-foreground',
                     )}
                     aria-hidden
@@ -720,7 +720,7 @@ function ClientTypeOption({
                 className={cn(
                     'inline-flex w-fit items-center rounded-full border px-2 py-0.5 font-mono text-[10px] tracking-wide uppercase',
                     selected
-                        ? 'border-primary/30 bg-primary/10 text-primary'
+                        ? 'border-border-strong bg-surface-sunken text-primary'
                         : 'border-border bg-muted/50 text-muted-foreground',
                 )}
             >
@@ -757,7 +757,7 @@ function ProfileOption({
                 'group flex items-start gap-3 rounded-xl border p-4 text-left transition-[box-shadow,background-color,border-color] duration-200',
                 'focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
                 selected
-                    ? 'border-primary bg-primary/5 shadow-sm'
+                    ? 'border-primary bg-surface-sunken shadow-sm'
                     : 'border-border bg-card hover:bg-accent/30',
             )}
             data-kind={kind}
@@ -766,7 +766,7 @@ function ProfileOption({
                 className={cn(
                     'flex size-9 shrink-0 items-center justify-center rounded-lg border',
                     selected
-                        ? 'border-primary/40 bg-primary/10 text-primary'
+                        ? 'border-border-strong bg-surface-sunken text-primary'
                         : 'border-border bg-muted text-muted-foreground',
                 )}
                 aria-hidden

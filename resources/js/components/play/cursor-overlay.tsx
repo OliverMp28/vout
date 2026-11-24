@@ -84,7 +84,7 @@ export const CursorOverlay = forwardRef<CursorOverlayHandle>(
             <div
                 ref={containerRef}
                 aria-hidden="true"
-                className="pointer-events-none absolute inset-0 z-10 overflow-hidden rounded-xl"
+                className="pointer-events-none absolute inset-0 z-10 overflow-hidden rounded-surface"
             >
                 {/* Anchor de 0×0 en el origen — los hijos ya se centran sobre el
                 punto con sus propias `-translate-x-1/2 -translate-y-1/2`. La
@@ -99,27 +99,27 @@ export const CursorOverlay = forwardRef<CursorOverlayHandle>(
                 >
                     {/* Anillo exterior fino — identifica el cursor del portal */}
                     <div
-                        className="absolute size-7 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/70"
+                        className="absolute size-7 -translate-x-1/2 -translate-y-1/2 rounded-full border border-on-media/70"
                         style={{
                             filter: 'drop-shadow(0 0 4px rgba(0,0,0,0.8))',
                         }}
                     />
                     {/* Línea horizontal del crosshair */}
                     <div
-                        className="absolute h-px w-4 -translate-x-1/2 -translate-y-px bg-white/90"
+                        className="absolute h-px w-4 -translate-x-1/2 -translate-y-px bg-on-media/90"
                         style={{
                             filter: 'drop-shadow(0 0 2px rgba(0,0,0,0.9))',
                         }}
                     />
                     {/* Línea vertical del crosshair */}
                     <div
-                        className="absolute h-4 w-px -translate-x-px -translate-y-1/2 bg-white/90"
+                        className="absolute h-4 w-px -translate-x-px -translate-y-1/2 bg-on-media/90"
                         style={{
                             filter: 'drop-shadow(0 0 2px rgba(0,0,0,0.9))',
                         }}
                     />
                     {/* Punto central para precisión */}
-                    <div className="absolute size-1 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white/95" />
+                    <div className="absolute size-1 -translate-x-1/2 -translate-y-1/2 rounded-full bg-on-media/95" />
                 </div>
             </div>
         );

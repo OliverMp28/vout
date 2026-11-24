@@ -51,20 +51,20 @@ export function CookieBanner() {
                 aria-modal="false"
                 aria-labelledby="cookie-banner-title"
                 aria-describedby="cookie-banner-description"
-                className="motion-safe:animate-slide-up-fade fixed inset-x-3 bottom-3 z-50 sm:inset-x-auto sm:right-4 sm:bottom-4 sm:max-w-sm"
+                className="fixed inset-x-3 bottom-3 z-50 motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-bottom-2 sm:inset-x-auto sm:right-4 sm:bottom-4 sm:max-w-sm"
             >
-                <div className="rounded-2xl border border-border/60 bg-background/95 p-5 shadow-lg backdrop-blur-md">
+                <div className="rounded-surface border bg-surface-2 p-5 shadow-overlay">
                     <div className="flex items-start gap-3">
                         <span
                             aria-hidden="true"
-                            className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary"
+                            className="flex size-9 shrink-0 items-center justify-center rounded-control bg-surface-sunken text-muted-foreground"
                         >
                             <Cookie className="size-4" />
                         </span>
                         <div className="space-y-1.5">
                             <h2
                                 id="cookie-banner-title"
-                                className="text-sm font-semibold text-foreground"
+                                className="text-sm font-bold text-foreground"
                             >
                                 {t('cookie.banner.title')}
                             </h2>
@@ -75,7 +75,7 @@ export function CookieBanner() {
                                 {t('cookie.banner.description')}{' '}
                                 <Link
                                     href={legalShow('cookies').url}
-                                    className="font-medium text-primary underline-offset-2 hover:underline"
+                                    className="font-semibold text-foreground underline decoration-border-strong underline-offset-2 hover:decoration-signal-strong"
                                 >
                                     {t('cookie.banner.learn_more')}
                                 </Link>

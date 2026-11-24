@@ -2,12 +2,16 @@ import * as React from "react"
 
 import { cn } from "@/lib/utils"
 
+/**
+ * Bandeja: gris redondeado con sombra suave. Para separar partes dentro de una
+ * bandeja usa `CardSection` (líneas), no otra tarjeta.
+ */
 function Card({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="card"
       className={cn(
-        "bg-card text-card-foreground flex flex-col gap-6 rounded-xl border py-6 shadow-sm",
+        "flex flex-col gap-6 rounded-surface border bg-card py-6 text-card-foreground shadow-surface",
         className
       )}
       {...props}
@@ -29,7 +33,7 @@ function CardTitle({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="card-title"
-      className={cn("leading-none font-semibold", className)}
+      className={cn("leading-tight font-bold", className)}
       {...props}
     />
   )
@@ -39,7 +43,7 @@ function CardDescription({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="card-description"
-      className={cn("text-muted-foreground text-sm", className)}
+      className={cn("text-sm text-muted-foreground", className)}
       {...props}
     />
   )
@@ -65,4 +69,23 @@ function CardFooter({ className, ...props }: React.ComponentProps<"div">) {
   )
 }
 
-export { Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent }
+/** Una parte de la bandeja separada de la anterior por una línea. */
+function CardSection({ className, ...props }: React.ComponentProps<"div">) {
+  return (
+    <div
+      data-slot="card-section"
+      className={cn("border-t px-6 pt-5 first:border-t-0 first:pt-0", className)}
+      {...props}
+    />
+  )
+}
+
+export {
+  Card,
+  CardHeader,
+  CardFooter,
+  CardTitle,
+  CardDescription,
+  CardContent,
+  CardSection,
+}

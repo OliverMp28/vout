@@ -102,7 +102,7 @@ export default function Profile({
                                                 {t('profile.fields.avatar')}
                                             </Label>
                                             <div className="flex items-center gap-4">
-                                                <Avatar className="h-16 w-16 border-2 border-primary/20">
+                                                <Avatar className="h-16 w-16 border-2 border-border-strong">
                                                     <AvatarImage
                                                         src={
                                                             auth.user.avatar ??
@@ -111,7 +111,7 @@ export default function Profile({
                                                         alt={auth.user.name}
                                                         className="object-cover"
                                                     />
-                                                    <AvatarFallback className="bg-neutral-200 text-base font-medium text-black dark:bg-neutral-700 dark:text-white">
+                                                    <AvatarFallback className="bg-surface-sunken text-base font-medium text-foreground">
                                                         {getInitials(
                                                             auth.user.name,
                                                         )}
@@ -231,7 +231,7 @@ export default function Profile({
                                                     <Link
                                                         href={send()}
                                                         as="button"
-                                                        className="text-foreground underline decoration-neutral-300 underline-offset-4 transition-colors duration-300 ease-out hover:decoration-current! dark:decoration-neutral-500"
+                                                        className="text-foreground underline decoration-border-strong underline-offset-4 transition-colors duration-300 ease-out hover:decoration-current!"
                                                     >
                                                         Click here to resend the
                                                         verification email.
@@ -240,7 +240,7 @@ export default function Profile({
 
                                                 {status ===
                                                     'verification-link-sent' && (
-                                                    <div className="mt-2 text-sm font-medium text-green-600">
+                                                    <div className="mt-2 text-sm font-medium text-success-text">
                                                         A new verification link
                                                         has been sent to your
                                                         email address.
@@ -264,7 +264,7 @@ export default function Profile({
                                             leave="transition ease-in-out"
                                             leaveTo="opacity-0"
                                         >
-                                            <p className="text-sm font-medium text-green-600 dark:text-green-400">
+                                            <p className="text-sm font-medium text-success-text">
                                                 {t('profile.saved')}
                                             </p>
                                         </Transition>
@@ -306,7 +306,7 @@ export default function Profile({
                                 <div>
                                     {auth.user.google_id ? (
                                         <div className="flex items-center gap-3">
-                                            <span className="inline-flex items-center rounded-md bg-green-500/10 px-2.5 py-1 text-xs font-semibold text-green-500 ring-1 ring-green-500/20 ring-inset">
+                                            <span className="inline-flex items-center rounded-md bg-success-soft px-2.5 py-1 text-xs font-semibold text-success-text ring-1 ring-success/20 ring-inset">
                                                 Connected
                                             </span>
                                             {auth.user.has_password && (
@@ -315,14 +315,14 @@ export default function Profile({
                                                     method="delete"
                                                     as="button"
                                                     type="button"
-                                                    className="text-xs text-red-500 transition-colors hover:text-red-600 hover:underline"
+                                                    className="text-xs text-danger-text transition-colors hover:text-danger-text hover:underline"
                                                 >
                                                     Disconnect
                                                 </Link>
                                             )}
                                         </div>
                                     ) : (
-                                        <span className="inline-flex items-center rounded-md bg-neutral-500/10 px-2.5 py-1 text-xs font-semibold text-neutral-500 ring-1 ring-neutral-500/20 ring-inset">
+                                        <span className="inline-flex items-center rounded-md bg-surface-sunken px-2.5 py-1 text-xs font-semibold text-muted-foreground ring-1 ring-border ring-inset">
                                             Not Connected
                                         </span>
                                     )}

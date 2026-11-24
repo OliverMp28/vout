@@ -71,9 +71,9 @@ function RecommendationsEmpty() {
         <section
             id="dashboard-recommendations"
             aria-labelledby="dashboard-recommendations-empty-title"
-            className="flex flex-col items-start gap-3 rounded-xl border bg-card p-6 shadow-sm"
+            className="flex flex-col items-start gap-3 rounded-surface border bg-card p-6 shadow-surface"
         >
-            <div className="flex size-10 items-center justify-center rounded-full bg-primary/10">
+            <div className="flex size-10 items-center justify-center rounded-control bg-surface-sunken">
                 <Sparkles className="size-5 text-primary" aria-hidden="true" />
             </div>
             <div className="space-y-1">

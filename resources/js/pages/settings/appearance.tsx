@@ -108,7 +108,7 @@ export default function Appearance({ activeGestureConfig }: AppearanceProps) {
                     {/* Theme Preference */}
                     <div className="rounded-xl border border-border/60 bg-card p-6 shadow-sm md:p-8">
                         <div className="flex items-start gap-4">
-                            <div className="shrink-0 rounded-lg bg-primary/10 p-3">
+                            <div className="shrink-0 rounded-lg bg-surface-sunken p-3">
                                 <Paintbrush className="h-6 w-6 text-primary" />
                             </div>
                             <div>
@@ -141,7 +141,7 @@ export default function Appearance({ activeGestureConfig }: AppearanceProps) {
                             >
                                 <p
                                     role="status"
-                                    className="shrink-0 text-sm font-medium text-green-600 dark:text-green-400"
+                                    className="shrink-0 text-sm font-medium text-success-text"
                                 >
                                     {t('profile.saved')}
                                 </p>
@@ -152,8 +152,8 @@ export default function Appearance({ activeGestureConfig }: AppearanceProps) {
                             {/* Mascot Toggle */}
                             <div className="flex items-center justify-between gap-4 rounded-lg border border-border/50 bg-background/50 p-4">
                                 <div className="flex items-start gap-4">
-                                    <div className="shrink-0 rounded-md bg-pink-500/10 p-2">
-                                        <Smile className="h-5 w-5 text-pink-500" />
+                                    <div className="shrink-0 rounded-md bg-danger-soft p-2">
+                                        <Smile className="h-5 w-5 text-danger-text" />
                                     </div>
                                     <div className="space-y-1">
                                         <Label
@@ -189,8 +189,8 @@ export default function Appearance({ activeGestureConfig }: AppearanceProps) {
                                 className="space-y-4 rounded-lg border border-border/50 bg-background/50 p-4"
                             >
                                 <div className="flex items-start gap-4">
-                                    <div className="shrink-0 rounded-md bg-blue-500/10 p-2">
-                                        <Aperture className="h-5 w-5 text-blue-500" />
+                                    <div className="shrink-0 rounded-md bg-info-soft p-2">
+                                        <Aperture className="h-5 w-5 text-info-text" />
                                     </div>
                                     <div className="space-y-1">
                                         <h2
@@ -223,7 +223,7 @@ export default function Appearance({ activeGestureConfig }: AppearanceProps) {
                                         return (
                                             <div
                                                 key={usage}
-                                                className="flex items-start gap-3 rounded-lg border border-border/60 p-3 transition-colors duration-200 has-data-[state=checked]:border-primary/50 has-data-[state=checked]:bg-primary/5"
+                                                className="flex items-start gap-3 rounded-lg border border-border/60 p-3 transition-colors duration-200 has-data-[state=checked]:border-border-strong has-data-[state=checked]:bg-surface-sunken"
                                             >
                                                 <RadioGroupItem
                                                     id={id}
@@ -302,18 +302,18 @@ export default function Appearance({ activeGestureConfig }: AppearanceProps) {
                                      * su vídeo no sale nunca del dispositivo y sólo se guardan
                                      * parámetros numéricos de configuración.
                                      */}
-                                    <div className="flex items-start gap-3 rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-4">
+                                    <div className="flex items-start gap-3 rounded-lg border border-success/30 bg-success-soft p-4">
                                         <ShieldCheck
-                                            className="mt-0.5 size-5 shrink-0 text-emerald-600 dark:text-emerald-400"
+                                            className="mt-0.5 size-5 shrink-0 text-success-text"
                                             aria-hidden="true"
                                         />
                                         <div className="space-y-1.5 text-sm">
-                                            <p className="font-medium text-emerald-900 dark:text-emerald-100">
+                                            <p className="font-medium text-success-text">
                                                 {t(
                                                     'appearance.camera_notice.title',
                                                 )}
                                             </p>
-                                            <p className="text-xs leading-relaxed text-emerald-800/90 dark:text-emerald-200/80">
+                                            <p className="text-xs leading-relaxed text-success-text">
                                                 {t(
                                                     'appearance.camera_notice.desc',
                                                 )}
@@ -324,7 +324,7 @@ export default function Appearance({ activeGestureConfig }: AppearanceProps) {
                                                 }
                                                 target="_blank"
                                                 rel="noopener noreferrer"
-                                                className="inline-flex items-center text-xs font-medium text-emerald-700 underline-offset-2 hover:underline dark:text-emerald-300"
+                                                className="inline-flex items-center text-xs font-medium text-success-text underline-offset-2 hover:underline"
                                             >
                                                 {t(
                                                     'appearance.camera_notice.link',
