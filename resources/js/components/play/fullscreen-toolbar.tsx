@@ -7,7 +7,8 @@
  * Va dentro del escenario (lo de fuera no se ve a pantalla completa, ni los
  * menús que Radix pinta en `<body>`), con botones normales, y no se oculta
  * sola: quien juega sin manos tiene que ver siempre el estado de la cámara.
- * Sin control facial en el juego, solo queda el botón de salir.
+ * Solo se muestra en juegos con control facial: en los demás el juego ocupa
+ * toda la pantalla y se sale con Esc.
  */
 
 import { Minimize2 } from 'lucide-react';
@@ -21,7 +22,7 @@ import { cn } from '@/lib/utils';
 type FullscreenToolbarProps = {
     onExit: () => void;
     /** Estado de la cámara (solo en juegos con control facial). */
-    cameraStatus: ComponentProps<typeof CameraStatus> | null;
+    cameraStatus: ComponentProps<typeof CameraStatus>;
     /** La cámara en miniatura, si se está viendo. */
     thumbnail?: ReactNode;
 };
@@ -32,14 +33,13 @@ export function FullscreenToolbar({
     thumbnail,
 }: FullscreenToolbarProps) {
     const { t } = useTranslation();
-    const wide = cameraStatus !== null;
 
     return (
         <div
             id="play-fullscreen-toolbar"
             className={cn(
                 'flex h-full shrink-0 flex-col gap-3 border-l border-white/10 bg-black p-3 text-white',
-                wide ? 'w-60' : 'w-auto',
+                'w-60',
             )}
         >
             <Button
@@ -53,10 +53,10 @@ export function FullscreenToolbar({
                 className="h-9 justify-start gap-2 rounded-lg px-3 text-white hover:bg-white/10 hover:text-white"
             >
                 <Minimize2 aria-hidden="true" className="size-4" />
-                {wide && <span>{t('play.fullscreen.exit')}</span>}
+                <span>{t('play.fullscreen.exit')}</span>
             </Button>
 
-            {cameraStatus && <CameraStatus {...cameraStatus} />}
+            <CameraStatus {...cameraStatus} />
 
             {thumbnail && <div className="mt-auto">{thumbnail}</div>}
         </div>

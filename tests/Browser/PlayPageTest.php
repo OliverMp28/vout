@@ -295,3 +295,18 @@ test('el juego se pone a pantalla completa con el estado de la cámara a la vist
 
     $page->assertNoJavaScriptErrors();
 });
+
+test('a pantalla completa, un juego sin control facial ocupa toda la pantalla sin columna', function (): void {
+    $game = engineTestGame(usage: 'occasional', announcesReady: true, support: 'none');
+
+    $page = visit('/play/'.$game->slug);
+
+    expect(waitForGameFrame($page, 'handshakeStatus', ['authenticated']))->toBe('authenticated');
+
+    $page->click('#play-fullscreen');
+
+    expect($page->script('new Promise((resolve) => setTimeout(() => resolve(document.fullscreenElement?.id ?? null), 500))'))->toBe('play-stage')
+        ->and($page->script('document.querySelector("#play-fullscreen-toolbar") === null'))->toBeTrue();
+
+    $page->assertNoJavaScriptErrors();
+});

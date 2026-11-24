@@ -664,18 +664,16 @@ export default function PlayGame({
                         />
                     </div>
 
-                    {fullscreen.active && (
+                    {/* Sin control facial no hay nada que mostrar: el juego ocupa
+                        toda la pantalla y se sale con Esc. */}
+                    {fullscreen.active && mode.cameraAvailable && (
                         <FullscreenToolbar
                             onExit={fullscreen.exit}
-                            cameraStatus={
-                                mode.cameraAvailable
-                                    ? {
-                                          ...cameraStatus,
-                                          quickActivate: mode.quickActivate,
-                                          tone: 'overlay',
-                                      }
-                                    : null
-                            }
+                            cameraStatus={{
+                                ...cameraStatus,
+                                quickActivate: mode.quickActivate,
+                                tone: 'overlay',
+                            }}
                             thumbnail={
                                 cameraPreviewSlot === 'stage' ? (
                                     <CameraThumbnail
