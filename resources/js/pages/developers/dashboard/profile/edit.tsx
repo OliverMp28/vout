@@ -39,7 +39,7 @@ const BIO_MAX = 500;
 export default function DevelopersProfileEdit({
     profile,
 }: DevelopersProfileEditProps) {
-    const { t } = useTranslation();
+    const { t, locale } = useTranslation();
     const isClaimed = profile !== null;
 
     const { data, setData, post, put, processing, errors } =
@@ -82,7 +82,7 @@ export default function DevelopersProfileEdit({
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                         <div>
                             <div className="flex items-center gap-2">
-                                <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">
+                                <h1 className="text-2xl font-extrabold tracking-tight md:text-3xl">
                                     {isClaimed
                                         ? t('developers.profile.edit.title')
                                         : t('developers.profile.claim.title')}
@@ -115,7 +115,7 @@ export default function DevelopersProfileEdit({
                         noValidate
                         className="space-y-6"
                     >
-                        <section className="space-y-4 rounded-2xl border border-border bg-card p-6 shadow-sm">
+                        <section className="space-y-4 rounded-surface border bg-card p-6 shadow-surface">
                             <div className="space-y-1">
                                 <h2 className="text-base font-semibold tracking-tight">
                                     {t(
@@ -199,7 +199,7 @@ export default function DevelopersProfileEdit({
                             </div>
                         </section>
 
-                        <section className="space-y-4 rounded-2xl border border-border bg-card p-6 shadow-sm">
+                        <section className="space-y-4 rounded-surface border bg-card p-6 shadow-surface">
                             <div className="space-y-1">
                                 <h2 className="text-base font-semibold tracking-tight">
                                     {t(
@@ -322,7 +322,7 @@ export default function DevelopersProfileEdit({
                                             )}
                                             value={new Date(
                                                 profile.updated_at,
-                                            ).toLocaleString()}
+                                            ).toLocaleString(locale)}
                                         />
                                     )}
                                 </dl>
@@ -374,8 +374,8 @@ function PreviewCard({ name, bio, website, logo }: PreviewCardProps) {
                 {t('developers.profile.preview.description')}
             </p>
 
-            <div className="flex items-start gap-3 rounded-xl border border-border bg-background p-4">
-                <div className="flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-border bg-muted">
+            <div className="flex items-start gap-3 rounded-surface border bg-background p-4">
+                <div className="flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-lg border bg-muted">
                     {logo ? (
                         <img
                             src={logo}

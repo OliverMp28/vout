@@ -1,4 +1,3 @@
-import type { LucideIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 
@@ -7,7 +6,6 @@ type Tone = 'default' | 'primary' | 'success' | 'warning' | 'danger';
 type MetricCardProps = {
     label: string;
     value: number | string;
-    icon: LucideIcon;
     tone?: Tone;
     hint?: string;
     action?: ReactNode;
@@ -23,49 +21,56 @@ const toneLight: Record<Tone, string> = {
 };
 
 /**
- * Tarjeta compacta de métrica para el panel de admin: etiqueta pixel, cifra
- * grande en mono y un icono. El tono se ve en la luz de la esquina, no en el
- * fondo, para que el panel no se llene de colores.
+ * Una celda del cuadro de métricas del admin: luz y etiqueta pixel arriba y la
+ * cifra en mono. Va dentro de `MetricGrid`, que dibuja las líneas entre
+ * celdas; el tono se ve en la luz, no en el fondo.
  */
 export function MetricCard({
     label,
     value,
-    icon: Icon,
     tone = 'default',
     hint,
     action,
 }: MetricCardProps) {
     return (
-        <div
-            className={cn(
-                'group relative flex flex-col gap-3 rounded-surface border bg-card p-5 shadow-surface transition-colors',
-                'hover:border-border-strong',
-            )}
-        >
-            <div className="flex items-start justify-between gap-3">
-                <p className="flex items-center gap-2 font-pixel-label text-base leading-none text-muted-foreground">
-                    <span
-                        className={cn('size-2 rounded-[2px]', toneLight[tone])}
-                        aria-hidden
-                    />
-                    {label}
-                </p>
+        <div className="flex min-h-28 flex-col gap-2 bg-card p-4 md:p-5">
+            <dt className="flex items-center gap-2 font-pixel-label text-base leading-none text-muted-foreground">
                 <span
-                    className="inline-flex size-9 shrink-0 items-center justify-center rounded-control bg-surface-sunken text-muted-foreground"
+                    className={cn(
+                        'size-2 shrink-0 rounded-[2px]',
+                        toneLight[tone],
+                    )}
                     aria-hidden
-                >
-                    <Icon className="size-4" />
-                </span>
-            </div>
-            <p className="font-mono text-3xl font-semibold tracking-tight tabular-nums">
+                />
+                {label}
+            </dt>
+            <dd className="font-mono text-3xl font-semibold tracking-tight tabular-nums">
                 {value}
-            </p>
+            </dd>
             {(hint || action) && (
-                <div className="mt-auto flex items-center justify-between gap-2 text-xs text-muted-foreground">
+                <dd className="mt-auto flex items-center justify-between gap-2 text-xs text-muted-foreground">
                     {hint && <span className="truncate">{hint}</span>}
                     {action}
-                </div>
+                </dd>
             )}
         </div>
+    );
+}
+
+/** Cuadro de métricas: una bandeja con las celdas separadas por líneas. */
+export function MetricGrid({
+    label,
+    children,
+}: {
+    label: string;
+    children: ReactNode;
+}) {
+    return (
+        <dl
+            aria-label={label}
+            className="grid grid-cols-2 gap-px overflow-hidden rounded-surface border bg-border shadow-surface lg:grid-cols-4"
+        >
+            {children}
+        </dl>
     );
 }

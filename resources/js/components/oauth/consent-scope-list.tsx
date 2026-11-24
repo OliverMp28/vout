@@ -46,7 +46,7 @@ export function ConsentScopeList({ appName, scopes }: ConsentScopeListProps) {
                     {scopes.map((scope) => (
                         <li
                             key={scope.id}
-                            className="flex items-start gap-2.5 rounded-lg border border-border bg-card px-3 py-2.5"
+                            className="flex items-start gap-2.5 rounded-lg border bg-card px-3 py-2.5"
                         >
                             <CheckCircle2
                                 className="mt-0.5 size-4 shrink-0 text-primary"

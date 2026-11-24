@@ -127,7 +127,7 @@ export default function AdminAuditIndex({
             <div className="space-y-6">
                 <header className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
                     <div>
-                        <h1 className="text-2xl font-semibold tracking-tight">
+                        <h1 className="text-2xl font-extrabold tracking-tight">
                             {t('admin.audit.index.title')}
                         </h1>
                         <p className="mt-1 text-sm text-muted-foreground">
@@ -157,7 +157,7 @@ export default function AdminAuditIndex({
 
                 <section
                     aria-label={t('admin.audit.filters.heading')}
-                    className="grid grid-cols-1 gap-3 rounded-xl border border-border/60 bg-card/60 p-4 sm:grid-cols-2 lg:grid-cols-5"
+                    className="grid grid-cols-1 gap-3 rounded-surface border border-border/60 bg-card p-4 sm:grid-cols-2 lg:grid-cols-5"
                 >
                     <div className="space-y-1">
                         <Label className="text-xs">
@@ -284,7 +284,7 @@ export default function AdminAuditIndex({
                 </section>
 
                 {logs.data.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-border bg-card/60 py-16">
+                    <div className="flex flex-col items-center justify-center gap-2 rounded-surface border border-dashed border-border bg-card py-16">
                         <ScrollText
                             className="size-10 text-muted-foreground/40"
                             aria-hidden
@@ -426,7 +426,7 @@ function AuditEntry({ entry, isExpanded, onToggle, locale }: AuditEntryProps) {
         : null;
 
     return (
-        <li className="overflow-hidden rounded-xl border border-border/60 bg-card shadow-sm">
+        <li className="overflow-hidden rounded-surface border border-border/60 bg-card shadow-surface">
             <div className="flex items-start gap-3 px-4 py-3 sm:px-5">
                 <span
                     className="mt-0.5 inline-flex size-8 shrink-0 items-center justify-center rounded-full bg-surface-sunken text-primary"

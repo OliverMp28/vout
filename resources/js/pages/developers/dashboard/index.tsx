@@ -40,7 +40,7 @@ export default function DevelopersDashboardIndex({
             <div className="space-y-8">
                 <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div className="space-y-1">
-                        <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">
+                        <h1 className="text-2xl font-extrabold tracking-tight md:text-3xl">
                             {t('developers.dashboard.index.heading')}
                         </h1>
                         <p className="text-sm text-muted-foreground">
@@ -82,7 +82,7 @@ function EmptyState() {
     const { t } = useTranslation();
 
     return (
-        <div className="rounded-2xl border border-dashed border-border bg-card/40 p-10 text-center shadow-sm">
+        <div className="rounded-surface border border-dashed border-border bg-card p-10 text-center shadow-surface">
             <div className="mx-auto flex size-14 items-center justify-center rounded-full bg-surface-sunken text-primary">
                 <Boxes className="size-7" aria-hidden />
             </div>
@@ -114,7 +114,7 @@ function AppCard({ app }: AppCardProps) {
             href={appsRoutes.show(app.slug).url}
             prefetch
             className={cn(
-                'group flex h-full flex-col gap-4 rounded-2xl border border-border bg-card p-6 shadow-sm',
+                'group flex h-full flex-col gap-4 rounded-surface border bg-card p-6 shadow-surface',
                 'transition-[box-shadow,background-color] duration-300 ease-out',
                 'hover:bg-accent/30 hover:shadow-md',
                 'focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',

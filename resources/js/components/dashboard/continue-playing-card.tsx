@@ -50,7 +50,7 @@ export function ContinuePlayingCard({ game }: Props) {
             id="dashboard-continue-playing"
             aria-labelledby="dashboard-continue-playing-title"
             className={cn(
-                'relative overflow-hidden rounded-xl border border-border/60 bg-card shadow-sm',
+                'relative overflow-hidden rounded-surface border border-border/60 bg-card shadow-surface',
                 'flex flex-col gap-0 md:flex-row md:items-stretch',
                 'transition-[color,background-color,border-color,box-shadow,transform,opacity] duration-200 hover:shadow-md',
             )}

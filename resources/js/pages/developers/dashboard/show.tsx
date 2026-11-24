@@ -18,6 +18,7 @@ import { CopyButton } from '@/components/developers/copy-button';
 import { DynamicUrlList } from '@/components/developers/dynamic-url-list';
 import { SecretRevealDialog } from '@/components/developers/secret-reveal-dialog';
 import InputError from '@/components/input-error';
+import { SectionPanel } from '@/components/section-panel';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -102,10 +103,10 @@ export default function DevelopersDashboardShow({
                         </Link>
                     </Button>
 
-                    <div className="flex flex-col gap-4 rounded-2xl border border-border bg-card p-6 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex flex-col gap-4 rounded-surface border bg-card p-6 shadow-surface sm:flex-row sm:items-center sm:justify-between">
                         <div className="min-w-0 space-y-1">
                             <div className="flex items-center gap-2">
-                                <h1 className="truncate text-2xl font-semibold tracking-tight md:text-3xl">
+                                <h1 className="truncate text-2xl font-extrabold tracking-tight md:text-3xl">
                                     {app.name}
                                 </h1>
                                 <Badge
@@ -263,7 +264,7 @@ type OverviewPanelProps = {
 };
 
 function OverviewPanel({ app }: OverviewPanelProps) {
-    const { t } = useTranslation();
+    const { t, locale } = useTranslation();
     return (
         <Panel
             title={t('developers.dashboard.show.overview.heading')}
@@ -286,7 +287,7 @@ function OverviewPanel({ app }: OverviewPanelProps) {
                 />
                 <MetaRow
                     label={t('developers.dashboard.show.overview.updated_at')}
-                    value={new Date(app.updated_at).toLocaleString()}
+                    value={new Date(app.updated_at).toLocaleString(locale)}
                 />
             </dl>
         </Panel>
@@ -347,12 +348,12 @@ function CredentialsPanel({
             title={t('developers.dashboard.show.credentials.heading')}
             description={t('developers.dashboard.show.credentials.description')}
         >
-            <div className="space-y-3 rounded-xl border border-border bg-muted/30 p-4">
+            <div className="space-y-3 rounded-surface border bg-muted/30 p-4">
                 <Label className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
                     {t('developers.secret.client_id_label')}
                 </Label>
                 <div className="flex items-stretch gap-2">
-                    <code className="flex-1 overflow-x-auto rounded-md border border-border bg-background px-3 py-2 font-mono text-sm break-all">
+                    <code className="flex-1 overflow-x-auto rounded-md border bg-background px-3 py-2 font-mono text-sm break-all">
                         {clientId}
                     </code>
                     <CopyButton
@@ -530,7 +531,7 @@ function IssueCredentialsPanel({
                     disabled={processing || isSuspended}
                 />
 
-                <div className="flex items-start gap-3 rounded-xl border border-border bg-muted/30 p-4">
+                <div className="flex items-start gap-3 rounded-surface border bg-muted/30 p-4">
                     <Checkbox
                         id="issue-confidential"
                         checked={data.confidential}
@@ -904,29 +905,9 @@ type PanelProps = {
 
 function Panel({ title, description, children, tone = 'default' }: PanelProps) {
     return (
-        <section
-            className={cn(
-                'space-y-4 rounded-2xl border bg-card p-6 shadow-sm',
-                tone === 'danger' ? 'border-destructive/30' : 'border-border',
-            )}
-        >
-            <div className="space-y-1">
-                <h2
-                    className={cn(
-                        'text-base font-semibold tracking-tight',
-                        tone === 'danger' && 'text-destructive',
-                    )}
-                >
-                    {title}
-                </h2>
-                {description && (
-                    <p className="text-sm text-muted-foreground">
-                        {description}
-                    </p>
-                )}
-            </div>
+        <SectionPanel title={title} description={description} tone={tone}>
             <div className="space-y-4">{children}</div>
-        </section>
+        </SectionPanel>
     );
 }
 

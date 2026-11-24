@@ -1,11 +1,11 @@
 import { Transition } from '@headlessui/react';
 import { Head, Link, useForm, usePage } from '@inertiajs/react';
-import { Aperture, Paintbrush, ShieldCheck, Smile } from 'lucide-react';
+import { ShieldCheck } from 'lucide-react';
 
 import AppearanceTabs from '@/components/appearance-tabs';
-import Heading from '@/components/heading';
 import { CelebrateOnSuccess } from '@/components/mascot/celebrate-on-success';
 import { VouPreview } from '@/components/mascot/vou-preview';
+import { SectionPanel } from '@/components/section-panel';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -104,267 +104,213 @@ export default function Appearance({ activeGestureConfig }: AppearanceProps) {
 
             <SettingsLayout>
                 <CelebrateOnSuccess recentlySuccessful={recentlySuccessful} />
-                <div className="space-y-8">
-                    {/* Theme Preference */}
-                    <div className="rounded-xl border border-border/60 bg-card p-6 shadow-sm md:p-8">
-                        <div className="flex items-start gap-4">
-                            <div className="shrink-0 rounded-lg bg-surface-sunken p-3">
-                                <Paintbrush className="h-6 w-6 text-primary" />
-                            </div>
-                            <div>
-                                <Heading
-                                    variant="small"
-                                    title={t('appearance.theme.title')}
-                                    description={t('appearance.theme.desc')}
-                                />
-                                <div className="mt-4">
-                                    <AppearanceTabs />
-                                </div>
-                            </div>
-                        </div>
-                    </div>
 
-                    {/* Vout Ecosystem Preferences */}
-                    <div className="space-y-6 rounded-xl border border-border/60 bg-card p-6 shadow-sm md:p-8">
-                        <div className="flex items-start justify-between gap-4">
-                            <Heading
-                                variant="small"
-                                title={t('appearance.ecosystem.title')}
-                                description={t('appearance.ecosystem.desc')}
-                            />
-                            <Transition
-                                show={recentlySuccessful}
-                                enter="transition ease-in-out"
-                                enterFrom="opacity-0"
-                                leave="transition ease-in-out"
-                                leaveTo="opacity-0"
+                <SectionPanel
+                    title={t('appearance.theme.title')}
+                    description={t('appearance.theme.desc')}
+                >
+                    <AppearanceTabs />
+                </SectionPanel>
+
+                <SectionPanel
+                    title={t('appearance.ecosystem.title')}
+                    description={t('appearance.ecosystem.desc')}
+                    aside={
+                        <Transition
+                            show={recentlySuccessful}
+                            enter="transition-opacity ease-out"
+                            enterFrom="opacity-0"
+                            leave="transition-opacity ease-in"
+                            leaveTo="opacity-0"
+                        >
+                            <p
+                                role="status"
+                                className="shrink-0 text-sm font-medium text-success-text"
                             >
-                                <p
-                                    role="status"
-                                    className="shrink-0 text-sm font-medium text-success-text"
+                                {t('profile.saved')}
+                            </p>
+                        </Transition>
+                    }
+                >
+                    <div className="grid gap-5">
+                        <div className="flex items-center justify-between gap-4">
+                            <div className="space-y-1">
+                                <Label
+                                    htmlFor="show_mascot"
+                                    className="text-base font-bold"
                                 >
-                                    {t('profile.saved')}
+                                    {t('appearance.mascot.title')}
+                                </Label>
+                                <p className="text-sm text-muted-foreground">
+                                    {t('appearance.mascot.desc')}
                                 </p>
-                            </Transition>
+                            </div>
+                            <Switch
+                                id="show_mascot"
+                                checked={data.show_mascot}
+                                onCheckedChange={(checked) =>
+                                    save('show_mascot', checked)
+                                }
+                            />
                         </div>
 
-                        <div className="mt-6 space-y-8">
-                            {/* Mascot Toggle */}
-                            <div className="flex items-center justify-between gap-4 rounded-lg border border-border/50 bg-background/50 p-4">
-                                <div className="flex items-start gap-4">
-                                    <div className="shrink-0 rounded-md bg-danger-soft p-2">
-                                        <Smile className="h-5 w-5 text-danger-text" />
-                                    </div>
-                                    <div className="space-y-1">
-                                        <Label
-                                            htmlFor="show_mascot"
-                                            className="text-base font-medium"
-                                        >
-                                            {t('appearance.mascot.title')}
-                                        </Label>
-                                        <p className="w-full text-sm text-muted-foreground md:w-3/4">
-                                            {t('appearance.mascot.desc')}
-                                        </p>
-                                    </div>
-                                </div>
-                                <Switch
-                                    id="show_mascot"
-                                    checked={data.show_mascot}
-                                    onCheckedChange={(checked) =>
-                                        save('show_mascot', checked)
-                                    }
-                                />
-                            </div>
+                        {data.show_mascot && <VouPreview />}
+                    </div>
+                </SectionPanel>
 
-                            {/* Mascot Preview */}
-                            {data.show_mascot && (
-                                <div className="animate-in duration-500 ease-out fade-in slide-in-from-top-4">
-                                    <VouPreview />
-                                </div>
-                            )}
+                <SectionPanel
+                    headingId="facial-control-heading"
+                    title={t('appearance.facial_control.title')}
+                    description={t('appearance.facial_control.desc')}
+                >
+                    <div className="grid gap-4">
+                        <RadioGroup
+                            id="facial_control_usage"
+                            value={data.facial_control_usage}
+                            onValueChange={(value) =>
+                                changeUsage(value as FacialControlUsage)
+                            }
+                            aria-labelledby="facial-control-heading"
+                        >
+                            {USAGE_OPTIONS.map((usage) => {
+                                const id = `facial-control-usage-${usage}`;
 
-                            {/* Perfil de uso del control facial */}
-                            <section
-                                aria-labelledby="facial-control-heading"
-                                className="space-y-4 rounded-lg border border-border/50 bg-background/50 p-4"
-                            >
-                                <div className="flex items-start gap-4">
-                                    <div className="shrink-0 rounded-md bg-info-soft p-2">
-                                        <Aperture className="h-5 w-5 text-info-text" />
-                                    </div>
-                                    <div className="space-y-1">
-                                        <h2
-                                            id="facial-control-heading"
-                                            className="text-base font-medium"
-                                        >
-                                            {t(
-                                                'appearance.facial_control.title',
-                                            )}
-                                        </h2>
-                                        <p className="text-sm text-muted-foreground">
-                                            {t(
-                                                'appearance.facial_control.desc',
-                                            )}
-                                        </p>
-                                    </div>
-                                </div>
-
-                                <RadioGroup
-                                    id="facial_control_usage"
-                                    value={data.facial_control_usage}
-                                    onValueChange={(value) =>
-                                        changeUsage(value as FacialControlUsage)
-                                    }
-                                    aria-labelledby="facial-control-heading"
-                                >
-                                    {USAGE_OPTIONS.map((usage) => {
-                                        const id = `facial-control-usage-${usage}`;
-
-                                        return (
-                                            <div
-                                                key={usage}
-                                                className="flex items-start gap-3 rounded-lg border border-border/60 p-3 transition-colors duration-200 has-data-[state=checked]:border-border-strong has-data-[state=checked]:bg-surface-sunken"
-                                            >
-                                                <RadioGroupItem
-                                                    id={id}
-                                                    value={usage}
-                                                    aria-describedby={`${id}-desc`}
-                                                    className="mt-0.5"
-                                                />
-                                                <div className="grid gap-1">
-                                                    <Label
-                                                        htmlFor={id}
-                                                        className="font-medium"
-                                                    >
-                                                        {t(
-                                                            `appearance.facial_control.usage.${usage}.label`,
-                                                        )}
-                                                    </Label>
-                                                    <p
-                                                        id={`${id}-desc`}
-                                                        className="text-xs text-muted-foreground"
-                                                    >
-                                                        {t(
-                                                            `appearance.facial_control.usage.${usage}.desc`,
-                                                        )}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
-                                </RadioGroup>
-
-                                {/* Encendido automático: aparte y solo para quien juega con la cámara */}
-                                {data.facial_control_usage === 'primary' && (
-                                    <div className="flex animate-in items-start gap-3 rounded-lg border border-dashed border-border/70 p-3 duration-300 fade-in">
-                                        <Checkbox
-                                            id="camera_autostart"
-                                            checked={data.camera_autostart}
-                                            onCheckedChange={(checked) =>
-                                                save(
-                                                    'camera_autostart',
-                                                    checked === true,
-                                                )
-                                            }
-                                            aria-describedby="camera_autostart-desc"
+                                return (
+                                    <div
+                                        key={usage}
+                                        className="flex items-start gap-3 rounded-control border p-3 transition-colors has-data-[state=checked]:border-signal-edge has-data-[state=checked]:bg-signal-soft"
+                                    >
+                                        <RadioGroupItem
+                                            id={id}
+                                            value={usage}
+                                            aria-describedby={`${id}-desc`}
                                             className="mt-0.5"
                                         />
                                         <div className="grid gap-1">
                                             <Label
-                                                htmlFor="camera_autostart"
-                                                className="font-medium"
+                                                htmlFor={id}
+                                                className="font-bold"
                                             >
                                                 {t(
-                                                    'appearance.facial_control.autostart.label',
+                                                    `appearance.facial_control.usage.${usage}.label`,
                                                 )}
                                             </Label>
                                             <p
-                                                id="camera_autostart-desc"
-                                                className="text-xs text-muted-foreground"
+                                                id={`${id}-desc`}
+                                                className="text-sm text-muted-foreground"
                                             >
                                                 {t(
-                                                    'appearance.facial_control.autostart.desc',
+                                                    `appearance.facial_control.usage.${usage}.desc`,
                                                 )}
                                             </p>
                                         </div>
                                     </div>
-                                )}
-                            </section>
+                                );
+                            })}
+                        </RadioGroup>
 
-                            {/* Asistente y mapeo (con el control facial en uso) */}
-                            {usesCamera && (
-                                <div className="animate-in space-y-6 duration-500 fade-in slide-in-from-top-4">
-                                    {/*
-                                     * Aviso de procesamiento local exigido por el plan de Fase 5.
-                                     * MediaPipe procesa los frames en el propio navegador mediante
-                                     * un Web Worker (la justificación legal completa vive en la
-                                     * Política de Privacidad). Este bloque recuerda al usuario que
-                                     * su vídeo no sale nunca del dispositivo y sólo se guardan
-                                     * parámetros numéricos de configuración.
-                                     */}
-                                    <div className="flex items-start gap-3 rounded-lg border border-success/30 bg-success-soft p-4">
-                                        <ShieldCheck
-                                            className="mt-0.5 size-5 shrink-0 text-success-text"
-                                            aria-hidden="true"
-                                        />
-                                        <div className="space-y-1.5 text-sm">
-                                            <p className="font-medium text-success-text">
-                                                {t(
-                                                    'appearance.camera_notice.title',
-                                                )}
-                                            </p>
-                                            <p className="text-xs leading-relaxed text-success-text">
-                                                {t(
-                                                    'appearance.camera_notice.desc',
-                                                )}
-                                            </p>
-                                            <Link
-                                                href={
-                                                    legalShow('privacidad').url
-                                                }
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="inline-flex items-center text-xs font-medium text-success-text underline-offset-2 hover:underline"
-                                            >
-                                                {t(
-                                                    'appearance.camera_notice.link',
-                                                )}
-                                            </Link>
-                                        </div>
-                                    </div>
-
-                                    <CalibrationWizard
-                                        saveUrl={
-                                            activeGestureConfig
-                                                ? `/gesture-configs/${activeGestureConfig.id}`
-                                                : '/gesture-configs'
-                                        }
-                                        saveMethod={
-                                            activeGestureConfig ? 'put' : 'post'
-                                        }
-                                        hasExistingProfile={
-                                            !!activeGestureConfig
-                                        }
-                                        existingProfileName={
-                                            activeGestureConfig?.profile_name
-                                        }
-                                        initialSensitivity={
-                                            activeGestureConfig?.sensitivity ??
-                                            5
-                                        }
-                                    />
-
-                                    {/* Mapping editor: solo visible si ya existe un perfil activo */}
-                                    {activeGestureConfig && (
-                                        <GestureMappingEditor
-                                            config={activeGestureConfig}
-                                        />
-                                    )}
+                        {/* Encendido automático: aparte y solo para quien juega con la cámara */}
+                        {data.facial_control_usage === 'primary' && (
+                            <div className="flex items-start gap-3 rounded-control border border-dashed border-border-strong p-3">
+                                <Checkbox
+                                    id="camera_autostart"
+                                    checked={data.camera_autostart}
+                                    onCheckedChange={(checked) =>
+                                        save(
+                                            'camera_autostart',
+                                            checked === true,
+                                        )
+                                    }
+                                    aria-describedby="camera_autostart-desc"
+                                    className="mt-0.5"
+                                />
+                                <div className="grid gap-1">
+                                    <Label
+                                        htmlFor="camera_autostart"
+                                        className="font-bold"
+                                    >
+                                        {t(
+                                            'appearance.facial_control.autostart.label',
+                                        )}
+                                    </Label>
+                                    <p
+                                        id="camera_autostart-desc"
+                                        className="text-sm text-muted-foreground"
+                                    >
+                                        {t(
+                                            'appearance.facial_control.autostart.desc',
+                                        )}
+                                    </p>
                                 </div>
-                            )}
-                        </div>
+                            </div>
+                        )}
+
+                        {/*
+                         * Aviso de procesamiento local: MediaPipe procesa los
+                         * fotogramas en el navegador (en un Web Worker) y solo
+                         * se guardan parámetros numéricos. La justificación
+                         * legal completa está en la Política de Privacidad.
+                         */}
+                        {usesCamera && (
+                            <div className="flex items-start gap-3 border-t pt-4 text-sm">
+                                <ShieldCheck
+                                    className="mt-0.5 size-5 shrink-0 text-success-text"
+                                    aria-hidden="true"
+                                />
+                                <div className="space-y-1">
+                                    <p className="font-bold">
+                                        {t('appearance.camera_notice.title')}
+                                    </p>
+                                    <p className="text-muted-foreground">
+                                        {t('appearance.camera_notice.desc')}
+                                    </p>
+                                    <Link
+                                        href={legalShow('privacidad').url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-flex rounded-xs font-semibold underline decoration-border-strong underline-offset-4 hover:decoration-signal-strong"
+                                    >
+                                        {t('appearance.camera_notice.link')}
+                                    </Link>
+                                </div>
+                            </div>
+                        )}
                     </div>
-                </div>
+                </SectionPanel>
+
+                {/* Asistente y mapeo (con el control facial en uso) */}
+                {usesCamera && (
+                    <>
+                        <div className="rounded-surface border bg-surface-1 p-5 shadow-surface md:p-6">
+                            <CalibrationWizard
+                                saveUrl={
+                                    activeGestureConfig
+                                        ? `/gesture-configs/${activeGestureConfig.id}`
+                                        : '/gesture-configs'
+                                }
+                                saveMethod={
+                                    activeGestureConfig ? 'put' : 'post'
+                                }
+                                hasExistingProfile={!!activeGestureConfig}
+                                existingProfileName={
+                                    activeGestureConfig?.profile_name
+                                }
+                                initialSensitivity={
+                                    activeGestureConfig?.sensitivity ?? 5
+                                }
+                            />
+                        </div>
+
+                        {/* Editor del mapeo: solo con un perfil activo */}
+                        {activeGestureConfig && (
+                            <div className="rounded-surface border bg-surface-1 p-5 shadow-surface md:p-6">
+                                <GestureMappingEditor
+                                    config={activeGestureConfig}
+                                />
+                            </div>
+                        )}
+                    </>
+                )}
             </SettingsLayout>
         </AppLayout>
     );

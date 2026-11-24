@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { SectionPanel } from '@/components/section-panel';
 import { cn } from '@/lib/utils';
 
 // ── Panel ────────────────────────────────────────────────────────────
@@ -9,29 +10,18 @@ type PanelProps = {
     tone?: 'default' | 'danger' | 'primary';
 };
 
+/**
+ * Bandeja de las fichas del admin. `primary` marca lo que espera una decisión
+ * y `danger`, lo que no se puede deshacer.
+ */
 export function Panel({ title, children, tone = 'default' }: PanelProps) {
     return (
-        <section
-            className={cn(
-                'space-y-4 rounded-2xl border bg-card p-6 shadow-sm',
-                tone === 'danger'
-                    ? 'border-destructive/30'
-                    : tone === 'primary'
-                      ? 'border-border-strong'
-                      : 'border-border',
-            )}
+        <SectionPanel
+            title={title}
+            tone={tone === 'primary' ? 'attention' : tone}
         >
-            <h2
-                className={cn(
-                    'text-base font-semibold tracking-tight',
-                    tone === 'danger' && 'text-destructive',
-                    tone === 'primary' && 'text-primary',
-                )}
-            >
-                {title}
-            </h2>
             <div className="space-y-4">{children}</div>
-        </section>
+        </SectionPanel>
     );
 }
 
@@ -71,7 +61,7 @@ type ActionRowProps = {
 
 export function ActionRow({ title, description, action }: ActionRowProps) {
     return (
-        <div className="flex flex-col gap-3 border-b border-border/60 py-4 first:pt-0 last:border-b-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-3 border-b py-4 first:pt-0 last:border-b-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between">
             <div className="space-y-1">
                 <p className="text-sm font-semibold tracking-tight">{title}</p>
                 <p className="text-xs text-muted-foreground">{description}</p>

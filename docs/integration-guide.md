@@ -792,15 +792,15 @@ Trátalo como una pista y acótalo: si `at` queda en el futuro o más de un par 
 
 El usuario también puede mapear un gesto a un evento con el nombre que quiera, y te llegará tal cual en `event`. Trátalo como texto que no controlas: compáralo contra tu lista de acciones y descarta el resto.
 
-### Declara si tu juego se juega con la cara
+### Declara si tu juego admite gestos
 
 El portal no puede comprobar si tu juego entiende los mensajes de arriba: tu página está en otro origen. Por eso, al enviar el juego (o al editarlo en tu panel), declaras en "Control facial" uno de estos tres niveles. El equipo de Vout lo revisa al aprobarlo.
 
 | Nivel | Cuándo elegirlo | Qué hace el portal |
 | :--- | :--- | :--- |
 | **No recibe los controles de Vout** (por defecto) | Tu juego no usa el SDK ni convierte `VOUT_KEY` / `VOUT_POINTER`. | No ofrece la cámara en tu juego. |
-| **Compatible** | Usas el SDK (o conviertes los mensajes a mano) y tu juego se puede jugar con teclado o ratón. | Ofrece la cámara con los controles de cada usuario, puede encenderla sola a quien lo haya autorizado y muestra la insignia "Admite control facial". |
-| **Pensado para jugar con la cara** | Además, se juega bien solo con gestos: pocas acciones, sin precisión al milisegundo y tolerante a un pequeño retraso. | Lo mismo, con la insignia "Se juega con la cara". Quien juega con la cámara lo encuentra con el filtro del catálogo. |
+| **Compatible** | Usas el SDK (o conviertes los mensajes a mano) y tu juego se puede jugar con teclado o ratón. | Ofrece la cámara con los controles de cada usuario, puede encenderla sola a quien lo haya autorizado y muestra la insignia "Admite gestos". |
+| **Hecho para gestos** | Además, se juega bien solo con gestos: pocas acciones, sin precisión al milisegundo y tolerante a un pequeño retraso. | Lo mismo, con la insignia "Hecho para gestos". Quien juega con la cámara lo encuentra con el filtro del catálogo. |
 
 Sé conservador: declarar "Compatible" sin serlo deja a alguien que juega sin manos con una cámara encendida que no hace nada. Si dudas, prueba tu juego con el control facial del portal antes de enviarlo.
 

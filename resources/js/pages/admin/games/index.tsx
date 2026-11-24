@@ -78,7 +78,7 @@ export default function AdminGamesIndex({
             <div className="space-y-6">
                 <header className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                        <h1 className="text-2xl font-semibold tracking-tight">
+                        <h1 className="text-2xl font-extrabold tracking-tight">
                             {t('admin.games.index.title')}
                         </h1>
                         <p className="mt-1 text-sm text-muted-foreground">
@@ -158,14 +158,14 @@ export default function AdminGamesIndex({
                 </div>
 
                 {games.data.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-card py-16">
+                    <div className="flex flex-col items-center justify-center rounded-surface border border-dashed border-border bg-card py-16">
                         <Gamepad2 className="mb-3 size-10 text-muted-foreground/40" />
                         <p className="text-sm text-muted-foreground">
                             {t('admin.games.index.empty')}
                         </p>
                     </div>
                 ) : (
-                    <div className="overflow-hidden rounded-xl border border-border">
+                    <div className="overflow-hidden rounded-surface border">
                         <table className="w-full text-sm">
                             <thead className="border-b border-border bg-muted/40 text-left text-xs font-medium tracking-wide text-muted-foreground uppercase">
                                 <tr>

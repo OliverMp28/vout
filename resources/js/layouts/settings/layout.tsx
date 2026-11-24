@@ -109,10 +109,8 @@ export default function SettingsLayout({ children }: PropsWithChildren) {
                     </nav>
                 </aside>
 
-                <div className="min-w-0 flex-1 md:max-w-2xl">
-                    <section className="max-w-xl space-y-12">
-                        {children}
-                    </section>
+                <div className="grid min-w-0 flex-1 content-start gap-6 lg:max-w-3xl">
+                    {children}
                 </div>
             </div>
         </div>

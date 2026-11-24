@@ -188,7 +188,7 @@ export default function DevelopersDashboardCreate() {
                         </Link>
                     </Button>
                     <div>
-                        <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">
+                        <h1 className="text-2xl font-extrabold tracking-tight md:text-3xl">
                             {t('developers.dashboard.create.heading')}
                         </h1>
                         <p className="mt-1 text-sm text-muted-foreground">
@@ -595,7 +595,7 @@ export default function DevelopersDashboardCreate() {
                     </div>
 
                     <aside
-                        className="order-first h-fit space-y-4 rounded-2xl border border-border bg-card p-6 text-sm shadow-sm lg:sticky lg:top-24 lg:order-0"
+                        className="order-first h-fit space-y-4 rounded-surface border bg-card p-6 text-sm shadow-surface lg:sticky lg:top-24 lg:order-0"
                         aria-label={t(
                             'developers.dashboard.create.help.heading',
                         )}
@@ -623,7 +623,7 @@ type SectionProps = {
 
 function Section({ title, description, children }: SectionProps) {
     return (
-        <section className="space-y-4 rounded-2xl border border-border bg-card p-6 shadow-sm">
+        <section className="space-y-4 rounded-surface border bg-card p-6 shadow-surface">
             <div className="space-y-1">
                 <h2 className="text-base font-semibold tracking-tight">
                     {title}
@@ -692,10 +692,10 @@ function ClientTypeOption({
             aria-checked={selected}
             onClick={onSelect}
             className={cn(
-                'group flex flex-col gap-3 rounded-xl border p-4 text-left transition-[box-shadow,background-color,border-color] duration-200',
+                'group flex flex-col gap-3 rounded-surface border p-4 text-left transition-[box-shadow,background-color,border-color] duration-200',
                 'focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
                 selected
-                    ? 'border-primary bg-surface-sunken shadow-sm'
+                    ? 'border-signal-edge bg-signal-soft'
                     : 'border-border bg-card hover:bg-accent/30',
             )}
         >
@@ -754,10 +754,10 @@ function ProfileOption({
             aria-checked={selected}
             onClick={onSelect}
             className={cn(
-                'group flex items-start gap-3 rounded-xl border p-4 text-left transition-[box-shadow,background-color,border-color] duration-200',
+                'group flex items-start gap-3 rounded-surface border p-4 text-left transition-[box-shadow,background-color,border-color] duration-200',
                 'focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
                 selected
-                    ? 'border-primary bg-surface-sunken shadow-sm'
+                    ? 'border-signal-edge bg-signal-soft'
                     : 'border-border bg-card hover:bg-accent/30',
             )}
             data-kind={kind}

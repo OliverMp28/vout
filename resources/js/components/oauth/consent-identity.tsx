@@ -24,7 +24,7 @@ export function ConsentIdentity({ name, email, avatar }: ConsentIdentityProps) {
         .join('');
 
     return (
-        <div className="flex items-center gap-3 rounded-lg border border-border bg-muted/40 px-3 py-2.5">
+        <div className="flex items-center gap-3 rounded-lg border bg-muted/40 px-3 py-2.5">
             <Avatar className="size-10 shrink-0">
                 <AvatarImage src={avatar ?? undefined} alt={name} />
                 <AvatarFallback className="bg-surface-sunken text-sm font-medium text-primary">

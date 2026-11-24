@@ -73,7 +73,7 @@ export default function LegalShow({
 
                     <MarkdownView content={markdown} />
 
-                    <footer className="rounded-xl border border-border/60 bg-muted/30 p-6">
+                    <footer className="rounded-surface border border-border/60 bg-muted/30 p-6">
                         <p className="text-sm text-muted-foreground">
                             {t('legal.footer.contact')}
                         </p>

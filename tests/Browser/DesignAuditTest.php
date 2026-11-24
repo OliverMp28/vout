@@ -2,6 +2,7 @@
 
 use App\Models\Category;
 use App\Models\Game;
+use App\Models\RegisteredApp;
 use App\Models\User;
 use App\Models\UserSetting;
 use Illuminate\Support\Str;
@@ -125,3 +126,109 @@ test('capturas de la página de juego', function (bool $dark, bool $mobile) {
 
     auditShot('/play/'.$game->slug, 'juego', $dark, $mobile);
 })->with('audit_modes');
+
+// -----------------------------------------------------------------------
+// Parte 2 del rediseño: el resto de pantallas, en claro y oscuro (escritorio)
+// y en claro (móvil).
+// -----------------------------------------------------------------------
+
+dataset('audit_modes_parte2', [
+    'claro escritorio' => [false, false],
+    'oscuro escritorio' => [true, false],
+    'claro movil' => [false, true],
+]);
+
+/**
+ * Administrador con ajustes, una app de terceros autorizada, una app propia
+ * con su juego y actividad para el registro de auditoría.
+ *
+ * @return array{user: User, app: RegisteredApp, game: Game}
+ */
+function seedAuditAccount(): array
+{
+    seedAuditCatalog();
+
+    $user = User::factory()->create(['is_admin' => true, 'name' => 'Oliver Prueba']);
+    UserSetting::factory()->for($user)->create(['show_mascot' => false, 'locale' => 'es']);
+
+    $thirdParty = gameWithOAuthApp(['name' => 'Daino']);
+    authorizeGameApp($user, $thirdParty);
+
+    $app = RegisteredApp::factory()->forUser($user)->withClient()->create(['name' => 'Mi Estudio']);
+    $game = Game::factory()->forApp($app)->submittedBy($user)->pendingReview()->create([
+        'name' => 'Rana Saltarina',
+        'slug' => 'rana-saltarina',
+        'cover_image' => null,
+    ]);
+
+    return ['user' => $user, 'app' => $app, 'game' => $game];
+}
+
+test('capturas de los ajustes', function (bool $dark, bool $mobile) {
+    ['user' => $user] = seedAuditAccount();
+    $this->actingAs($user);
+
+    auditShot('/settings/profile', 'ajustes-perfil', $dark, $mobile);
+    auditShot('/settings/password', 'ajustes-contrasena', $dark, $mobile);
+    auditShot('/settings/two-factor', 'ajustes-2fa', $dark, $mobile);
+    auditShot('/settings/privacy', 'ajustes-privacidad', $dark, $mobile);
+    auditShot('/settings/connected-apps', 'ajustes-apps', $dark, $mobile);
+    auditShot('/library/favorites', 'favoritos', $dark, $mobile);
+})->with('audit_modes_parte2');
+
+test('capturas del portal de desarrolladores', function (bool $dark, bool $mobile) {
+    ['user' => $user, 'app' => $app, 'game' => $game] = seedAuditAccount();
+    $this->actingAs($user);
+
+    auditShot('/developers/dashboard', 'dev-apps', $dark, $mobile);
+    auditShot('/developers/apps/create', 'dev-app-nueva', $dark, $mobile);
+    auditShot('/developers/apps/'.$app->slug, 'dev-app', $dark, $mobile);
+    auditShot('/developers/dashboard/games', 'dev-juegos', $dark, $mobile);
+    auditShot('/developers/dashboard/games/create', 'dev-juego-nuevo', $dark, $mobile);
+    auditShot('/developers/dashboard/games/'.$game->slug, 'dev-juego', $dark, $mobile);
+    auditShot('/developers/dashboard/profile', 'dev-perfil', $dark, $mobile);
+    auditShot('/developers/docs/integration-guide', 'dev-guia', $dark, $mobile);
+})->with('audit_modes_parte2');
+
+test('capturas del admin', function (bool $dark, bool $mobile) {
+    ['user' => $user, 'app' => $app, 'game' => $game] = seedAuditAccount();
+    $this->actingAs($user);
+
+    auditShot('/admin/dashboard', 'admin-panel', $dark, $mobile);
+    auditShot('/admin/games/'.$game->slug, 'admin-juego', $dark, $mobile);
+    auditShot('/admin/apps', 'admin-apps', $dark, $mobile);
+    auditShot('/admin/apps/'.$app->slug, 'admin-app', $dark, $mobile);
+    auditShot('/admin/categories', 'admin-categorias', $dark, $mobile);
+    auditShot('/admin/categories/create', 'admin-categoria-nueva', $dark, $mobile);
+    auditShot('/admin/developers', 'admin-desarrolladores', $dark, $mobile);
+    auditShot('/admin/audit', 'admin-auditoria', $dark, $mobile);
+})->with('audit_modes_parte2');
+
+test('capturas del acceso y los consentimientos', function (bool $dark, bool $mobile) {
+    auditShot('/register', 'registro', $dark, $mobile);
+    auditShot('/forgot-password', 'recuperar', $dark, $mobile);
+    auditShot('/reset-password/token-de-prueba?email=oliver@example.com', 'restablecer', $dark, $mobile);
+
+    $unverified = User::factory()->unverified()->create();
+    UserSetting::factory()->for($unverified)->create(['show_mascot' => false, 'locale' => 'es']);
+    $this->actingAs($unverified);
+    auditShot('/email/verify', 'verificar-email', $dark, $mobile);
+
+    $user = User::factory()->create(['name' => 'Oliver Prueba']);
+    UserSetting::factory()->for($user)->create(['show_mascot' => false, 'locale' => 'es']);
+    $this->actingAs($user);
+    auditShot('/user/confirm-password', 'confirmar-contrasena', $dark, $mobile);
+
+    $game = gameWithOAuthApp(['name' => 'Daino']);
+    auditShot('/play/'.$game->slug, 'consentimiento-juego', $dark, $mobile);
+
+    auditShot('/oauth/authorize?'.http_build_query([
+        'client_id' => $game->registeredApp->oauth_client_id,
+        'redirect_uri' => 'https://embedded.test/auth/callback',
+        'response_type' => 'code',
+        'scope' => 'user:read user:email',
+        'state' => 'estado-de-prueba',
+        'code_challenge' => str_repeat('a', 43),
+        'code_challenge_method' => 'S256',
+    ]), 'consentimiento-oauth', $dark, $mobile);
+})->with('audit_modes_parte2');

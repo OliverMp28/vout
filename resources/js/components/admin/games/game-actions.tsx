@@ -119,7 +119,7 @@ export function RejectAction({ game }: { game: AdminGameDetail }) {
         <>
             <Button
                 type="button"
-                variant="destructive"
+                variant="secondary"
                 onClick={() => {
                     reset();
                     setOpen(true);

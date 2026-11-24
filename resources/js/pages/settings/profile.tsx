@@ -1,13 +1,18 @@
 import { Transition } from '@headlessui/react';
 import { Form, Head, Link, usePage } from '@inertiajs/react';
+import { ImageUp } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import type { ChangeEvent } from 'react';
 import ProfileController from '@/actions/App/Http/Controllers/Settings/ProfileController';
-import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
 import { CelebrateOnSuccess } from '@/components/mascot/celebrate-on-success';
+import { SectionPanel, SectionRow } from '@/components/section-panel';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { useInitials } from '@/hooks/use-initials';
 import { useMascotContext } from '@/hooks/use-mascot-context';
 import { useTranslation } from '@/hooks/use-translation';
@@ -26,8 +31,6 @@ export default function Profile({
 }) {
     const { auth } = usePage().props;
     const { t } = useTranslation();
-    const getInitials = useInitials();
-
     const breadcrumbs: BreadcrumbItem[] = [
         {
             title: t('profile.edit.title'),
@@ -75,263 +78,267 @@ export default function Profile({
             <h1 className="sr-only">{t('profile.edit.title')}</h1>
 
             <SettingsLayout>
-                <div className="space-y-6">
-                    <div className="rounded-xl border border-border/60 bg-card p-6 shadow-sm md:p-8">
-                        <Heading
-                            variant="small"
-                            title={t('profile.info.title')}
-                            description={t('profile.info.desc')}
-                        />
+                <SectionPanel
+                    title={t('profile.info.title')}
+                    description={t('profile.info.desc')}
+                >
+                    <Form
+                        {...ProfileController.update.form()}
+                        options={{
+                            preserveScroll: true,
+                        }}
+                        encType="multipart/form-data"
+                        className="space-y-6"
+                    >
+                        {({ processing, recentlySuccessful, errors }) => (
+                            <>
+                                <CelebrateOnSuccess
+                                    recentlySuccessful={recentlySuccessful}
+                                />
 
-                        <Form
-                            {...ProfileController.update.form()}
-                            options={{
-                                preserveScroll: true,
-                            }}
-                            encType="multipart/form-data"
-                            className="mt-6 space-y-6"
-                        >
-                            {({ processing, recentlySuccessful, errors }) => (
-                                <>
-                                    <CelebrateOnSuccess
-                                        recentlySuccessful={recentlySuccessful}
-                                    />
-                                    <div className="flex flex-col gap-6 sm:flex-row">
-                                        <div className="grid flex-1 gap-2">
-                                            <Label htmlFor="avatar">
-                                                {t('profile.fields.avatar')}
-                                            </Label>
-                                            <div className="flex items-center gap-4">
-                                                <Avatar className="h-16 w-16 border-2 border-border-strong">
-                                                    <AvatarImage
-                                                        src={
-                                                            auth.user.avatar ??
-                                                            undefined
-                                                        }
-                                                        alt={auth.user.name}
-                                                        className="object-cover"
-                                                    />
-                                                    <AvatarFallback className="bg-surface-sunken text-base font-medium text-foreground">
-                                                        {getInitials(
-                                                            auth.user.name,
-                                                        )}
-                                                    </AvatarFallback>
-                                                </Avatar>
-                                                <div className="flex-1">
-                                                    <Input
-                                                        id="avatar"
-                                                        type="file"
-                                                        name="avatar"
-                                                        className="block w-full cursor-pointer file:cursor-pointer"
-                                                        accept="image/*"
-                                                    />
-                                                    <InputError
-                                                        className="mt-2"
-                                                        message={errors.avatar}
-                                                    />
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
+                                <AvatarPicker
+                                    name={auth.user.name}
+                                    current={auth.user.avatar}
+                                    error={errors.avatar}
+                                />
 
-                                    <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                                        <div className="grid gap-2">
-                                            <Label htmlFor="name">
-                                                {t('profile.fields.name')}
-                                            </Label>
-                                            <Input
-                                                id="name"
-                                                className="mt-1 block w-full bg-background/50"
-                                                defaultValue={auth.user.name}
-                                                name="name"
-                                                required
-                                                autoComplete="name"
-                                                placeholder={t(
-                                                    'profile.fields.name',
-                                                )}
-                                            />
-                                            <InputError
-                                                className="mt-2"
-                                                message={errors.name}
-                                            />
-                                        </div>
-
-                                        <div className="grid gap-2">
-                                            <Label htmlFor="username">
-                                                {t('profile.fields.username')}
-                                            </Label>
-                                            <Input
-                                                id="username"
-                                                className="mt-1 block w-full bg-background/50"
-                                                defaultValue={
-                                                    auth.user.username
-                                                }
-                                                name="username"
-                                                required
-                                                autoComplete="username"
-                                                placeholder={t(
-                                                    'profile.fields.username',
-                                                )}
-                                            />
-                                            <InputError
-                                                className="mt-2"
-                                                message={errors.username}
-                                            />
-                                        </div>
-                                    </div>
-
+                                <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                                     <div className="grid gap-2">
-                                        <Label htmlFor="email">
-                                            {t('profile.fields.email')}
+                                        <Label htmlFor="name">
+                                            {t('profile.fields.name')}
                                         </Label>
                                         <Input
-                                            id="email"
-                                            type="email"
-                                            className="mt-1 block w-full bg-background/50"
-                                            defaultValue={auth.user.email}
-                                            name="email"
+                                            id="name"
+                                            defaultValue={auth.user.name}
+                                            name="name"
                                             required
-                                            autoComplete="email"
-                                            placeholder={t(
-                                                'profile.fields.email',
-                                            )}
+                                            autoComplete="name"
                                         />
-                                        <InputError
-                                            className="mt-2"
-                                            message={errors.email}
-                                        />
+                                        <InputError message={errors.name} />
                                     </div>
 
                                     <div className="grid gap-2">
-                                        <Label htmlFor="bio">
-                                            {t('profile.fields.bio')}
+                                        <Label htmlFor="username">
+                                            {t('profile.fields.username')}
                                         </Label>
-                                        <textarea
-                                            id="bio"
-                                            className="mt-1 block min-h-[100px] w-full rounded-md border border-input bg-background/50 px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
-                                            defaultValue={auth.user.bio || ''}
-                                            name="bio"
-                                            placeholder={t(
-                                                'profile.fields.bio_placeholder',
-                                            )}
+                                        <Input
+                                            id="username"
+                                            defaultValue={auth.user.username}
+                                            name="username"
+                                            required
+                                            autoComplete="username"
                                         />
-                                        <InputError
-                                            className="mt-2"
-                                            message={errors.bio}
-                                        />
+                                        <InputError message={errors.username} />
                                     </div>
-
-                                    {mustVerifyEmail &&
-                                        auth.user.email_verified_at ===
-                                            null && (
-                                            <div>
-                                                <p className="-mt-4 text-sm text-muted-foreground">
-                                                    Your email address is
-                                                    unverified.{' '}
-                                                    <Link
-                                                        href={send()}
-                                                        as="button"
-                                                        className="text-foreground underline decoration-border-strong underline-offset-4 transition-colors duration-300 ease-out hover:decoration-current!"
-                                                    >
-                                                        Click here to resend the
-                                                        verification email.
-                                                    </Link>
-                                                </p>
-
-                                                {status ===
-                                                    'verification-link-sent' && (
-                                                    <div className="mt-2 text-sm font-medium text-success-text">
-                                                        A new verification link
-                                                        has been sent to your
-                                                        email address.
-                                                    </div>
-                                                )}
-                                            </div>
-                                        )}
-
-                                    <div className="flex items-center gap-4">
-                                        <Button
-                                            disabled={processing}
-                                            data-test="update-profile-button"
-                                        >
-                                            {t('profile.save')}
-                                        </Button>
-
-                                        <Transition
-                                            show={recentlySuccessful}
-                                            enter="transition ease-in-out"
-                                            enterFrom="opacity-0"
-                                            leave="transition ease-in-out"
-                                            leaveTo="opacity-0"
-                                        >
-                                            <p className="text-sm font-medium text-success-text">
-                                                {t('profile.saved')}
-                                            </p>
-                                        </Transition>
-                                    </div>
-                                </>
-                            )}
-                        </Form>
-                    </div>
-
-                    <div className="space-y-6 rounded-xl border border-border/60 bg-card p-6 shadow-sm md:p-8">
-                        <Heading
-                            variant="small"
-                            title={t('profile.details.title')}
-                            description={t('profile.details.desc')}
-                        />
-                        <div className="space-y-4">
-                            <div className="flex flex-col items-start justify-between gap-4 border-b border-border/50 py-2 sm:flex-row sm:items-center">
-                                <div>
-                                    <p className="font-medium">
-                                        Vout ID (Universal Identifier)
-                                    </p>
-                                    <p className="text-sm text-muted-foreground">
-                                        Used across all games in the ecosystem
-                                    </p>
                                 </div>
-                                <code className="rounded-md bg-muted px-3 py-1.5 text-center font-mono text-xs text-muted-foreground select-all">
-                                    {auth.user.vout_id}
-                                </code>
-                            </div>
-                            <div className="flex items-center justify-between py-2">
-                                <div>
-                                    <p className="font-medium">
-                                        Google Linked Account
-                                    </p>
-                                    <p className="text-sm text-muted-foreground">
-                                        Sign in securely with Google
-                                    </p>
-                                </div>
-                                <div>
-                                    {auth.user.google_id ? (
-                                        <div className="flex items-center gap-3">
-                                            <span className="inline-flex items-center rounded-md bg-success-soft px-2.5 py-1 text-xs font-semibold text-success-text ring-1 ring-success/20 ring-inset">
-                                                Connected
-                                            </span>
-                                            {auth.user.has_password && (
+
+                                <div className="grid gap-2">
+                                    <Label htmlFor="email">
+                                        {t('profile.fields.email')}
+                                    </Label>
+                                    <Input
+                                        id="email"
+                                        type="email"
+                                        defaultValue={auth.user.email}
+                                        name="email"
+                                        required
+                                        autoComplete="email"
+                                    />
+                                    <InputError message={errors.email} />
+
+                                    {emailUnverified && (
+                                        <div className="space-y-1 text-sm text-muted-foreground">
+                                            <p>
+                                                {t('profile.email.unverified')}{' '}
                                                 <Link
-                                                    href="/settings/google"
-                                                    method="delete"
+                                                    href={send()}
                                                     as="button"
-                                                    type="button"
-                                                    className="text-xs text-danger-text transition-colors hover:text-danger-text hover:underline"
+                                                    className="rounded-xs font-semibold text-foreground underline decoration-border-strong underline-offset-4 hover:decoration-signal-strong"
                                                 >
-                                                    Disconnect
+                                                    {t('profile.email.resend')}
                                                 </Link>
+                                            </p>
+                                            {status ===
+                                                'verification-link-sent' && (
+                                                <p className="font-medium text-success-text">
+                                                    {t('profile.email.sent')}
+                                                </p>
                                             )}
                                         </div>
-                                    ) : (
-                                        <span className="inline-flex items-center rounded-md bg-surface-sunken px-2.5 py-1 text-xs font-semibold text-muted-foreground ring-1 ring-border ring-inset">
-                                            Not Connected
-                                        </span>
                                     )}
                                 </div>
+
+                                <div className="grid gap-2">
+                                    <Label htmlFor="bio">
+                                        {t('profile.fields.bio')}
+                                    </Label>
+                                    <Textarea
+                                        id="bio"
+                                        className="min-h-24"
+                                        defaultValue={auth.user.bio || ''}
+                                        name="bio"
+                                        placeholder={t(
+                                            'profile.fields.bio_placeholder',
+                                        )}
+                                    />
+                                    <InputError message={errors.bio} />
+                                </div>
+
+                                <div className="flex items-center gap-4 border-t pt-5">
+                                    <Button
+                                        disabled={processing}
+                                        data-test="update-profile-button"
+                                    >
+                                        {t('profile.save')}
+                                    </Button>
+
+                                    <Transition
+                                        show={recentlySuccessful}
+                                        enter="transition-opacity ease-out"
+                                        enterFrom="opacity-0"
+                                        leave="transition-opacity ease-in"
+                                        leaveTo="opacity-0"
+                                    >
+                                        <p
+                                            role="status"
+                                            className="text-sm font-medium text-success-text"
+                                        >
+                                            {t('profile.saved')}
+                                        </p>
+                                    </Transition>
+                                </div>
+                            </>
+                        )}
+                    </Form>
+                </SectionPanel>
+
+                <SectionPanel
+                    title={t('profile.details.title')}
+                    description={t('profile.details.desc')}
+                >
+                    <SectionRow
+                        label={t('profile.details.vout_id.title')}
+                        description={t('profile.details.vout_id.desc')}
+                    >
+                        <code className="block rounded-control border bg-surface-sunken px-3 py-1.5 font-mono text-xs break-all select-all sm:max-w-64">
+                            {auth.user.vout_id}
+                        </code>
+                    </SectionRow>
+                    <SectionRow
+                        label={t('profile.details.google.title')}
+                        description={t('profile.details.google.desc')}
+                    >
+                        {googleLinked ? (
+                            <div className="flex items-center gap-3">
+                                <Badge variant="success">
+                                    {t('profile.details.google.connected')}
+                                </Badge>
+                                {auth.user.has_password && (
+                                    <Button asChild variant="ghost" size="sm">
+                                        <Link
+                                            href="/settings/google"
+                                            method="delete"
+                                            as="button"
+                                            type="button"
+                                        >
+                                            {t(
+                                                'profile.details.google.disconnect',
+                                            )}
+                                        </Link>
+                                    </Button>
+                                )}
                             </div>
-                        </div>
-                    </div>
-                </div>
+                        ) : (
+                            <Badge variant="outline">
+                                {t('profile.details.google.not_connected')}
+                            </Badge>
+                        )}
+                    </SectionRow>
+                </SectionPanel>
             </SettingsLayout>
         </AppLayout>
+    );
+}
+
+/**
+ * Foto de perfil: la actual (o las iniciales) y un botón para elegir otra,
+ * con vista previa antes de guardar. El campo de archivo nativo queda oculto
+ * (su texto sale en el idioma del navegador, no en el del portal) pero sigue
+ * siendo el que recibe el foco y el que se envía con el formulario.
+ */
+function AvatarPicker({
+    name,
+    current,
+    error,
+}: {
+    name: string;
+    current: string | null;
+    error?: string;
+}) {
+    const { t } = useTranslation();
+    const getInitials = useInitials();
+    const [preview, setPreview] = useState<{
+        url: string;
+        file: string;
+    } | null>(null);
+
+    useEffect(() => {
+        return () => {
+            if (preview) {
+                URL.revokeObjectURL(preview.url);
+            }
+        };
+    }, [preview]);
+
+    const onChange = (event: ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        setPreview(
+            file ? { url: URL.createObjectURL(file), file: file.name } : null,
+        );
+    };
+
+    return (
+        <div className="grid gap-2">
+            <span className="text-sm leading-none font-semibold">
+                {t('profile.fields.avatar')}
+            </span>
+            <div className="flex items-center gap-4">
+                <Avatar className="size-16 rounded-surface border border-border-strong">
+                    <AvatarImage
+                        src={preview?.url ?? current ?? undefined}
+                        alt=""
+                        className="object-cover"
+                    />
+                    <AvatarFallback className="rounded-surface bg-surface-sunken text-base font-bold text-foreground">
+                        {getInitials(name)}
+                    </AvatarFallback>
+                </Avatar>
+                <div className="min-w-0 space-y-1.5">
+                    <input
+                        id="avatar"
+                        type="file"
+                        name="avatar"
+                        accept="image/jpeg,image/png,image/gif,image/webp,image/svg+xml"
+                        className="peer sr-only"
+                        onChange={onChange}
+                        aria-describedby="avatar-hint"
+                    />
+                    <Label
+                        htmlFor="avatar"
+                        className="inline-flex h-8 cursor-pointer items-center gap-2 rounded-control border border-border-strong bg-key-light px-3 text-sm font-semibold shadow-[0_2px_0_0_var(--key-light-edge)] transition-[transform,box-shadow,background-color] peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-ring hover:bg-surface-hover active:translate-y-[2px] active:shadow-none"
+                    >
+                        <ImageUp className="size-4" aria-hidden />
+                        {t('profile.fields.avatar_choose')}
+                    </Label>
+                    <p
+                        id="avatar-hint"
+                        className="truncate text-xs text-muted-foreground"
+                    >
+                        {preview?.file ?? t('profile.fields.avatar_hint')}
+                    </p>
+                    <InputError message={error} />
+                </div>
+            </div>
+        </div>
     );
 }

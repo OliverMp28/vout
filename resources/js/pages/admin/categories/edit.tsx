@@ -28,7 +28,7 @@ type Props = {
 };
 
 export default function AdminCategoriesEdit({ category }: Props) {
-    const { t } = useTranslation();
+    const { t, locale } = useTranslation();
 
     const {
         data,
@@ -61,7 +61,7 @@ export default function AdminCategoriesEdit({ category }: Props) {
                 </Button>
 
                 <header>
-                    <h1 className="text-2xl font-semibold tracking-tight">
+                    <h1 className="text-2xl font-extrabold tracking-tight">
                         {t('admin.categories.edit.title')}
                     </h1>
                     <p className="mt-1 text-sm text-muted-foreground">
@@ -72,7 +72,7 @@ export default function AdminCategoriesEdit({ category }: Props) {
                 <div className="grid gap-6 lg:grid-cols-3">
                     <form
                         onSubmit={handleSubmit}
-                        className="space-y-6 rounded-2xl border border-border bg-card p-6 shadow-sm lg:col-span-2"
+                        className="space-y-6 rounded-surface border bg-card p-6 shadow-surface lg:col-span-2"
                     >
                         <div className="space-y-2">
                             <Label htmlFor="name">
@@ -124,7 +124,7 @@ export default function AdminCategoriesEdit({ category }: Props) {
                                         category.created_at
                                             ? new Date(
                                                   category.created_at,
-                                              ).toLocaleString()
+                                              ).toLocaleString(locale)
                                             : '-'
                                     }
                                 />
@@ -136,7 +136,7 @@ export default function AdminCategoriesEdit({ category }: Props) {
                                         category.updated_at
                                             ? new Date(
                                                   category.updated_at,
-                                              ).toLocaleString()
+                                              ).toLocaleString(locale)
                                             : '-'
                                     }
                                 />

@@ -514,7 +514,7 @@ export function GameForm({
             </div>
 
             <aside
-                className="order-first h-fit space-y-4 rounded-2xl border border-border bg-card p-6 text-sm shadow-sm lg:order-0"
+                className="order-first h-fit space-y-4 rounded-surface border bg-card p-6 text-sm shadow-surface lg:order-0"
                 aria-label={t('developers.games.form.help.heading')}
             >
                 <h2 className="text-base font-semibold tracking-tight">
@@ -537,7 +537,7 @@ type SectionProps = {
 
 function Section({ title, description, children }: SectionProps) {
     return (
-        <section className="space-y-4 rounded-2xl border border-border bg-card p-6 shadow-sm">
+        <section className="space-y-4 rounded-surface border bg-card p-6 shadow-surface">
             <div className="space-y-1">
                 <h2 className="text-base font-semibold tracking-tight">
                     {title}

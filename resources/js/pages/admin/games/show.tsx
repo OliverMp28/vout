@@ -51,10 +51,10 @@ export default function AdminGamesShow({
                         </Link>
                     </Button>
 
-                    <div className="flex flex-col gap-4 rounded-2xl border border-border bg-card p-6 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex flex-col gap-4 rounded-surface border bg-card p-6 shadow-surface sm:flex-row sm:items-center sm:justify-between">
                         <div className="min-w-0 space-y-1">
                             <div className="flex items-center gap-2">
-                                <h1 className="truncate text-2xl font-semibold tracking-tight md:text-3xl">
+                                <h1 className="truncate text-2xl font-extrabold tracking-tight md:text-3xl">
                                     {game.name}
                                 </h1>
                                 <GameStatusBadge status={game.status} />
@@ -126,7 +126,7 @@ AdminGamesShow.layout = (page: ReactNode) => <AdminLayout>{page}</AdminLayout>;
 // ── Info Panels ──────────────────────────────────────────────────────
 
 function DetailsPanel({ game }: { game: AdminGameDetail }) {
-    const { t } = useTranslation();
+    const { t, locale } = useTranslation();
 
     return (
         <Panel title={t('admin.games.show.details.heading')}>
@@ -195,7 +195,7 @@ function DetailsPanel({ game }: { game: AdminGameDetail }) {
                     label={t('admin.games.show.details.created_at')}
                     value={
                         game.created_at
-                            ? new Date(game.created_at).toLocaleString()
+                            ? new Date(game.created_at).toLocaleString(locale)
                             : '-'
                     }
                 />
@@ -203,7 +203,7 @@ function DetailsPanel({ game }: { game: AdminGameDetail }) {
                     label={t('admin.games.show.details.updated_at')}
                     value={
                         game.updated_at
-                            ? new Date(game.updated_at).toLocaleString()
+                            ? new Date(game.updated_at).toLocaleString(locale)
                             : '-'
                     }
                 />
@@ -217,7 +217,7 @@ function PreviewPanel({ game }: { game: AdminGameDetail }) {
 
     return (
         <Panel title={t('admin.games.show.preview.heading')}>
-            <div className="overflow-hidden rounded-lg border border-border">
+            <div className="overflow-hidden rounded-media border bg-media">
                 <iframe
                     src={game.embed_url ?? ''}
                     title={game.name}

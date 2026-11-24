@@ -55,10 +55,10 @@ export default function AdminAppsShow({ app, client }: Props) {
                         </Link>
                     </Button>
 
-                    <div className="flex flex-col gap-4 rounded-2xl border border-border bg-card p-6 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex flex-col gap-4 rounded-surface border bg-card p-6 shadow-surface sm:flex-row sm:items-center sm:justify-between">
                         <div className="min-w-0 space-y-1">
                             <div className="flex items-center gap-2">
-                                <h1 className="truncate text-2xl font-semibold tracking-tight md:text-3xl">
+                                <h1 className="truncate text-2xl font-extrabold tracking-tight md:text-3xl">
                                     {app.name}
                                 </h1>
                                 <StatusBadge status={app.effective_status} />
@@ -171,7 +171,7 @@ function DetailsPanel({
     app: AdminAppDetail;
     client: AdminAppClient | null;
 }) {
-    const { t } = useTranslation();
+    const { t, locale } = useTranslation();
 
     return (
         <Panel title={t('admin.apps.show.details.heading')}>
@@ -247,11 +247,11 @@ function DetailsPanel({
                 )}
                 <MetaRow
                     label={t('admin.apps.show.details.created_at')}
-                    value={new Date(app.created_at).toLocaleString()}
+                    value={new Date(app.created_at).toLocaleString(locale)}
                 />
                 <MetaRow
                     label={t('admin.apps.show.details.updated_at')}
-                    value={new Date(app.updated_at).toLocaleString()}
+                    value={new Date(app.updated_at).toLocaleString(locale)}
                 />
             </dl>
         </Panel>

@@ -77,10 +77,10 @@ export default function DevelopersGamesShow({
                         </Link>
                     </Button>
 
-                    <div className="flex flex-col gap-4 rounded-2xl border border-border bg-card p-6 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex flex-col gap-4 rounded-surface border bg-card p-6 shadow-surface sm:flex-row sm:items-center sm:justify-between">
                         <div className="min-w-0 space-y-1">
                             <div className="flex items-center gap-2">
-                                <h1 className="truncate text-2xl font-semibold tracking-tight md:text-3xl">
+                                <h1 className="truncate text-2xl font-extrabold tracking-tight md:text-3xl">
                                     {game.name}
                                 </h1>
                                 <GameStatusBadge status={game.status} />
@@ -218,7 +218,7 @@ function DangerZone({ game }: DangerZoneProps) {
     };
 
     return (
-        <section className="space-y-4 rounded-2xl border border-destructive/30 bg-card p-6 shadow-sm">
+        <section className="space-y-4 rounded-surface border border-danger/45 bg-card p-6 shadow-surface">
             <div className="space-y-1">
                 <h2 className="text-base font-semibold tracking-tight text-destructive">
                     {t('developers.games.show.danger.heading')}

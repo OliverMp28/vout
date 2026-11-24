@@ -1,14 +1,5 @@
 import { Head, Link } from '@inertiajs/react';
-import {
-    ArrowRight,
-    BookOpen,
-    CheckCircle2,
-    ChevronDown,
-    Fingerprint,
-    Gauge,
-    ShieldCheck,
-} from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
+import { ArrowRight, BookOpen, ChevronDown } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
 import {
@@ -18,18 +9,14 @@ import {
 } from '@/components/ui/collapsible';
 import { useTranslation } from '@/hooks/use-translation';
 import DevelopersLayout from '@/layouts/developers-layout';
-import { cn } from '@/lib/utils';
 import { register } from '@/routes';
 import { dashboard, docs } from '@/routes/developers';
 import type { DevelopersLandingProps } from '@/types';
 
 /**
- * Landing pública del Developer Portal.
- *
- * Mantiene un tono editorial: gradiente de marca confinado al hero y al CTA
- * final, paneles de contenido neutros, y glassmorfismo solo sobre fondo con
- * color. Todo el texto pasa por `t()` para respetar la estrategia i18n
- * flat-key del proyecto.
+ * Landing pública del Developer Portal: una consola oscura arriba (lo que
+ * viaja entre el portal y el juego) y debajo, como en una guía, qué te da
+ * Vout, los pasos, la documentación con las preguntas frecuentes y el cierre.
  */
 export default function DevelopersLanding({
     guides,
@@ -52,7 +39,7 @@ export default function DevelopersLanding({
         <>
             <Head title={t('developers.landing.hero.eyebrow')} />
 
-            <div className="space-y-20 pb-10 md:space-y-28">
+            <div className="space-y-16 pb-10 md:space-y-24">
                 <HeroSection
                     eyebrow={t('developers.landing.hero.eyebrow')}
                     title={t('developers.landing.hero.title')}
@@ -71,9 +58,7 @@ export default function DevelopersLanding({
 
                 <StepsSection t={t} />
 
-                <GuidesSection t={t} guides={guides} />
-
-                <FaqSection t={t} />
+                <DocsAndFaqSection t={t} guides={guides} />
 
                 <FinalCtaSection
                     heading={t('developers.landing.final_cta.heading')}
@@ -286,221 +271,232 @@ type TranslateFn = (
     replacements?: Record<string, string | number>,
 ) => string;
 
-type FeatureCardProps = {
-    icon: LucideIcon;
+type Feature = {
+    tag: string;
     title: string;
     description: string;
-    delay?: string;
 };
 
+/** Encabezado de sección alineado a la izquierda, como en una guía. */
+function SectionHeader({
+    id,
+    title,
+    description,
+}: {
+    id: string;
+    title: string;
+    description?: string;
+}) {
+    return (
+        <header className="max-w-2xl space-y-2">
+            <h2
+                id={id}
+                className="text-2xl font-extrabold tracking-tight text-balance md:text-3xl"
+            >
+                {title}
+            </h2>
+            {description && (
+                <p className="text-muted-foreground md:text-lg">
+                    {description}
+                </p>
+            )}
+        </header>
+    );
+}
+
+/**
+ * Qué te da Vout: el texto a la izquierda y tres filas separadas por líneas a
+ * la derecha, cada una con su etiqueta técnica (lo que de verdad recibe el
+ * desarrollador).
+ */
 function FeaturesSection({ t }: { t: TranslateFn }) {
-    const features: readonly FeatureCardProps[] = [
+    const features: readonly Feature[] = [
         {
-            icon: Fingerprint,
+            tag: 'JWT · RS256',
             title: t('developers.landing.features.identity.title'),
             description: t('developers.landing.features.identity.desc'),
         },
         {
-            icon: Gauge,
+            tag: 'VOUT_KEY · VOUT_ACTION',
             title: t('developers.landing.features.fast.title'),
             description: t('developers.landing.features.fast.desc'),
-            delay: '0.1s',
         },
         {
-            icon: ShieldCheck,
+            tag: 'on-device',
             title: t('developers.landing.features.privacy.title'),
             description: t('developers.landing.features.privacy.desc'),
-            delay: '0.2s',
         },
     ];
 
     return (
         <section
             aria-labelledby="developers-features-heading"
-            className="space-y-8"
+            className="grid gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:gap-16"
         >
-            <header className="mx-auto max-w-2xl space-y-3 text-center">
-                <h2
-                    id="developers-features-heading"
-                    className="text-2xl font-extrabold tracking-tight md:text-3xl"
-                >
-                    {t('developers.landing.features.heading')}
-                </h2>
-            </header>
+            <SectionHeader
+                id="developers-features-heading"
+                title={t('developers.landing.features.heading')}
+                description={t('developers.landing.features.intro')}
+            />
 
-            <div className="grid gap-4 md:grid-cols-3 md:gap-6">
+            <ul className="divide-y rounded-surface border bg-card shadow-surface">
                 {features.map((feature) => (
-                    <FeatureCard key={feature.title} {...feature} />
+                    <li
+                        key={feature.title}
+                        className="grid gap-2 px-5 py-5 md:px-6"
+                    >
+                        <span className="w-fit rounded-xs border bg-surface-sunken px-1.5 py-0.5 font-mono text-xs text-muted-foreground">
+                            {feature.tag}
+                        </span>
+                        <h3 className="text-lg font-bold tracking-tight">
+                            {feature.title}
+                        </h3>
+                        <p className="leading-relaxed text-muted-foreground">
+                            {feature.description}
+                        </p>
+                    </li>
                 ))}
-            </div>
+            </ul>
         </section>
     );
 }
 
-function FeatureCard({
-    icon: Icon,
-    title,
-    description,
-    delay,
-}: FeatureCardProps) {
-    return (
-        <article
-            className="group shadow-surfaced relative overflow-hidden rounded-surface border bg-card p-6 md:p-7"
-            style={delay ? { animationDelay: delay } : undefined}
-        >
-            <span
-                className="mb-4 inline-flex size-11 items-center justify-center rounded-control bg-surface-sunken text-foreground"
-                aria-hidden
-            >
-                <Icon className="size-5" />
-            </span>
-            <h3 className="text-lg font-semibold tracking-tight">{title}</h3>
-            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                {description}
-            </p>
-        </article>
-    );
-}
-
+/**
+ * Los pasos como una línea con teclas numeradas (en móvil, vertical). Sin
+ * tarjetas: el orden lo marca la línea.
+ */
 function StepsSection({ t }: { t: TranslateFn }) {
     const steps = [1, 2, 3, 4] as const;
 
     return (
         <section
             aria-labelledby="developers-steps-heading"
-            className="space-y-8"
+            className="space-y-10"
         >
-            <header className="mx-auto max-w-2xl space-y-3 text-center">
-                <h2
-                    id="developers-steps-heading"
-                    className="text-2xl font-extrabold tracking-tight md:text-3xl"
-                >
-                    {t('developers.landing.steps.heading')}
-                </h2>
-                <p className="text-sm text-muted-foreground md:text-base">
-                    {t('developers.landing.steps.subheading')}
-                </p>
-            </header>
+            <SectionHeader
+                id="developers-steps-heading"
+                title={t('developers.landing.steps.heading')}
+                description={t('developers.landing.steps.subheading')}
+            />
 
-            <ol className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 lg:gap-6">
+            <ol className="relative grid gap-8 lg:grid-cols-4 lg:gap-6">
+                <span
+                    aria-hidden
+                    className="absolute top-5 bottom-5 left-5 w-px bg-border-strong lg:top-5 lg:right-5 lg:bottom-auto lg:left-5 lg:h-px lg:w-auto"
+                />
                 {steps.map((step) => (
-                    <StepCard
+                    <li
                         key={step}
-                        number={step}
-                        title={t(`developers.landing.steps.step_${step}.title`)}
-                        description={t(
-                            `developers.landing.steps.step_${step}.desc`,
-                        )}
-                    />
+                        className="relative grid grid-cols-[2.5rem_minmax(0,1fr)] content-start gap-x-4 lg:grid-cols-1 lg:gap-y-4"
+                    >
+                        <span
+                            aria-hidden
+                            className="relative z-10 inline-flex size-10 items-center justify-center rounded-control border border-border-strong bg-key-light font-pixel text-2xl leading-none shadow-[0_3px_0_0_var(--key-light-edge)]"
+                        >
+                            {step}
+                        </span>
+                        <div className="space-y-1.5 lg:pr-4">
+                            <h3 className="font-bold tracking-tight">
+                                {t(
+                                    `developers.landing.steps.step_${step}.title`,
+                                )}
+                            </h3>
+                            <p className="text-sm leading-relaxed text-muted-foreground">
+                                {t(
+                                    `developers.landing.steps.step_${step}.desc`,
+                                )}
+                            </p>
+                        </div>
+                    </li>
                 ))}
             </ol>
         </section>
     );
 }
 
-type StepCardProps = {
-    number: number;
-    title: string;
-    description: string;
-};
-
-function StepCard({ number, title, description }: StepCardProps) {
-    return (
-        <li className="group relative h-full rounded-surface border bg-card p-6 shadow-surface">
-            <span
-                className="inline-flex h-8 min-w-8 items-center justify-center rounded-control border border-border-strong bg-key-light px-2 font-pixel text-xl leading-none shadow-[0_2px_0_0_var(--key-light-edge)]"
-                aria-hidden
-            >
-                {number.toString().padStart(2, '0')}
-            </span>
-            <h3 className="mt-4 text-base font-semibold tracking-tight">
-                {title}
-            </h3>
-            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                {description}
-            </p>
-        </li>
-    );
-}
-
-function GuidesSection({
+/** La documentación y las preguntas frecuentes, lado a lado. */
+function DocsAndFaqSection({
     t,
     guides,
 }: {
     t: TranslateFn;
     guides: DevelopersLandingProps['guides'];
 }) {
-    if (guides.length === 0) {
-        return null;
-    }
+    const items = [1, 2, 3, 4] as const;
 
     return (
-        <section
-            aria-labelledby="developers-guides-heading"
-            className="space-y-8"
-        >
-            <header className="mx-auto max-w-2xl space-y-3 text-center">
-                <h2
-                    id="developers-guides-heading"
-                    className="text-2xl font-extrabold tracking-tight md:text-3xl"
+        <div className="grid gap-12 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:gap-16">
+            {guides.length > 0 && (
+                <section
+                    aria-labelledby="developers-guides-heading"
+                    className="space-y-6"
                 >
-                    {t('developers.landing.guides.heading')}
-                </h2>
-                <p className="text-sm text-muted-foreground md:text-base">
-                    {t('developers.landing.guides.subheading')}
-                </p>
-            </header>
-
-            <div
-                className={cn(
-                    'grid gap-4 md:gap-6',
-                    guides.length === 1
-                        ? 'md:mx-auto md:max-w-2xl'
-                        : 'md:grid-cols-2',
-                )}
-            >
-                {guides.map((guide) => (
-                    <GuideCard
-                        key={guide.slug}
-                        title={t(guide.title_key)}
-                        href={docs({ slug: guide.slug }).url}
-                        cta={t('developers.landing.guides.cta')}
+                    <SectionHeader
+                        id="developers-guides-heading"
+                        title={t('developers.landing.guides.heading')}
+                        description={t('developers.landing.guides.subheading')}
                     />
-                ))}
-            </div>
-        </section>
+                    <ul className="grid gap-3">
+                        {guides.map((guide) => (
+                            <li key={guide.slug}>
+                                <GuideLink
+                                    title={t(guide.title_key)}
+                                    href={docs({ slug: guide.slug }).url}
+                                    cta={t('developers.landing.guides.cta')}
+                                />
+                            </li>
+                        ))}
+                    </ul>
+                </section>
+            )}
+
+            <section
+                aria-labelledby="developers-faq-heading"
+                className="space-y-6"
+            >
+                <SectionHeader
+                    id="developers-faq-heading"
+                    title={t('developers.landing.faq.heading')}
+                />
+                <div className="divide-y rounded-surface border bg-card shadow-surface">
+                    {items.map((item) => (
+                        <FaqItem
+                            key={item}
+                            question={t(`developers.landing.faq.q${item}`)}
+                            answer={t(`developers.landing.faq.a${item}`)}
+                        />
+                    ))}
+                </div>
+            </section>
+        </div>
     );
 }
 
-type GuideCardProps = {
+function GuideLink({
+    title,
+    href,
+    cta,
+}: {
     title: string;
     href: string;
     cta: string;
-};
-
-function GuideCard({ title, href, cta }: GuideCardProps) {
+}) {
     return (
         <Link
             href={href}
             prefetch
-            className="group flex items-center justify-between gap-6 rounded-surface border bg-card p-6 shadow-surface transition-[border-color,transform] hover:-translate-y-0.5 hover:border-border-strong focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+            className="group flex items-center justify-between gap-4 rounded-surface border bg-card px-5 py-4 shadow-surface transition-[border-color,transform] hover:-translate-y-0.5 hover:border-border-strong"
         >
-            <div className="flex items-start gap-4">
-                <span
-                    className="inline-flex size-10 shrink-0 items-center justify-center rounded-control bg-surface-sunken text-foreground"
+            <span className="flex items-center gap-3">
+                <BookOpen
                     aria-hidden
-                >
-                    <BookOpen className="size-5" />
+                    className="size-5 shrink-0 text-muted-foreground"
+                />
+                <span className="grid">
+                    <span className="font-bold">{title}</span>
+                    <span className="text-sm text-muted-foreground">{cta}</span>
                 </span>
-                <div className="space-y-1">
-                    <h3 className="text-base font-semibold tracking-tight">
-                        {title}
-                    </h3>
-                    <span className="inline-flex items-center gap-1 text-sm font-semibold underline decoration-border-strong underline-offset-4 group-hover:decoration-signal-strong">
-                        {cta}
-                    </span>
-                </div>
-            </div>
+            </span>
             <ArrowRight
                 aria-hidden
                 className="size-5 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5"
@@ -509,50 +505,18 @@ function GuideCard({ title, href, cta }: GuideCardProps) {
     );
 }
 
-function FaqSection({ t }: { t: TranslateFn }) {
-    const items = [1, 2, 3, 4] as const;
-
-    return (
-        <section
-            aria-labelledby="developers-faq-heading"
-            className="mx-auto max-w-3xl space-y-8"
-        >
-            <header className="space-y-3 text-center">
-                <h2
-                    id="developers-faq-heading"
-                    className="text-2xl font-extrabold tracking-tight md:text-3xl"
-                >
-                    {t('developers.landing.faq.heading')}
-                </h2>
-            </header>
-
-            <div className="divide-y rounded-surface border bg-card shadow-surface">
-                {items.map((item) => (
-                    <FaqItem
-                        key={item}
-                        question={t(`developers.landing.faq.q${item}`)}
-                        answer={t(`developers.landing.faq.a${item}`)}
-                    />
-                ))}
-            </div>
-        </section>
-    );
-}
-
 function FaqItem({ question, answer }: { question: string; answer: string }) {
     return (
         <Collapsible className="group">
-            <CollapsibleTrigger className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left transition-colors hover:bg-surface-hover focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring data-[state=open]:bg-muted/40">
-                <span className="text-sm font-medium md:text-base">
-                    {question}
-                </span>
+            <CollapsibleTrigger className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left transition-colors first:rounded-t-surface hover:bg-surface-hover focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring data-[state=open]:bg-surface-sunken">
+                <span className="font-semibold">{question}</span>
                 <ChevronDown
                     className="size-4 shrink-0 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-180"
                     aria-hidden
                 />
             </CollapsibleTrigger>
             <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-none">
-                <p className="px-5 pt-1 pb-5 text-sm leading-relaxed text-muted-foreground">
+                <p className="px-5 pt-1 pb-5 leading-relaxed text-muted-foreground">
                     {answer}
                 </p>
             </CollapsibleContent>
@@ -567,6 +531,7 @@ type FinalCtaSectionProps = {
     href: string;
 };
 
+/** Cierre: una banda con el texto a la izquierda y la acción a la derecha. */
 function FinalCtaSection({
     heading,
     description,
@@ -576,39 +541,31 @@ function FinalCtaSection({
     return (
         <section
             aria-labelledby="developers-final-cta-heading"
-            className="rounded-surface border bg-surface-sunken px-6 py-12 text-center md:px-12 md:py-14"
+            className="flex flex-col gap-5 rounded-surface border bg-surface-sunken px-6 py-7 sm:flex-row sm:items-center sm:justify-between md:px-8"
         >
-            <div className="relative z-10 mx-auto max-w-2xl space-y-4">
-                <CheckCircle2
-                    aria-hidden
-                    className="mx-auto size-10 text-muted-foreground"
-                />
+            <div className="space-y-1">
                 <h2
                     id="developers-final-cta-heading"
-                    className="text-2xl font-extrabold tracking-tight text-balance md:text-3xl"
+                    className="text-xl font-extrabold tracking-tight md:text-2xl"
                 >
                     {heading}
                 </h2>
-                <p className="text-sm text-muted-foreground md:text-base">
-                    {description}
-                </p>
-                <div className="pt-2">
-                    <Button
-                        asChild
-                        id="btn-developers-landing-final-cta"
-                        size="lg"
-                        className="group/cta"
-                    >
-                        <Link href={href}>
-                            {cta}
-                            <ArrowRight
-                                className="ml-2 size-4 transition-transform group-hover/cta:translate-x-0.5"
-                                aria-hidden
-                            />
-                        </Link>
-                    </Button>
-                </div>
+                <p className="text-muted-foreground">{description}</p>
             </div>
+            <Button
+                asChild
+                id="btn-developers-landing-final-cta"
+                size="lg"
+                className="group/cta shrink-0"
+            >
+                <Link href={href}>
+                    {cta}
+                    <ArrowRight
+                        className="size-4 transition-transform group-hover/cta:translate-x-0.5"
+                        aria-hidden
+                    />
+                </Link>
+            </Button>
         </section>
     );
 }

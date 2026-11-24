@@ -87,6 +87,8 @@ dataset('account_pages', [
     'perfil' => '/settings/profile',
     'apariencia' => '/settings/appearance',
     'privacidad de la cuenta' => '/settings/privacy',
+    'contraseña' => '/settings/password',
+    'apps conectadas' => '/settings/connected-apps',
     'apps de desarrollador' => '/developers/dashboard',
     'juego' => '/play/{slug}',
     'admin' => '/admin/dashboard',
@@ -113,6 +115,10 @@ dataset('key_pages', [
     'login' => ['/login', false],
     'panel' => ['/dashboard', true],
     'apariencia' => ['/settings/appearance', true],
+    'perfil' => ['/settings/profile', true],
+    'privacidad de la cuenta' => ['/settings/privacy', true],
+    'desarrolladores' => ['/developers', false],
+    'admin' => ['/admin/dashboard', true],
 ]);
 
 dataset('themes', [
@@ -129,6 +135,16 @@ test('las páginas clave no tienen problemas serios de accesibilidad', function 
 
     $page = visit(str_replace('{slug}', $game->slug, $path));
     $page = $dark ? $page->inDarkMode() : $page;
+
+    // Espera a que acaben las entradas animadas (el aviso de cookies aparece
+    // con un fundido): a medio fundido el contraste aún no es el final.
+    $page->assertScript(<<<'JS'
+        Promise.all(
+            document.getAnimations()
+                .filter((animation) => animation.effect?.getTiming().iterations !== Infinity)
+                .map((animation) => animation.finished.catch(() => null)),
+        ).then(() => true)
+    JS, true);
 
     $page->assertNoAccessibilityIssues();
 })->with('key_pages')->with('themes');

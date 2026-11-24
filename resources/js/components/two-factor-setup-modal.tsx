@@ -18,33 +18,18 @@ import {
     InputOTPSlot,
 } from '@/components/ui/input-otp';
 import { Spinner } from '@/components/ui/spinner';
-import { useAppearance } from '@/hooks/use-appearance';
 import { useClipboard } from '@/hooks/use-clipboard';
+import { useTranslation } from '@/hooks/use-translation';
 import { OTP_MAX_LENGTH } from '@/hooks/use-two-factor-auth';
 import { confirm } from '@/routes/two-factor';
 
-function GridScanIcon() {
+function ScanIcon() {
     return (
-        <div className="mb-3 rounded-full border border-border bg-card p-0.5 shadow-sm">
-            <div className="relative overflow-hidden rounded-full border border-border bg-muted p-2.5">
-                <div className="absolute inset-0 grid grid-cols-5 opacity-50">
-                    {Array.from({ length: 5 }, (_, i) => (
-                        <div
-                            key={`col-${i + 1}`}
-                            className="border-r border-border last:border-r-0"
-                        />
-                    ))}
-                </div>
-                <div className="absolute inset-0 grid grid-rows-5 opacity-50">
-                    {Array.from({ length: 5 }, (_, i) => (
-                        <div
-                            key={`row-${i + 1}`}
-                            className="border-b border-border last:border-b-0"
-                        />
-                    ))}
-                </div>
-                <ScanLine className="relative z-20 size-6 text-foreground" />
-            </div>
+        <div
+            aria-hidden="true"
+            className="mb-2 flex size-12 items-center justify-center rounded-control border border-border-strong bg-key-light shadow-[0_2px_0_0_var(--key-light-edge)]"
+        >
+            <ScanLine className="size-6 text-foreground" />
         </div>
     );
 }
@@ -62,9 +47,10 @@ function TwoFactorSetupStep({
     onNextStep: () => void;
     errors: string[];
 }) {
-    const { resolvedAppearance } = useAppearance();
+    const { t } = useTranslation();
     const [copiedText, copy] = useClipboard();
-    const IconComponent = copiedText === manualSetupKey ? Check : Copy;
+    const copied = copiedText === manualSetupKey;
+    const IconComponent = copied ? Check : Copy;
 
     return (
         <>
@@ -73,19 +59,13 @@ function TwoFactorSetupStep({
             ) : (
                 <>
                     <div className="mx-auto flex max-w-md overflow-hidden">
-                        <div className="mx-auto aspect-square w-64 rounded-lg border border-border">
+                        <div className="mx-auto aspect-square w-64 rounded-surface border bg-surface-sunken">
                             <div className="z-10 flex h-full w-full items-center justify-center p-5">
                                 {qrCodeSvg ? (
                                     <div
                                         className="aspect-square w-full rounded-control bg-on-media p-2 [&_svg]:size-full"
                                         dangerouslySetInnerHTML={{
                                             __html: qrCodeSvg,
-                                        }}
-                                        style={{
-                                            filter:
-                                                resolvedAppearance === 'dark'
-                                                    ? 'invert(1) brightness(1.5)'
-                                                    : undefined,
                                         }}
                                     />
                                 ) : (
@@ -103,15 +83,15 @@ function TwoFactorSetupStep({
 
                     <div className="relative flex w-full items-center justify-center">
                         <div className="absolute inset-0 top-1/2 h-px w-full bg-border" />
-                        <span className="relative bg-card px-2 py-1">
-                            or, enter the code manually
+                        <span className="relative bg-surface-2 px-2 py-1 text-sm text-muted-foreground">
+                            {t('two_factor.setup.manual')}
                         </span>
                     </div>
 
                     <div className="flex w-full space-x-2">
-                        <div className="flex w-full items-stretch overflow-hidden rounded-xl border border-border">
+                        <div className="flex w-full items-stretch overflow-hidden rounded-control border border-border-strong">
                             {!manualSetupKey ? (
-                                <div className="flex h-full w-full items-center justify-center bg-muted p-3">
+                                <div className="flex h-full w-full items-center justify-center bg-surface-sunken p-3">
                                     <Spinner />
                                 </div>
                             ) : (
@@ -120,13 +100,25 @@ function TwoFactorSetupStep({
                                         type="text"
                                         readOnly
                                         value={manualSetupKey}
-                                        className="h-full w-full bg-background p-3 text-foreground outline-none"
+                                        aria-label={t(
+                                            'two_factor.setup.key_label',
+                                        )}
+                                        className="h-full w-full bg-surface-1 p-3 font-mono text-sm text-foreground outline-none focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring"
                                     />
                                     <button
+                                        type="button"
                                         onClick={() => copy(manualSetupKey)}
-                                        className="border-l border-border px-3 hover:bg-muted"
+                                        aria-label={
+                                            copied
+                                                ? t('two_factor.setup.copied')
+                                                : t('two_factor.setup.copy')
+                                        }
+                                        className="border-l border-border-strong bg-key-light px-3 transition-colors hover:bg-surface-hover focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring"
                                     >
-                                        <IconComponent className="w-4" />
+                                        <IconComponent
+                                            className="size-4"
+                                            aria-hidden="true"
+                                        />
                                     </button>
                                 </>
                             )}
@@ -145,6 +137,7 @@ function TwoFactorVerificationStep({
     onClose: () => void;
     onBack: () => void;
 }) {
+    const { t } = useTranslation();
     const [code, setCode] = useState<string>('');
     const pinInputContainerRef = useRef<HTMLDivElement>(null);
 
@@ -204,12 +197,12 @@ function TwoFactorVerificationStep({
                         <div className="flex w-full space-x-5">
                             <Button
                                 type="button"
-                                variant="outline"
+                                variant="secondary"
                                 className="flex-1"
                                 onClick={onBack}
                                 disabled={processing}
                             >
-                                Back
+                                {t('two_factor.setup.back')}
                             </Button>
                             <Button
                                 type="submit"
@@ -218,7 +211,7 @@ function TwoFactorVerificationStep({
                                     processing || code.length < OTP_MAX_LENGTH
                                 }
                             >
-                                Confirm
+                                {t('two_factor.setup.confirm')}
                             </Button>
                         </div>
                     </div>
@@ -251,6 +244,7 @@ export default function TwoFactorSetupModal({
     fetchSetupData,
     errors,
 }: Props) {
+    const { t } = useTranslation();
     const [showVerificationStep, setShowVerificationStep] =
         useState<boolean>(false);
 
@@ -261,29 +255,26 @@ export default function TwoFactorSetupModal({
     }>(() => {
         if (twoFactorEnabled) {
             return {
-                title: 'Two-factor authentication enabled',
-                description:
-                    'Two-factor authentication is now enabled. Scan the QR code or enter the setup key in your authenticator app.',
-                buttonText: 'Close',
+                title: t('two_factor.setup.done_title'),
+                description: t('two_factor.setup.done_desc'),
+                buttonText: t('two_factor.setup.close'),
             };
         }
 
         if (showVerificationStep) {
             return {
-                title: 'Verify authentication code',
-                description:
-                    'Enter the 6-digit code from your authenticator app',
-                buttonText: 'Continue',
+                title: t('two_factor.setup.verify_title'),
+                description: t('two_factor.setup.verify_desc'),
+                buttonText: t('two_factor.setup.continue'),
             };
         }
 
         return {
-            title: 'Enable two-factor authentication',
-            description:
-                'To finish enabling two-factor authentication, scan the QR code or enter the setup key in your authenticator app',
-            buttonText: 'Continue',
+            title: t('two_factor.setup.title'),
+            description: t('two_factor.setup.desc'),
+            buttonText: t('two_factor.setup.continue'),
         };
-    }, [twoFactorEnabled, showVerificationStep]);
+    }, [twoFactorEnabled, showVerificationStep, t]);
 
     const handleModalNextStep = useCallback(() => {
         if (requiresConfirmation) {
@@ -318,7 +309,7 @@ export default function TwoFactorSetupModal({
         <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
             <DialogContent className="sm:max-w-md">
                 <DialogHeader className="flex items-center justify-center">
-                    <GridScanIcon />
+                    <ScanIcon />
                     <DialogTitle>{modalConfig.title}</DialogTitle>
                     <DialogDescription className="text-center">
                         {modalConfig.description}

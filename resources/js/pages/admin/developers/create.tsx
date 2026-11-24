@@ -44,7 +44,7 @@ export default function AdminDevelopersCreate() {
                 </Button>
 
                 <header>
-                    <h1 className="text-2xl font-semibold tracking-tight">
+                    <h1 className="text-2xl font-extrabold tracking-tight">
                         {t('admin.developers.create.title')}
                     </h1>
                     <p className="mt-1 text-sm text-muted-foreground">
@@ -54,7 +54,7 @@ export default function AdminDevelopersCreate() {
 
                 <form
                     onSubmit={handleSubmit}
-                    className="max-w-lg space-y-6 rounded-2xl border border-border bg-card p-6 shadow-sm"
+                    className="max-w-lg space-y-6 rounded-surface border bg-card p-6 shadow-surface"
                 >
                     <div className="space-y-2">
                         <Label htmlFor="name">

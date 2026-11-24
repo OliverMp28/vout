@@ -1,7 +1,7 @@
 import { Form, Head, usePage } from '@inertiajs/react';
-import { ExternalLink, KeyRound, ShieldCheck, Trash2 } from 'lucide-react';
+import { ExternalLink, ShieldCheck, Trash2 } from 'lucide-react';
 import ConnectedAppsController from '@/actions/App/Http/Controllers/Settings/ConnectedAppsController';
-import Heading from '@/components/heading';
+import { SectionPanel } from '@/components/section-panel';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -72,90 +72,90 @@ export default function ConnectedApps({ grants }: Props) {
             <h1 className="sr-only">{t('connected_apps.title')}</h1>
 
             <SettingsLayout>
-                <div className="space-y-6">
-                    <div className="rounded-xl border border-border/60 bg-card p-6 shadow-sm md:p-8">
-                        <Heading
-                            title={t('connected_apps.title')}
-                            description={t('connected_apps.description')}
-                        />
+                <SectionPanel
+                    title={t('connected_apps.title')}
+                    description={t('connected_apps.description')}
+                >
+                    {grants.length === 0 ? (
+                        <div
+                            className="flex flex-col items-center gap-2 rounded-surface border border-dashed border-border-strong px-6 py-10 text-center"
+                            data-test="connected-apps-empty"
+                        >
+                            <ShieldCheck
+                                className="size-8 text-muted-foreground"
+                                aria-hidden="true"
+                            />
+                            <p className="font-semibold">
+                                {t('connected_apps.empty_title')}
+                            </p>
+                            <p className="max-w-sm text-sm text-muted-foreground">
+                                {t('connected_apps.empty_body')}
+                            </p>
+                        </div>
+                    ) : (
+                        <ul
+                            className="divide-y"
+                            data-test="connected-apps-list"
+                        >
+                            {grants.map((grant) => {
+                                const appName =
+                                    grant.app.name ?? 'OAuth client';
 
-                        {grants.length === 0 ? (
-                            <div
-                                className="mt-6 flex flex-col items-center gap-3 rounded-lg border border-dashed border-border/60 p-10 text-center"
-                                data-test="connected-apps-empty"
-                            >
-                                <ShieldCheck
-                                    className="size-10 text-muted-foreground"
-                                    aria-hidden="true"
-                                />
-                                <p className="text-base font-medium">
-                                    {t('connected_apps.empty_title')}
-                                </p>
-                                <p className="max-w-sm text-sm text-muted-foreground">
-                                    {t('connected_apps.empty_body')}
-                                </p>
-                            </div>
-                        ) : (
-                            <ul
-                                className="mt-6 space-y-4"
-                                data-test="connected-apps-list"
-                            >
-                                {grants.map((grant) => (
+                                return (
                                     <li
                                         key={grant.id}
-                                        className="rounded-lg border border-border/60 bg-background/60 p-5 transition-[color,background-color,border-color,box-shadow,transform,opacity] duration-200 hover:shadow-md"
+                                        className="grid gap-4 py-5 first:pt-0 last:pb-0"
                                         data-test={`connected-apps-item-${grant.id}`}
                                     >
                                         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                                            <div className="space-y-2">
-                                                <div className="flex items-center gap-3">
-                                                    <span className="flex size-9 items-center justify-center rounded-md bg-surface-sunken text-primary">
-                                                        <KeyRound
-                                                            className="size-4"
-                                                            aria-hidden="true"
-                                                        />
-                                                    </span>
-                                                    <div>
-                                                        <p className="text-base font-medium">
-                                                            {grant.app.name ??
-                                                                'OAuth client'}
-                                                        </p>
-                                                        <p className="text-xs text-muted-foreground">
-                                                            {t(
-                                                                'connected_apps.granted_at',
-                                                                {
-                                                                    date: formatDate(
-                                                                        grant.granted_at,
-                                                                        locale,
-                                                                    ),
-                                                                },
-                                                            )}
-                                                        </p>
-                                                    </div>
-                                                </div>
-
-                                                {grant.app.app_url && (
-                                                    <a
-                                                        href={grant.app.app_url}
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        className="inline-flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
-                                                    >
-                                                        <ExternalLink
-                                                            className="size-3"
-                                                            aria-hidden="true"
-                                                        />
+                                            <div className="flex min-w-0 items-start gap-3">
+                                                <span
+                                                    aria-hidden="true"
+                                                    className="flex size-10 shrink-0 items-center justify-center rounded-control border border-border-strong bg-key-light font-pixel text-xl leading-none shadow-[0_2px_0_0_var(--key-light-edge)]"
+                                                >
+                                                    {appName.charAt(0)}
+                                                </span>
+                                                <div className="min-w-0 space-y-0.5">
+                                                    <p className="font-bold">
+                                                        {appName}
+                                                    </p>
+                                                    <p className="text-sm text-muted-foreground">
                                                         {t(
-                                                            'connected_apps.visit_app',
+                                                            'connected_apps.granted_at',
+                                                            {
+                                                                date: formatDate(
+                                                                    grant.granted_at,
+                                                                    locale,
+                                                                ),
+                                                            },
                                                         )}
-                                                    </a>
-                                                )}
+                                                    </p>
+                                                    {grant.app.app_url && (
+                                                        <a
+                                                            href={
+                                                                grant.app
+                                                                    .app_url
+                                                            }
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="inline-flex items-center gap-1 rounded-xs text-sm font-semibold underline decoration-border-strong underline-offset-4 hover:decoration-signal-strong"
+                                                        >
+                                                            {t(
+                                                                'connected_apps.visit_app',
+                                                            )}
+                                                            <ExternalLink
+                                                                className="size-3.5"
+                                                                aria-hidden="true"
+                                                            />
+                                                        </a>
+                                                    )}
+                                                </div>
                                             </div>
 
                                             <Dialog>
                                                 <DialogTrigger asChild>
                                                     <Button
-                                                        variant="destructive"
+                                                        variant="secondary"
                                                         size="sm"
                                                         data-test={`revoke-grant-${grant.id}`}
                                                     >
@@ -172,12 +172,7 @@ export default function ConnectedApps({ grants }: Props) {
                                                     <DialogTitle>
                                                         {t(
                                                             'connected_apps.revoke_confirm_title',
-                                                            {
-                                                                app:
-                                                                    grant.app
-                                                                        .name ??
-                                                                    'OAuth client',
-                                                            },
+                                                            { app: appName },
                                                         )}
                                                     </DialogTitle>
                                                     <DialogDescription>
@@ -224,30 +219,28 @@ export default function ConnectedApps({ grants }: Props) {
                                             </Dialog>
                                         </div>
 
-                                        <div className="mt-4 border-t border-border/40 pt-4">
-                                            <p className="mb-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                                        <div className="space-y-2 sm:pl-13">
+                                            <p className="font-pixel-label text-base leading-none text-muted-foreground">
                                                 {t(
                                                     'connected_apps.scopes_label',
                                                 )}
                                             </p>
-                                            <div className="flex flex-wrap gap-2">
+                                            <ul className="flex flex-wrap gap-2">
                                                 {grant.scopes.map((scope) => (
-                                                    <Badge
-                                                        key={scope.id}
-                                                        variant="secondary"
-                                                        className="font-normal"
-                                                    >
-                                                        {scope.description}
-                                                    </Badge>
+                                                    <li key={scope.id}>
+                                                        <Badge variant="secondary">
+                                                            {scope.description}
+                                                        </Badge>
+                                                    </li>
                                                 ))}
-                                            </div>
+                                            </ul>
                                         </div>
                                     </li>
-                                ))}
-                            </ul>
-                        )}
-                    </div>
-                </div>
+                                );
+                            })}
+                        </ul>
+                    )}
+                </SectionPanel>
             </SettingsLayout>
         </AppLayout>
     );

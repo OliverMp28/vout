@@ -51,7 +51,7 @@ export default function AdminDevelopersEdit({
     developer,
     reassign_candidates,
 }: Props) {
-    const { t } = useTranslation();
+    const { t, locale } = useTranslation();
 
     const {
         data,
@@ -90,7 +90,7 @@ export default function AdminDevelopersEdit({
 
                 <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div>
-                        <h1 className="text-2xl font-semibold tracking-tight">
+                        <h1 className="text-2xl font-extrabold tracking-tight">
                             {t('admin.developers.edit.title')}
                         </h1>
                         <p className="mt-1 text-sm text-muted-foreground">
@@ -119,7 +119,7 @@ export default function AdminDevelopersEdit({
                 <div className="grid gap-6 lg:grid-cols-3">
                     <form
                         onSubmit={handleSubmit}
-                        className="space-y-6 rounded-2xl border border-border bg-card p-6 shadow-sm lg:col-span-2"
+                        className="space-y-6 rounded-surface border bg-card p-6 shadow-surface lg:col-span-2"
                     >
                         <div className="space-y-2">
                             <Label htmlFor="name">
@@ -248,7 +248,7 @@ export default function AdminDevelopersEdit({
                                         developer.created_at
                                             ? new Date(
                                                   developer.created_at,
-                                              ).toLocaleString()
+                                              ).toLocaleString(locale)
                                             : '-'
                                     }
                                 />
@@ -260,7 +260,7 @@ export default function AdminDevelopersEdit({
                                         developer.updated_at
                                             ? new Date(
                                                   developer.updated_at,
-                                              ).toLocaleString()
+                                              ).toLocaleString(locale)
                                             : '-'
                                     }
                                 />

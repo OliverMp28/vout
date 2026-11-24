@@ -1,20 +1,7 @@
 import { Head, Link } from '@inertiajs/react';
-import {
-    AppWindow,
-    CheckCircle2,
-    Code2,
-    Gamepad2,
-    History,
-    ScrollText,
-    ShieldAlert,
-    ShieldCheck,
-    Sparkles,
-    Tags,
-    UserCog,
-} from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
+import { CheckCircle2, History } from 'lucide-react';
 import type { ReactNode } from 'react';
-import { MetricCard } from '@/components/admin/metric-card';
+import { MetricCard, MetricGrid } from '@/components/admin/metric-card';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from '@/hooks/use-translation';
 import AdminLayout from '@/layouts/admin-layout';
@@ -32,7 +19,6 @@ type Tone = 'default' | 'primary' | 'success' | 'warning' | 'danger';
 type MetricSpec = {
     key: AdminMetricKey;
     labelKey: string;
-    icon: LucideIcon;
     tone: (value: number) => Tone;
     hintKey?: string;
     action?: ReactNode;
@@ -81,7 +67,6 @@ export default function AdminDashboard({ metrics, recentActivity }: Props) {
         {
             key: 'gamesPending',
             labelKey: 'admin.dashboard.metrics.games_pending',
-            icon: Sparkles,
             tone: (v) => (v > 0 ? 'warning' : 'default'),
             hintKey: 'admin.dashboard.metrics.games_pending_hint',
             action: (
@@ -106,19 +91,16 @@ export default function AdminDashboard({ metrics, recentActivity }: Props) {
         {
             key: 'gamesPublished',
             labelKey: 'admin.dashboard.metrics.games_published',
-            icon: Gamepad2,
             tone: () => 'success',
         },
         {
             key: 'appsActive',
             labelKey: 'admin.dashboard.metrics.apps_active',
-            icon: AppWindow,
             tone: () => 'primary',
         },
         {
             key: 'appsSuspended',
             labelKey: 'admin.dashboard.metrics.apps_suspended',
-            icon: ShieldAlert,
             tone: (v) => (v > 0 ? 'danger' : 'default'),
             action: (
                 <Button
@@ -141,25 +123,21 @@ export default function AdminDashboard({ metrics, recentActivity }: Props) {
         {
             key: 'developersClaimed',
             labelKey: 'admin.dashboard.metrics.developers_claimed',
-            icon: ShieldCheck,
             tone: () => 'default',
         },
         {
             key: 'developersManual',
             labelKey: 'admin.dashboard.metrics.developers_manual',
-            icon: Code2,
             tone: () => 'default',
         },
         {
             key: 'categories',
             labelKey: 'admin.dashboard.metrics.categories',
-            icon: Tags,
             tone: () => 'default',
         },
         {
             key: 'admins',
             labelKey: 'admin.dashboard.metrics.admins',
-            icon: UserCog,
             tone: () => 'default',
         },
     ];
@@ -171,25 +149,22 @@ export default function AdminDashboard({ metrics, recentActivity }: Props) {
             <div className="space-y-8">
                 <header className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
                     <div>
-                        <h1 className="text-2xl font-semibold tracking-tight">
+                        <h1 className="text-2xl font-extrabold tracking-tight">
                             {t('admin.dashboard.title')}
                         </h1>
                         <p className="mt-1 text-sm text-muted-foreground">
                             {t('admin.dashboard.description')}
                         </p>
                     </div>
-                    <Button asChild variant="outline" size="sm">
+                    <Button asChild variant="secondary" size="sm">
                         <Link href={auditRoutes.index().url} prefetch>
-                            <History className="mr-2 size-4" aria-hidden />
+                            <History className="size-4" aria-hidden />
                             {t('admin.dashboard.view_audit')}
                         </Link>
                     </Button>
                 </header>
 
-                <section
-                    aria-label={t('admin.dashboard.metrics_heading')}
-                    className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4"
-                >
+                <MetricGrid label={t('admin.dashboard.metrics_heading')}>
                     {specs.map((spec) => {
                         const metric = metrics[spec.key];
 
@@ -198,7 +173,6 @@ export default function AdminDashboard({ metrics, recentActivity }: Props) {
                                 key={spec.key}
                                 label={t(spec.labelKey)}
                                 value={metric.value}
-                                icon={spec.icon}
                                 tone={spec.tone(metric.value)}
                                 hint={
                                     spec.hintKey && metric.value > 0
@@ -211,22 +185,19 @@ export default function AdminDashboard({ metrics, recentActivity }: Props) {
                             />
                         );
                     })}
-                </section>
+                </MetricGrid>
 
                 <section
-                    aria-label={t('admin.dashboard.activity.title')}
-                    className="rounded-2xl border border-border/60 bg-card shadow-sm"
+                    aria-labelledby="admin-activity-title"
+                    className="rounded-surface border bg-card shadow-surface"
                 >
-                    <header className="flex items-center justify-between gap-3 border-b border-border/60 px-6 py-4">
-                        <div className="flex items-center gap-2">
-                            <ScrollText
-                                className="size-4 text-muted-foreground"
-                                aria-hidden
-                            />
-                            <h2 className="text-sm font-semibold tracking-tight">
-                                {t('admin.dashboard.activity.title')}
-                            </h2>
-                        </div>
+                    <header className="flex items-center justify-between gap-3 border-b px-5 py-3 md:px-6">
+                        <h2
+                            id="admin-activity-title"
+                            className="font-bold tracking-tight"
+                        >
+                            {t('admin.dashboard.activity.title')}
+                        </h2>
                         <Button asChild variant="ghost" size="sm">
                             <Link href={auditRoutes.index().url} prefetch>
                                 {t('admin.dashboard.activity.view_all')}
@@ -237,7 +208,7 @@ export default function AdminDashboard({ metrics, recentActivity }: Props) {
                     {recentActivity.length === 0 ? (
                         <div className="flex flex-col items-center justify-center gap-2 px-6 py-10 text-center">
                             <CheckCircle2
-                                className="size-8 text-muted-foreground/40"
+                                className="size-8 text-muted-foreground"
                                 aria-hidden
                             />
                             <p className="text-sm text-muted-foreground">
@@ -245,18 +216,12 @@ export default function AdminDashboard({ metrics, recentActivity }: Props) {
                             </p>
                         </div>
                     ) : (
-                        <ol className="divide-y divide-border/60">
+                        <ol className="divide-y">
                             {recentActivity.map((entry) => (
                                 <li
                                     key={entry.id}
-                                    className="flex items-start gap-3 px-6 py-3 transition-colors hover:bg-muted/30"
+                                    className="flex items-start gap-3 px-5 py-3 md:px-6"
                                 >
-                                    <span
-                                        className="mt-1 inline-flex size-7 shrink-0 items-center justify-center rounded-full bg-surface-sunken text-primary"
-                                        aria-hidden
-                                    >
-                                        <ScrollText className="size-3.5" />
-                                    </span>
                                     <div className="min-w-0 flex-1 space-y-0.5">
                                         <p className="text-sm">
                                             <span className="font-medium">
@@ -270,7 +235,7 @@ export default function AdminDashboard({ metrics, recentActivity }: Props) {
                                                     'admin.dashboard.activity.performed',
                                                 )}
                                             </span>{' '}
-                                            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-[11px]">
+                                            <code className="rounded-xs border bg-surface-sunken px-1.5 py-0.5 font-mono text-xs">
                                                 {entry.action}
                                             </code>
                                         </p>
