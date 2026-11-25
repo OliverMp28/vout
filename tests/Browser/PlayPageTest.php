@@ -326,8 +326,10 @@ test('un invitado prueba los gestos sin cuenta y se le ofrece entrar para guarda
     $page->assertPresent('[data-play-guest-notice="guest"]')
         ->click('#play-panel-trigger')
         ->assertVisible('#play-engine-toggle')
-        ->assertSee('Entrar para guardar tus controles')
-        ->assertDontSee('Configurar en Ajustes')
+        // Sin depender del idioma (la CI arranca en inglés): el enlace del
+        // panel lleva a entrar y vuelve al juego, no a Ajustes.
+        ->assertPresent('#play-control-panel a[href$="/play/'.$game->slug.'/sign-in"]')
+        ->assertMissing('#play-control-panel a[href$="/settings/appearance"]')
         ->assertNoJavaScriptErrors();
 
     // Abrir el panel no guarda nada: no hay cuenta.

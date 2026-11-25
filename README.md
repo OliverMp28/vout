@@ -1,58 +1,94 @@
 # Vout
 
-**A single account for a family of browser games, and a way to play them with your face.**
+**One account for a whole family of browser games, and a way to play them with your face.**
 
 [Leer en español](README.es.md)
 
-![Playing a game in Vout with facial gestures](docs/media/demo.gif)
+![Vout's home page: featured games, categories and games made for gestures](docs/media/portal.png)
 
-Vout is three things that work together:
+## The idea
 
-- **An identity provider.** You create one Vout account and use it to sign in to every game in the ecosystem. Vout is a full OAuth2 server (Authorization Code + PKCE) that issues signed JWTs, so each game checks who you are without ever touching Vout's database.
-- **A game portal.** A catalog of browser games you open and play straight away, with favorites, a library and "continue playing".
-- **Hands-free control.** Turn on your camera and your face becomes the controller: raise your eyebrows to jump, open your mouth to duck, turn your head to move or to steer a cursor. Detection runs entirely in your browser. The camera image never leaves your computer.
+Most web games assume you have two working hands and a keyboard. Many people don't: people with reduced mobility, people recovering from an injury, people who simply can't hold a controller for long.
 
-The hands-free part is the reason the project exists. Many people can't use a keyboard or a gamepad comfortably, and most web games give them no other option.
+Vout lets them play anyway. You turn on your webcam and your face becomes the controller. You raise your eyebrows to jump, open your mouth to duck and turn your head to move. The game receives ordinary key presses, so it doesn't even need to know a camera is involved.
 
-## Try it in 30 seconds
+Around that, Vout solves a second problem every small game studio has: accounts. Instead of each game building its own sign-up, password reset and email checks, players create **one Vout account** and use it everywhere, the way you'd use "Sign in with Google".
+
+## Highlights
+
+- **Hands-free play in the browser.** Real-time face tracking with no install and no plugin, and the camera image never leaves the player's device.
+- **A real identity provider.** It is a standards-based OAuth2 server with signed tokens that any game can verify on its own.
+- **Games from anywhere.** Third-party games keep running on their own domains. Vout embeds them and talks to them through a small, documented protocol.
+- **Built to be trusted.** Accessibility is checked by automated tests, personal data is kept to a minimum and every layer is tested, from units to a real browser.
+
+## Try it
 
 1. Open a game whose page says you can play without an account. You don't need to sign up.
 2. Press **"Face control"** and then **"Try it now"**. Your browser asks for camera access.
-3. Look at the camera and raise your eyebrows. The game receives it as a key press.
+3. Look at the camera and raise your eyebrows. The game reacts as if you'd pressed a key.
 
-If you sign in, the game recognizes you and saves your progress. Your gesture settings and sensitivity are saved too.
+If you sign in, the game recognizes you and keeps your progress. Your gesture settings and sensitivity are saved to your account.
 
-## What's interesting under the hood
+## How it works
 
-**OAuth2 / OpenID-style identity provider** (Laravel Passport)
+### Identity: an OAuth2 server, not just a login form
 
-- Authorization Code with PKCE for external games, RS256-signed JWTs with a `kid`, a public JWKS endpoint and `/.well-known/openid-configuration` discovery.
-- Games validate tokens statelessly (signature, `iss`, `aud`, `exp`). They never query Vout's database.
-- Per-user consent that the user can review and revoke, with scopes (`user:read`, `user:email`, `games:read`, `games:write`).
-- Two-factor authentication, Google sign-in and email verification.
+Vout is built on Laravel Passport and follows the same standards as the big identity providers:
 
-**Secure identity inside an iframe**
+- **Authorization Code with PKCE** for games that sign players in on their own site ("Sign in with Vout").
+- **RS256-signed JWTs** with a public key set and OpenID-style discovery. Games verify tokens themselves (signature, issuer, audience, expiry) and never need access to Vout's database. This keeps the games decoupled and keeps Vout's data where it is.
+- **Scoped, revocable consent.** A game only gets what the player approved, and the player can withdraw it at any time from their settings.
+- Two-factor authentication, Google sign-in and email verification for the accounts themselves.
 
-Games run on their own domains inside an iframe, and third-party cookies are increasingly blocked there. The portal and the game talk over `postMessage` (`READY` → `VOUT_AUTH` or `VOUT_GUEST`):
+### Games in an iframe, identity over `postMessage`
 
-- Tokens never travel in a URL.
-- Every message is checked against the game's registered origins, and the portal only sends to the validated origin (never `'*'`).
-- The portal renews the game's token before it expires and tells the game when the session ends (`signed_out`, `revoked`, `unavailable`).
-- Each game declares whether it needs an account: **none** (it never receives the player's identity), **optional** or **required**.
+Inside the portal, games run in an iframe on their own domain. Browsers increasingly block third-party cookies there, so the usual "the game reads its own session" approach doesn't work. Vout uses a handshake instead:
 
-**A gesture engine that keeps up with the game**
+1. The game says it's ready (`READY`).
+2. The portal checks that the message really comes from that game's registered origin and from the iframe it created.
+3. The portal replies with a short-lived token (`VOUT_AUTH`) or, if the player has no account, a guest greeting (`VOUT_GUEST`).
+4. Before the token expires, the portal sends a fresh one. When the session ends, the game is told why.
 
-- [MediaPipe Face Landmarker](https://ai.google.dev/edge/mediapipe/solutions/vision/face_landmarker) runs in a dedicated Web Worker, so detection never blocks the game's rendering. The model and WASM files are served by Vout itself, with no third-party CDN.
-- Measured on a mid-range laptop (Chrome, Intel UHD 620 integrated GPU): inference p50 ≈ 40 ms, camera frame to result ≈ 75 ms, ≈ 23 frames analyzed per second from a 30 fps camera, and no frame queue building up.
-- Gestures are classified against a neutral face calibrated for each player, with adjustable sensitivity. A held gesture is a held key.
-- Games on another domain can't receive synthetic key events from the portal, so Vout ships a small **dependency-free SDK** (`public/sdk/vout-game.js`) that turns Vout's messages into real `keydown`/`click` events. A game's existing keyboard controls work without changes.
+Tokens never travel in a URL, and the portal only ever sends messages to the origin it verified.
 
-**Accessibility and privacy as requirements**
+Each game also declares how much it needs to know about the player:
 
-- Automated accessibility checks (axe) on the key pages in light and dark mode, plus a test that checks the contrast of every color token (WCAG AA).
-- The [Atkinson Hyperlegible](https://www.brailleinstitute.org/freefont/) typeface, designed by the Braille Institute for low-vision readers, self-hosted.
-- The camera only turns on after an explicit action, pauses when the tab is hidden and switches off after a minute away. Only numeric settings are stored, never images or facial data. This follows the guidance of Spain's data protection authority (AEPD).
-- The whole interface is translated into Spanish and English.
+- **No account:** the game never receives the player's identity.
+- **Optional account:** anyone can play; signed-in players are recognized.
+- **Account required.**
+
+The portal enforces the choice, so a game that doesn't need personal data never gets it.
+
+### The gesture engine
+
+- **On-device vision.** Google's [MediaPipe Face Landmarker](https://ai.google.dev/edge/mediapipe/solutions/vision/face_landmarker) runs in a **dedicated Web Worker**, so detecting gestures never steals time from the game's rendering. The model and runtime are served by Vout itself, without a third-party CDN.
+- **Measured, not guessed.** The engine reports its own timings at every stage of the pipeline. On a mid-range laptop with an integrated GPU (Intel UHD 620), inference takes about **40 ms** (median) and the whole path from camera frame to detected gesture about **75 ms**, with no backlog of frames.
+- **Calibrated for each player.** Gestures are measured against the player's own neutral face, with adjustable sensitivity, because faces and mobility vary a lot. A held gesture behaves like a held key.
+- **A tiny SDK for game developers.** For security reasons, browsers don't let one site type into another site's page. Vout's dependency-free SDK runs inside the game and turns the portal's messages into real keyboard and mouse events. A game's existing controls work unchanged; integrating it takes two lines.
+
+## Security and privacy by design
+
+- **The camera image stays on the device.** Only the detected action (for example, "jump") leaves the vision worker. Vout stores numeric settings such as sensitivity, never images or facial data. This follows the guidance of Spain's data protection authority (AEPD).
+- **The camera only turns on after an explicit action.** It pauses when the tab is hidden and switches off after a minute away.
+- **Least privilege everywhere:** short-lived tokens, scopes, per-game consent, strict origin checks, CSRF protection and rate limiting on sensitive endpoints.
+- **Minimal cookies:** only the ones the site needs to work, plus one optional preference. There are no ad trackers and no third-party analytics.
+
+## Accessibility
+
+Accessibility is a requirement here, not a feature:
+
+- Automated **axe** audits run on the key pages, in light and dark mode.
+- A test checks the **contrast of every color** in the theme against WCAG AA.
+- The interface uses **Atkinson Hyperlegible**, a typeface the Braille Institute designed for low-vision readers. It is self-hosted, with no external font requests.
+- Everything works with the keyboard and has a visible focus indicator, and the interface is available in Spanish and English.
+
+## Quality
+
+- **800+ PHP tests:** unit, integration and **real-browser tests** (Pest 4 + Playwright). The browser tests play stub games on a different origin, check the whole handshake and run the actual vision model against a synthetic camera.
+- **~380 JavaScript tests** for the gesture engine, the classifier (using recorded gesture data) and the design system.
+- Linting, formatting and the full test suite run in GitHub Actions on every push to `main`.
+
+![The developer portal: "Sign in with Vout" and gesture control for your game](docs/media/developers.png)
 
 ## Architecture
 
@@ -64,14 +100,14 @@ flowchart LR
         Game["Game iframe<br/>(other domain)"]
         Camera[(Camera)]
         Camera --> Worker
-        Worker -- "gestures" --> Portal
-        Portal -- "VOUT_AUTH / VOUT_GUEST<br/>VOUT_KEY / VOUT_ACTION" --> Game
-        Game -- "READY / EXIT" --> Portal
+        Worker -- "gestures only" --> Portal
+        Portal -- "identity or guest,<br/>keys and actions" --> Game
+        Game -- "ready / exit" --> Portal
     end
 
-    Portal -- "session (Sanctum cookies)" --> Vout["Vout server<br/>(Laravel 13 + Passport)"]
+    Portal -- "web session" --> Vout["Vout server<br/>(Laravel + Passport)"]
     GameServer["Game backend"] -- "OAuth2 + PKCE" --> Vout
-    GameServer -. "validates JWT with JWKS<br/>(no DB access)" .-> Vout
+    GameServer -. "verifies JWT signature<br/>(no database access)" .-> Vout
     Game --> GameServer
 ```
 
@@ -80,10 +116,10 @@ flowchart LR
 | Layer | Technology |
 | :--- | :--- |
 | Backend | PHP 8.5, Laravel 13, Laravel Passport (OAuth2), Fortify, Socialite, MariaDB |
-| Frontend | React 19, Inertia.js 2, TypeScript, Tailwind CSS 4, Wayfinder (typed routes) |
+| Frontend | React 19, Inertia.js 2, TypeScript, Tailwind CSS 4, Wayfinder (type-safe routes) |
 | Computer vision | MediaPipe Tasks Vision (Face Landmarker) in a Web Worker |
-| Tests | Pest 4 (unit, feature and browser tests with Playwright), Bun test |
-| Tooling | Laravel Sail (Docker), Bun, ESLint, Prettier, Pint, GitHub Actions |
+| Testing | Pest 4 (unit, feature and browser tests with Playwright), Bun test |
+| Tooling | Docker (Laravel Sail), Bun, ESLint, Prettier, Pint, GitHub Actions |
 
 ## Running it locally
 
@@ -101,33 +137,32 @@ vendor/bin/sail bun install
 vendor/bin/sail bun run build
 ```
 
-Open <http://localhost> and sign in with `test@example.com` / `password`. Google sign-in needs `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` in `.env`.
+Then open <http://localhost> and create an account. Google sign-in is optional and needs your own OAuth credentials in `.env`. For development, `vendor/bin/sail bun run dev` reloads changes as you save.
 
-For development, use `vendor/bin/sail bun run dev` to get hot reload.
-
-## Tests
+To run the tests:
 
 ```bash
-vendor/bin/sail artisan test --compact   # PHP: unit, feature and browser tests
-vendor/bin/sail bun run test:js          # gesture engine and design tests
-vendor/bin/sail bun run lint:check && vendor/bin/sail bun run format:check
+vendor/bin/sail artisan test --compact
+vendor/bin/sail bun run test:js
 ```
-
-The browser tests drive a real Chromium: they play stub games on another origin, check the full handshake, and run MediaPipe against a synthetic camera.
 
 ## Adding a game
 
-Any web game that can run in an iframe can join the catalog. The [integration guide](docs/integration-guide.en.md) covers registering an app, signing users in with "Sign in with Vout", validating tokens, the iframe protocol and the SDK. The fastest path is two lines:
+Any web game that can run in an iframe can join the catalog. The [integration guide](docs/integration-guide.en.md) covers "Sign in with Vout", verifying tokens, the iframe protocol and the SDK. The quickest start:
 
 ```html
-<script src="https://YOUR-VOUT/sdk/vout-game.js"></script>
+<script src="https://YOUR-VOUT-DOMAIN/sdk/vout-game.js"></script>
 <script>
-    VoutGame.connect({ portalOrigin: 'https://YOUR-VOUT', onAuth(session) {}, onGuest() {} });
+    VoutGame.connect({
+        portalOrigin: 'https://YOUR-VOUT-DOMAIN',
+        onAuth(session) { /* signed-in player: send session.token to your backend */ },
+        onGuest() { /* playing without an account */ },
+    });
 </script>
 ```
 
-Daino, a separate project, is a game that uses Vout as its identity provider, both on its own site and embedded in the portal.
+**Daino**, a separate project, is a game built this way. It uses Vout to sign players in on its own site and inside the portal.
 
 ## Author
 
-Built by [Oliver](https://github.com/OliverMp28).
+Designed and built by [Oliver](https://github.com/OliverMp28): product, backend, frontend, computer vision and tests.
