@@ -138,7 +138,7 @@ test('quien usa la cámara a veces tiene el motor preparado al cargar el juego y
     useSyntheticCamera($page, 30);
 
     // Sin pulsar nada: primero el juego, después el motor (sin cámara).
-    expect(waitForGameFrame($page, 'handshakeStatus', ['authenticated']))->toBe('authenticated')
+    expect(waitForGameFrame($page, 'handshakeStatus', ['connected']))->toBe('connected')
         ->and(waitForGameFrame($page, 'engineRuntime', ['loading', 'ready']))->toBeIn(['loading', 'ready']);
 
     $page->click('#play-engine-toggle');
@@ -172,7 +172,7 @@ test('quien no usa la cámara no prepara nada hasta pulsar', function (): void {
 
     useSyntheticCamera($page, 30);
 
-    expect(waitForGameFrame($page, 'handshakeStatus', ['authenticated']))->toBe('authenticated');
+    expect(waitForGameFrame($page, 'handshakeStatus', ['connected']))->toBe('connected');
 
     // Más que el tiempo que esperaría la precarga (navegador libre, 2 s).
     $page->script('new Promise((resolve) => setTimeout(resolve, 3000))');

@@ -17,6 +17,7 @@
  * | iframe → Vout   | EXIT         | Juego (el usuario quiere salir)      |
  * | iframe → Vout   | GAME_STATE   | Juego (futuro)                       |
  * | Vout → iframe   | VOUT_AUTH    | Portal (tras READY y en cada renovación) |
+ * | Vout → iframe   | VOUT_GUEST   | Portal (tras READY, si no hay identidad que dar) |
  * | Vout → iframe   | VOUT_SESSION_END | Portal (la sesión de juego terminó) |
  * | Vout → iframe   | VOUT_ACTION  | ActionDispatcher (empieza una acción) |
  * | Vout → iframe   | VOUT_ACTION_END | ActionDispatcher (termina la acción) |
@@ -75,6 +76,23 @@ export type VoutAuthMessage = {
      * modo de depuración. La URL del iframe no cambia: el aviso viaja aquí
      * para no meter parámetros de la URL del portal en la del juego.
      */
+    debug?: true;
+};
+
+/**
+ * Respuesta al READY cuando el juego no va a recibir identidad: juega un
+ * invitado (o una cuenta sin el email confirmado) en un juego de cuenta
+ * opcional, o el juego no usa la cuenta de Vout. Confirma la conexión (el
+ * juego deja de repetir READY) y los controles por gestos llegan igual.
+ *
+ * Nunca lleva datos del jugador. Si después entra con su cuenta (el botón
+ * "Entrar" de la página de juego), vuelve a un iframe recién cargado que
+ * recibe `VOUT_AUTH`: dentro de una misma carga no se pasa de invitado a
+ * jugador con cuenta.
+ */
+export type VoutGuestMessage = {
+    type: 'VOUT_GUEST';
+    /** Igual que en `VoutAuthMessage`: el usuario pidió el modo de depuración. */
     debug?: true;
 };
 
@@ -178,6 +196,7 @@ export type VoutCursorMessage = {
 
 export type VoutToGameMessage =
     | VoutAuthMessage
+    | VoutGuestMessage
     | VoutSessionEndMessage
     | VoutActionMessage
     | VoutActionEndMessage
@@ -232,13 +251,14 @@ export type GameToVoutMessage =
 
 /**
  * - `waiting`        → iframe aún no envió READY.
- * - `ready`          → READY recibido y validado, a punto de enviar AUTH.
- * - `authenticated`  → AUTH enviado correctamente, sesión activa.
- * - `error`          → fallo en validación de origen, token ausente o iframe inválido.
+ * - `ready`          → READY recibido y validado, a punto de responder.
+ * - `connected`      → VOUT_AUTH (con identidad) o VOUT_GUEST (sin ella)
+ *                      enviado: el juego ya recibe los controles.
+ * - `error`          → fallo en validación de origen o iframe inválido.
  * - `timeout`        → el iframe cargó pero no envió READY en el tiempo esperado.
  */
 export type HandshakeStatus =
-    'waiting' | 'ready' | 'authenticated' | 'error' | 'timeout';
+    'waiting' | 'ready' | 'connected' | 'error' | 'timeout';
 
 // ---------------------------------------------------------------------------
 // Type guards

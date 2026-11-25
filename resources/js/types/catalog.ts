@@ -32,6 +32,15 @@ export type GameUserInteraction = {
  */
 export type FacialControlSupport = 'none' | 'compatible' | 'designed';
 
+/**
+ * Si hace falta una cuenta de Vout para jugar (espejo de
+ * `App\Enums\AccountRequirement`):
+ * - `none`     → el juego no usa la cuenta: nadie la necesita ni la comparte.
+ * - `optional` → se juega sin cuenta; con ella, el juego reconoce al jugador.
+ * - `required` → hay que entrar con una cuenta confirmada.
+ */
+export type AccountRequirement = 'none' | 'optional' | 'required';
+
 export type Game = {
     id: number;
     name: string;
@@ -40,6 +49,7 @@ export type Game = {
     cover_image: string | null;
     embed_url: string | null;
     facial_control_support: FacialControlSupport;
+    account_requirement: AccountRequirement;
     release_date: string | null;
     play_count: number;
     is_active: boolean;

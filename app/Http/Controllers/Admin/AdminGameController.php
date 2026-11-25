@@ -171,6 +171,7 @@ class AdminGameController extends Controller
         $game->fill(collect($data)->only([
             'name', 'description', 'embed_url', 'cover_image',
             'release_date', 'repo_url', 'facial_control_support',
+            'account_requirement',
         ])->all())->save();
 
         if (array_key_exists('category_ids', $data)) {
@@ -217,6 +218,7 @@ class AdminGameController extends Controller
             'cover_image' => $game->cover_image,
             'embed_url' => $game->embed_url,
             'facial_control_support' => $game->facial_control_support->value,
+            'account_requirement' => $game->account_requirement->value,
             'repo_url' => $game->repo_url,
             'release_date' => $game->release_date?->toDateString(),
             'status' => $game->status->value,

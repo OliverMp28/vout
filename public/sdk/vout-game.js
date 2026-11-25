@@ -9,8 +9,13 @@
  *     const vout = VoutGame.connect({
  *       portalOrigin: 'https://TU-VOUT',
  *       onAuth(session) { ... },   // { token, expiresAt, voutId, username }
+ *       onGuest() { ... },         // juega sin cuenta: sin identidad
  *     });
  *   </script>
+ *
+ * Si el juego se puede jugar sin cuenta, quien juega sin ella (o un juego
+ * que no usa la cuenta) recibe `onGuest()` en lugar de `onAuth()`. Los
+ * controles por gestos llegan igual.
  *
  * Con `simulateInput` (activo por defecto) las teclas y el ratón que el
  * jugador maneja con la cara llegan a tu página como eventos de teclado y
@@ -28,7 +33,7 @@
 (function (global) {
     'use strict';
 
-    var VERSION = '1.1.0';
+    var VERSION = '1.2.0';
 
     /** Cada cuánto se repite READY hasta que el portal responde. */
     var READY_INTERVAL_MS = 500;
@@ -207,6 +212,7 @@
                 embedded: false,
                 version: VERSION,
                 session: null,
+                guest: false,
                 debug: false,
                 exit: noop,
                 disconnect: noop,
@@ -214,7 +220,9 @@
         }
 
         var session = null;
-        var authenticated = false;
+        // El portal ya respondió al READY (con VOUT_AUTH o VOUT_GUEST).
+        var connected = false;
+        var guest = false;
         var disconnected = false;
         var debug = false;
         var startedAt = Date.now();
@@ -229,10 +237,11 @@
         }
 
         // ── Saludo ───────────────────────────────────────────────────────
-        // READY se repite hasta el primer VOUT_AUTH: si el portal aún no
-        // estaba escuchando cuando arrancó el juego, el primero se pierde.
+        // READY se repite hasta la primera respuesta (VOUT_AUTH o
+        // VOUT_GUEST): si el portal aún no estaba escuchando cuando arrancó
+        // el juego, el primero se pierde.
         function announce() {
-            if (authenticated || disconnected) {
+            if (connected || disconnected) {
                 return;
             }
             if (Date.now() - startedAt > READY_GIVE_UP_MS) {
@@ -543,7 +552,11 @@
                 return;
             }
 
-            if (message.type === 'VOUT_AUTH' && message.debug === true) {
+            if (
+                (message.type === 'VOUT_AUTH' ||
+                    message.type === 'VOUT_GUEST') &&
+                message.debug === true
+            ) {
                 debug = true;
             }
             if (debug && message.type !== 'VOUT_CURSOR') {
@@ -560,7 +573,8 @@
                     if (typeof message.token !== 'string') {
                         return;
                     }
-                    authenticated = true;
+                    connected = true;
+                    guest = false;
                     clearTimeout(readyTimer);
                     session = {
                         token: message.token,
@@ -570,6 +584,17 @@
                         debug: debug,
                     };
                     call(options.onAuth, session);
+                    break;
+                case 'VOUT_GUEST':
+                    // Solo la primera vez: el portal contesta a cada READY.
+                    if (connected) {
+                        return;
+                    }
+                    connected = true;
+                    guest = true;
+                    clearTimeout(readyTimer);
+                    session = null;
+                    call(options.onGuest, { debug: debug });
                     break;
                 case 'VOUT_SESSION_END':
                     session = null;
@@ -603,6 +628,10 @@
             /** Última sesión recibida, o null. Úsala para leer el token vigente. */
             get session() {
                 return session;
+            },
+            /** True si se juega sin cuenta (el portal respondió con VOUT_GUEST). */
+            get guest() {
+                return guest;
             },
             /** True si el usuario abrió el juego con `?voutdebug=1` en el portal. */
             get debug() {

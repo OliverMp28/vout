@@ -19,6 +19,9 @@
  *
  * Efecto colateral buscado: cada renovación toca la sesión web, así que una
  * partida larga no desconecta al usuario del portal.
+ *
+ * Sin sesión inicial (invitado, o juego que no usa la cuenta) no hay nada
+ * que renovar: devuelve `session: null` y no hace peticiones.
  */
 
 import { useEffect, useState } from 'react';
@@ -68,16 +71,17 @@ type UseGameSessionOptions = {
     gameSlug: string;
     /**
      * `vout_id` del usuario para el que se renderizó la página. El servidor
-     * se niega a renovar si la sesión web ya no es de esa cuenta.
+     * se niega a renovar si la sesión web ya no es de esa cuenta. Null sin
+     * cuenta.
      */
-    voutId: string;
-    /** Sesión emitida por `PlayController` al cargar la página. */
-    initialSession: GameSessionPayload;
+    voutId: string | null;
+    /** Sesión emitida por `PlayController` al cargar la página (null sin identidad). */
+    initialSession: GameSessionPayload | null;
 };
 
 type UseGameSessionReturn = {
-    /** Token vigente. Cambia de identidad en cada renovación. */
-    session: GameSession;
+    /** Token vigente (null sin identidad). Cambia de identidad en cada renovación. */
+    session: GameSession | null;
     /** `null` mientras la sesión sigue viva; el motivo cuando terminó. */
     endReason: GameSessionEndReason | null;
 };
@@ -177,8 +181,8 @@ export function useGameSession({
     voutId,
     initialSession,
 }: UseGameSessionOptions): UseGameSessionReturn {
-    const [session, setSession] = useState<GameSession>(() =>
-        toGameSession(initialSession),
+    const [session, setSession] = useState<GameSession | null>(() =>
+        initialSession === null ? null : toGameSession(initialSession),
     );
     const [endReason, setEndReason] = useState<GameSessionEndReason | null>(
         null,
@@ -191,12 +195,16 @@ export function useGameSession({
         useState(initialSession);
     if (previousInitialSession !== initialSession) {
         setPreviousInitialSession(initialSession);
-        setSession(toGameSession(initialSession));
+        setSession(
+            initialSession === null ? null : toGameSession(initialSession),
+        );
         setEndReason(null);
     }
 
     useEffect(() => {
-        if (endReason !== null) return;
+        if (endReason !== null || session === null || voutId === null) return;
+
+        const accountVoutId = voutId;
 
         const renewAt = session.expiresAt * 1000 - RENEWAL_MARGIN_MS;
         let timer: ReturnType<typeof setTimeout> | null = null;
@@ -209,7 +217,10 @@ export function useGameSession({
             inFlight = true;
 
             try {
-                const nextSession = await requestSession(gameSlug, voutId);
+                const nextSession = await requestSession(
+                    gameSlug,
+                    accountVoutId,
+                );
                 // La sesión nueva re-ejecuta este effect, que programa la
                 // siguiente renovación a partir de su `expiresAt`.
                 if (!cancelled) setSession(nextSession);

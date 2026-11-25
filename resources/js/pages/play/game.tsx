@@ -35,6 +35,8 @@ import { CursorOverlay } from '@/components/play/cursor-overlay';
 import type { CursorOverlayHandle } from '@/components/play/cursor-overlay';
 import { EngineOverlay } from '@/components/play/engine-overlay';
 import { FullscreenToolbar } from '@/components/play/fullscreen-toolbar';
+import { GuestNotice } from '@/components/play/guest-notice';
+import type { GuestNoticeReason } from '@/components/play/guest-notice';
 import { NowPlayingHeader } from '@/components/play/now-playing-header';
 import { PlayToolbar } from '@/components/play/play-toolbar';
 import { StageNotice } from '@/components/play/stage-notice';
@@ -66,9 +68,10 @@ import {
     readPlayPreferences,
 } from '@/lib/play/play-mode';
 import { cn } from '@/lib/utils';
+import { signIn as playSignIn } from '@/routes/play';
 import { update as updatePlayPreferences } from '@/routes/play-preferences';
-import type { FacialControlSupport } from '@/types';
-import type { Auth } from '@/types/auth';
+import type { AccountRequirement, FacialControlSupport } from '@/types';
+import type { User } from '@/types/auth';
 
 // ---------------------------------------------------------------------------
 // Tipos de props recibidas desde Inertia (PlayController)
@@ -83,11 +86,20 @@ type PlayGameProps = {
         embed_url: string;
         effective_origins: string[];
         facial_control_support: FacialControlSupport;
+        account_requirement: AccountRequirement;
     };
     activeGestureConfig: GestureConfigData | null;
     /** Qué controles eligió el usuario para este juego (ver PresetChoiceController). */
     presetChoice: string | null;
-    session: GameSessionPayload;
+    /** Null si el juego no recibe la identidad: se le saluda con VOUT_GUEST. */
+    session: GameSessionPayload | null;
+    /** Por qué un juego de cuenta opcional no sabe quién juega, o null. */
+    guestNotice: GuestNoticeReason | null;
+};
+
+/** Quién juega: la página está abierta a invitados en algunos juegos. */
+type PlayPageProps = {
+    auth: { user: User | null };
 };
 
 /** Ids del panel (para `aria-controls` del botón "Control facial"). */
@@ -114,10 +126,10 @@ function savePlayPreference(
         preserveScroll: true,
         preserveState: true,
         props: (props) => {
-            const auth = props.auth as Auth;
-            const settings = auth.user.settings;
+            const auth = props.auth as PlayPageProps['auth'];
+            const settings = auth.user?.settings ?? null;
 
-            if (settings === null) {
+            if (auth.user === null || settings === null) {
                 return props;
             }
 
@@ -150,14 +162,18 @@ export default function PlayGame({
     activeGestureConfig,
     presetChoice,
     session,
+    guestNotice,
 }: PlayGameProps) {
     const { t } = useTranslation();
-    const { auth } = usePage<{ auth: Auth }>().props;
+    const { auth } = usePage<PlayPageProps>().props;
+    const user = auth.user;
     const isDesktop = useIsDesktop();
     const isMobile = useIsMobile();
 
-    // Qué se ofrece del control facial a este usuario en este juego.
-    const preferences = readPlayPreferences(auth.user.settings);
+    // Qué se ofrece del control facial a este usuario en este juego. Un
+    // invitado tiene los valores por defecto y no se le guarda nada.
+    const preferences = readPlayPreferences(user?.settings);
+    const savePreference = user === null ? null : savePlayPreference;
     const mode = decidePlayMode({
         usage: preferences.usage,
         support: game.facial_control_support,
@@ -189,22 +205,25 @@ export default function PlayGame({
         }
 
         setDesktopPanelOpen(!desktopPanelOpen);
-        savePlayPreference('play_panel_open', !desktopPanelOpen);
-    }, [isDesktop, desktopPanelOpen]);
+        savePreference?.('play_panel_open', !desktopPanelOpen);
+    }, [isDesktop, desktopPanelOpen, savePreference]);
 
     const [showTelemetry, setShowTelemetry] = useState(false);
     const [telemetryView, setTelemetryView] = useState<TelemetryView | null>(
         null,
     );
     // Ver la cámara mientras se juega: apagado por defecto, se guarda con la
-    // cuenta.
+    // cuenta (si la hay).
     const [previewEnabled, setPreviewEnabled] = useState(
         preferences.showCameraPreview,
     );
-    const handleTogglePreview = useCallback((enabled: boolean) => {
-        setPreviewEnabled(enabled);
-        savePlayPreference('show_camera_preview', enabled);
-    }, []);
+    const handleTogglePreview = useCallback(
+        (enabled: boolean) => {
+            setPreviewEnabled(enabled);
+            savePreference?.('show_camera_preview', enabled);
+        },
+        [savePreference],
+    );
 
     // ── Hotkey para telemetría (Ctrl+M) ────────────────────────────────────
     useEffect(() => {
@@ -262,7 +281,7 @@ export default function PlayGame({
             preferences.autostart &&
             mode.cameraAvailable &&
             activeGestureConfig !== null,
-        user: auth.user,
+        user,
         iframeRef,
         videoRef,
         onCursorMove: handleCursorMove,
@@ -430,6 +449,7 @@ export default function PlayGame({
             activeGamePreset={activeGamePreset}
             askPresetChoice={askPresetChoice}
             onChoosePreset={choosePreset}
+            signInHref={user === null ? playSignIn.url(game.slug) : null}
         />
     );
 
@@ -461,6 +481,10 @@ export default function PlayGame({
                     />
                 }
             />
+
+            {guestNotice && (
+                <GuestNotice reason={guestNotice} gameSlug={game.slug} />
+            )}
 
             {/* Panel en tablet/móvil: hoja (en móvil sale por abajo, para el pulgar) */}
             {mode.cameraAvailable && !isDesktop && (
@@ -549,7 +573,7 @@ export default function PlayGame({
                             allow="autoplay; fullscreen; clipboard-write; web-share"
                             className={cn(
                                 'absolute inset-0 size-full border-0 transition-opacity duration-700 ease-out',
-                                handshake.status === 'authenticated'
+                                handshake.status === 'connected'
                                     ? 'opacity-100'
                                     : 'opacity-0',
                             )}

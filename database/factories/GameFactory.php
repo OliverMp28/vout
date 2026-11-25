@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Enums\AccountRequirement;
 use App\Enums\FacialControlSupport;
 use App\Enums\GameStatus;
 use App\Models\Game;
@@ -33,6 +34,7 @@ class GameFactory extends Factory
             'cover_image' => fake()->optional()->imageUrl(640, 480, 'games'),
             'embed_url' => fake()->url(),
             'facial_control_support' => FacialControlSupport::None,
+            'account_requirement' => AccountRequirement::Required,
             'release_date' => fake()->optional()->date(),
             'play_count' => fake()->numberBetween(0, 10000),
             'is_active' => true,
@@ -78,6 +80,26 @@ class GameFactory extends Factory
     {
         return $this->state(fn (array $attributes): array => [
             'facial_control_support' => FacialControlSupport::Designed,
+        ]);
+    }
+
+    /**
+     * Estado: juego que no usa la cuenta de Vout (nunca recibe la identidad).
+     */
+    public function withoutAccount(): static
+    {
+        return $this->state(fn (array $attributes): array => [
+            'account_requirement' => AccountRequirement::None,
+        ]);
+    }
+
+    /**
+     * Estado: juego al que se puede jugar sin cuenta (con ella, reconoce al jugador).
+     */
+    public function accountOptional(): static
+    {
+        return $this->state(fn (array $attributes): array => [
+            'account_requirement' => AccountRequirement::Optional,
         ]);
     }
 

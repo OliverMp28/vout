@@ -16,6 +16,7 @@ const DEFAULT_FORM: GameFormData = {
     registered_app_id: null,
     embed_url: '',
     facial_control_support: 'none',
+    account_requirement: 'required',
     cover_image: '',
     release_date: '',
     repo_url: '',

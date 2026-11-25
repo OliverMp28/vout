@@ -33,6 +33,9 @@ use League\OAuth2\Server\Entities\ClientEntityInterface;
  *      token de portal: `aud` = Personal Access Client y scope
  *      `game:play`.
  *
+ * Un juego que no usa la cuenta (`AccountRequirement::None`) no recibe
+ * ninguno: el portal le saluda con `VOUT_GUEST`.
+ *
  * No pasa por `/oauth/token` ni registra ningún grant nuevo en el
  * AuthorizationServer: reutiliza los repositorios de Passport igual que
  * `League\OAuth2\Server\Grant\AbstractGrant::issueAccessToken()`, de modo
@@ -83,17 +86,23 @@ class GameSessionTokenIssuer
      */
     public function requiresConsent(User $user, Game $game): bool
     {
-        return $this->appClient($game) !== null
+        return $game->account_requirement->sharesIdentity()
+            && $this->appClient($game) !== null
             && $this->lacksConsent($user, $game->registeredApp);
     }
 
     /**
      * Emite el token de sesión para el par (usuario, juego).
      *
-     * @throws AuthorizationException si la app es third-party y el usuario no la ha autorizado.
+     * @throws AuthorizationException si el juego no usa la cuenta de Vout, o si la app es third-party y el usuario no la ha autorizado.
      */
     public function issue(User $user, Game $game): GameSessionToken
     {
+        // Un juego que no usa la cuenta nunca recibe la identidad del jugador.
+        if (! $game->account_requirement->sharesIdentity()) {
+            throw new AuthorizationException(__('play.session.no_identity'));
+        }
+
         $appClient = $this->appClient($game);
 
         if ($appClient === null) {

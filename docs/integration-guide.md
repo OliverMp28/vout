@@ -581,6 +581,8 @@ Sin esta cabecera correctamente configurada, el iframe del portal mostrará un c
 
 Cuando un usuario abre tu juego desde el portal, ya tiene sesión en Vout. Mandarlo a `/oauth/authorize` sería hacerle repetir algo que ya hizo, así que el portal le entrega a tu juego un access token directamente, por `postMessage`. Nunca por la URL.
 
+Si tu juego se puede jugar sin cuenta, quien juega sin ella no te llega con identidad: el portal te responde con `VOUT_GUEST` (ver "Jugar sin cuenta").
+
 Ese token es un access token normal de Vout: mismo formato, misma firma y mismos claims que los de `/oauth/token`. Lo validas con el código que ya tienes (ver "Validación Stateless del Token").
 
 ### Lo más rápido: el SDK
@@ -599,6 +601,9 @@ Vout publica un script que hace todo lo de esta sección por ti. Lo cargas, le d
             // Manda session.token a tu backend y valídalo allí.
         },
 
+        // Juega sin cuenta (solo si tu juego lo permite): no hay identidad.
+        onGuest() {},
+
         // Ya no habrá más renovaciones: suelta la identidad.
         onSessionEnd(reason) {},
     });
@@ -616,13 +621,14 @@ El SDK hace además lo que el navegador haría con una tecla real y un evento cr
 | :--- | :--- |
 | `portalOrigin` | Obligatorio. El origen exacto del portal. |
 | `onAuth(session)` | Identidad y token. Se llama al conectar y en cada renovación. |
+| `onGuest()` | Se juega sin cuenta: se llama una vez al conectar, en lugar de `onAuth`. |
 | `onSessionEnd(reason)` | El portal ya no renovará el token. |
 | `suggestedPreset` | Preset de gestos que tu juego recomienda (ver "Control facial"). |
 | `simulateInput` | `true` por defecto. Ponlo a `false` si prefieres tratar tú las teclas y el ratón con `onKey` y `onPointer`. |
 | `onAction(event, at)` / `onActionEnd(event, at)` | Eventos de juego (`JUMP`, `DUCK`…), si los usas. |
 | `onKey(key)` / `onPointer(pointer)` / `onCursor(x, y)` | La entrada en crudo, por si quieres algo a medida. |
 
-Lo que devuelve: `vout.embedded` (si estás dentro del portal), `vout.session` (la última sesión, o `null`), `vout.debug` (ver "Depurar la integración"), `vout.exit()` y `vout.disconnect()`.
+Lo que devuelve: `vout.embedded` (si estás dentro del portal), `vout.session` (la última sesión, o `null`), `vout.guest` (si se juega sin cuenta), `vout.debug` (ver "Depurar la integración"), `vout.exit()` y `vout.disconnect()`.
 
 Fuera del portal, `VoutGame.connect()` no hace nada y `vout.embedded` vale `false`. Puedes llamarlo siempre y usar tu flujo OAuth normal cuando no estés embebido.
 
@@ -634,8 +640,9 @@ El resto de esta sección explica qué pasa por debajo. Léela si quieres implem
 
 | Dirección | Mensaje | Cuándo |
 | :--- | :--- | :--- |
-| juego → portal | `{ type: 'READY', suggestedPreset?: string }` | Tu juego ya puede recibir la identidad. Repítelo hasta que llegue `VOUT_AUTH`. |
+| juego → portal | `{ type: 'READY', suggestedPreset?: string }` | Tu juego ya puede recibir la identidad. Repítelo hasta que llegue `VOUT_AUTH` o `VOUT_GUEST`. |
 | portal → juego | `{ type: 'VOUT_AUTH', token, expiresAt, voutId, username }` | En respuesta a cada `READY` válido, y otra vez cada vez que el portal renueva el token. |
+| portal → juego | `{ type: 'VOUT_GUEST' }` | En respuesta a cada `READY` válido cuando no hay identidad que darte: se juega sin cuenta. Nunca lleva datos del jugador. |
 | portal → juego | `{ type: 'VOUT_SESSION_END', reason }` | Ya no habrá más renovaciones. `reason` es `'signed_out'`, `'revoked'` o `'unavailable'`. |
 | portal → juego | `{ type: 'VOUT_ACTION', event: string, at: number }` | Empieza una acción: un gesto del usuario mapeado a un evento de juego (control facial). |
 | portal → juego | `{ type: 'VOUT_ACTION_END', event: string, at: number }` | Termina esa acción: el usuario dejó de hacer el gesto. |
@@ -654,7 +661,7 @@ Ignora cualquier `type` que no conozcas. El protocolo puede crecer y tu juego no
 1. El portal carga tu `embed_url` tal cual, sin parámetros.
 2. Tu juego envía `READY` a `window.parent`.
 3. El portal comprueba dos cosas: que `event.origin` es uno de los `allowed_origins` de tu app (comparación exacta de esquema, host y puerto) y que el mensaje viene del iframe que él mismo creó. Si algo no cuadra, lo descarta sin responder.
-4. El portal responde con `VOUT_AUTH`, dirigido solo a ese origen.
+4. El portal responde con `VOUT_AUTH`, dirigido solo a ese origen. Si no hay identidad que darte (ver "Jugar sin cuenta"), responde con `VOUT_GUEST`.
 5. Unos 5 minutos antes de que el token caduque, el portal pide uno nuevo y te manda otro `VOUT_AUTH`. Quédate siempre con el último.
 
 Tu iframe permanece oculto hasta que el handshake termina. Está oculto por opacidad, no con `display: none`: desde el primer momento tiene su tamaño real, así que puedes medir la ventana y arrancar tu bucle de juego con normalidad.
@@ -804,6 +811,26 @@ El portal no puede comprobar si tu juego entiende los mensajes de arriba: tu pá
 
 Sé conservador: declarar "Compatible" sin serlo deja a alguien que juega sin manos con una cámara encendida que no hace nada. Si dudas, prueba tu juego con el control facial del portal antes de enviarlo.
 
+### Jugar sin cuenta
+
+Al enviar el juego (o al editarlo en tu panel) eliges en "Cuenta de Vout" quién puede jugar. Lo revisa el equipo de Vout, como el control facial.
+
+| Modo | Quién juega | Qué recibe tu juego |
+| :--- | :--- | :--- |
+| **Sin cuenta** | Cualquiera, sin entrar. | Siempre `VOUT_GUEST`, aunque el jugador haya entrado en Vout. Nunca su identidad, y una app de terceros no pide consentimiento. |
+| **Cuenta opcional** | Cualquiera, sin entrar. | `VOUT_AUTH` si el jugador entró con una cuenta confirmada y te autorizó. Si no, `VOUT_GUEST`. |
+| **Cuenta obligatoria** (por defecto) | Solo quien entra con una cuenta confirmada. Al resto el portal le pide entrar antes de cargar tu iframe. | Siempre `VOUT_AUTH`. |
+
+Elige "Sin cuenta" si tu juego no guarda nada por jugador: así no recibes datos que no usas. Elige "Cuenta opcional" si guardas progreso, pero quieres que cualquiera pueda probarlo en un clic.
+
+Con "Cuenta opcional", `VOUT_GUEST` llega en tres casos: quien juega no ha entrado, aún no ha confirmado su correo o, en una app de terceros, eligió "Jugar sin compartir mi cuenta" en la pantalla de permisos. El portal le explica por qué el juego no le reconoce y le ofrece arreglarlo. Si entra, vuelve a una carga nueva de tu iframe, que recibe `VOUT_AUTH`: dentro de una misma carga no se pasa de invitado a jugador con cuenta.
+
+Con un invitado:
+
+- Los controles por gestos llegan igual (`VOUT_KEY`, `VOUT_ACTION`…), con los controles por defecto o los que sugiere tu juego. Vout no guarda nada del invitado.
+- No hay token ni renovaciones, así que tampoco `VOUT_SESSION_END`.
+- Si quieres guardar su progreso, hazlo en tu juego (por ejemplo, en `localStorage`). Vout no une lo que jugó como invitado a la cuenta que cree después: si quieres hacerlo, ofrécelo tú cuando te llegue `VOUT_AUTH`.
+
 ### Ejemplo mínimo sin el SDK
 
 ```js
@@ -811,6 +838,8 @@ Sé conservador: declarar "Compatible" sin serlo deja a alguien que juega sin ma
 const VOUT_ORIGIN = 'https://vout.app';
 
 let session = null;
+// El portal ya respondió al READY (con VOUT_AUTH o VOUT_GUEST).
+let connected = false;
 
 window.addEventListener('message', (event) => {
     if (event.origin !== VOUT_ORIGIN || event.source !== window.parent) return;
@@ -821,8 +850,13 @@ window.addEventListener('message', (event) => {
     switch (message.type) {
         case 'VOUT_AUTH':
             // Llega tras READY y en cada renovación: quédate con el último.
+            connected = true;
             session = { token: message.token, expiresAt: message.expiresAt };
             // Mándalo a tu backend y valídalo allí (firma, iss, aud, exp).
+            break;
+        case 'VOUT_GUEST':
+            // Se juega sin cuenta: no hay identidad (ver "Jugar sin cuenta").
+            connected = true;
             break;
         case 'VOUT_SESSION_END':
             // No habrá más renovaciones: suelta la identidad.
@@ -846,9 +880,9 @@ window.addEventListener('message', (event) => {
     }
 });
 
-// Repite READY hasta que llegue VOUT_AUTH, por si el portal aún no escuchaba.
+// Repite READY hasta que el portal responda, por si aún no escuchaba.
 (function announce() {
-    if (session) return;
+    if (connected) return;
     window.parent.postMessage({ type: 'READY', suggestedPreset: 'runner' }, VOUT_ORIGIN);
     setTimeout(announce, 500);
 })();
@@ -862,7 +896,7 @@ Para saber si estás embebido, comprueba `window.parent !== window`. Fuera del p
 
 ### Depurar la integración
 
-Abre tu juego en el portal añadiendo `?voutdebug=1` a la dirección (por ejemplo `/play/tu-juego?voutdebug=1`). El portal no cambia la URL de tu iframe: te lo dice dentro de `VOUT_AUTH`, con el campo `debug: true`. Úsalo para encender tu propio modo de depuración.
+Abre tu juego en el portal añadiendo `?voutdebug=1` a la dirección (por ejemplo `/play/tu-juego?voutdebug=1`). El portal no cambia la URL de tu iframe: te lo dice dentro de `VOUT_AUTH` (o de `VOUT_GUEST`), con el campo `debug: true`. Úsalo para encender tu propio modo de depuración.
 
 Con el SDK, `vout.debug` vale `true` y cada mensaje del portal se escribe en la consola (sin el token).
 

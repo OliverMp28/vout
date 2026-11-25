@@ -2,6 +2,7 @@ import { useForm } from '@inertiajs/react';
 import { Pencil } from 'lucide-react';
 import { useState } from 'react';
 import { Panel } from '@/components/admin/panel';
+import { AccountRequirementField } from '@/components/catalog/account-requirement-field';
 import { FacialControlSupportField } from '@/components/catalog/facial-control-support-field';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
@@ -34,6 +35,7 @@ export function EditPanel({ game, categories, developers }: EditPanelProps) {
         description: game.description ?? '',
         embed_url: game.embed_url ?? '',
         facial_control_support: game.facial_control_support,
+        account_requirement: game.account_requirement,
         cover_image: game.cover_image ?? '',
         release_date: game.release_date ?? '',
         repo_url: game.repo_url ?? '',
@@ -201,6 +203,21 @@ export function EditPanel({ game, categories, developers }: EditPanelProps) {
                         disabled={processing}
                     />
                     <InputError message={errors.facial_control_support} />
+                </fieldset>
+
+                <fieldset className="grid gap-2" disabled={processing}>
+                    <legend className="mb-2 text-sm font-medium">
+                        {t('admin.games.show.edit.account')}
+                    </legend>
+                    <AccountRequirementField
+                        idPrefix="edit"
+                        value={data.account_requirement}
+                        onChange={(next) =>
+                            setData('account_requirement', next)
+                        }
+                        disabled={processing}
+                    />
+                    <InputError message={errors.account_requirement} />
                 </fieldset>
 
                 {categories.length > 0 && (

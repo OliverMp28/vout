@@ -8,6 +8,7 @@ import { useTranslation } from '@/hooks/use-translation';
 import AuthLayout from '@/layouts/auth-layout';
 import { urlHost } from '@/lib/utils';
 import { index as catalogIndex } from '@/routes/catalog';
+import { show as playShow } from '@/routes/play';
 import { store as consentStore } from '@/routes/play/consent';
 import type { Auth } from '@/types/auth';
 
@@ -21,6 +22,8 @@ type Props = {
         app_url: string | null;
     };
     scopes: ConsentScope[];
+    /** Juego de cuenta opcional: se puede jugar sin compartir la cuenta. */
+    canPlayAsGuest: boolean;
 };
 
 /**
@@ -34,8 +37,17 @@ type Props = {
  * A diferencia de `oauth/authorize`, aquí sí usamos `<Form>` de Inertia:
  * tras aprobar no hay redirect a otro dominio, solo se vuelve a
  * `/play/{game}`, ya con el juego.
+ *
+ * Si el juego se puede jugar sin cuenta, se ofrece también jugar sin
+ * compartirla (`?guest=1`): el juego recibe VOUT_GUEST y no se registra
+ * ninguna autorización.
  */
-export default function PlayConsent({ game, app, scopes }: Props) {
+export default function PlayConsent({
+    game,
+    app,
+    scopes,
+    canPlayAsGuest,
+}: Props) {
     const { t } = useTranslation();
     const { auth } = usePage<{ auth: Auth }>().props;
 
@@ -93,6 +105,20 @@ export default function PlayConsent({ game, app, scopes }: Props) {
                         </>
                     )}
                 </Form>
+
+                {canPlayAsGuest && (
+                    <p className="text-center text-sm text-muted-foreground">
+                        <Link
+                            id="btn-play-consent-guest"
+                            href={playShow.url(game.slug, {
+                                query: { guest: 1 },
+                            })}
+                            className="font-semibold text-foreground underline decoration-border-strong underline-offset-2 hover:decoration-signal-strong"
+                        >
+                            {t('play.consent.play_as_guest')}
+                        </Link>
+                    </p>
+                )}
 
                 {app.app_url && (
                     <p className="text-center text-[11px] text-muted-foreground">

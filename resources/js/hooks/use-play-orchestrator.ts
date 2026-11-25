@@ -20,7 +20,7 @@
  */
 
 import { router } from '@inertiajs/react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useActionDispatcher } from '@/hooks/use-action-dispatcher';
 import { useCamera } from '@/hooks/use-camera';
@@ -82,14 +82,19 @@ export type UsePlayOrchestratorOptions = {
      * clave del preset, `own` o null si nunca se le preguntó).
      */
     presetChoice: string | null;
-    /** Sesión de juego inicial emitida por `PlayController`. */
-    session: GameSessionPayload;
+    /**
+     * Sesión de juego inicial emitida por `PlayController`. Null si el juego
+     * no recibe identidad (invitado, o juego que no usa la cuenta): el juego
+     * recibe VOUT_GUEST.
+     */
+    session: GameSessionPayload | null;
     /**
      * Encender la cámara sola al cargar el juego: el usuario lo autorizó, el
      * juego lo admite y tiene perfil de gestos.
      */
     autostartWanted?: boolean;
-    user: UserInfo;
+    /** Quien juega con su cuenta, o null si es un invitado. */
+    user: UserInfo | null;
     iframeRef: React.RefObject<HTMLIFrameElement | null>;
     videoRef: React.RefObject<HTMLVideoElement | null>;
     /** Imperativa: actualiza la posición del cursor sin pasar por estado React. */
@@ -210,7 +215,7 @@ export function usePlayOrchestrator({
     // sesión nueva la reenvía el handshake al juego con otro VOUT_AUTH.
     const { session, endReason: sessionEndReason } = useGameSession({
         gameSlug: game.slug,
-        voutId: user.vout_id,
+        voutId: initialSession && user ? user.vout_id : null,
         initialSession,
     });
 
@@ -239,14 +244,24 @@ export function usePlayOrchestrator({
         router.visit(catalogIndex.url());
     }, []);
 
+    // Lo que VOUT_AUTH cuenta del jugador; sin sesión no se cuenta nada.
+    const voutId = user?.vout_id ?? null;
+    const userName = user?.name ?? null;
+    const player = useMemo(
+        () =>
+            initialSession !== null && voutId !== null && userName !== null
+                ? { voutId, username: userName }
+                : null,
+        [initialSession, voutId, userName],
+    );
+
     const handshake = useIframeHandshake({
         iframeRef,
         allowedOrigins: game.effective_origins,
         session,
         sessionEndReason:
             sessionEndReason === 'account_changed' ? null : sessionEndReason,
-        voutId: user.vout_id,
-        username: user.name,
+        player,
         onReady: handleReady,
         onExit: handleExit,
     });
@@ -254,7 +269,7 @@ export function usePlayOrchestrator({
     // ── Dispatcher ────────────────────────────────────────────────────────
     // El target no se pasa como prop (requeriría leer iframeRef.current durante
     // render). Se conecta imperativamente en un useEffect más abajo, una vez
-    // que handshake.status cambia a 'authenticated'.
+    // que handshake.status cambia a 'connected'.
     //
     // enabled se deriva en render para evitar un useEffect extra que llame
     // a setDispatchEnabled(false) cuando el handshake falla.
@@ -373,7 +388,7 @@ export function usePlayOrchestrator({
 
     useEngineWarmup(
         preloadDecision,
-        handshake.status === 'authenticated',
+        handshake.status === 'connected',
         enginePrewarm,
     );
 
@@ -474,7 +489,7 @@ export function usePlayOrchestrator({
     // ── Encendido automático ──────────────────────────────────────────────
     const autostart = usePlayAutostart({
         wanted: autostartWanted && gameSupportsFacialControl,
-        gameReady: handshake.status === 'authenticated',
+        gameReady: handshake.status === 'connected',
         engineIdle: engine.status === 'idle' || engine.status === 'ready',
         attempted: cameraAttempted,
         onStart: () => void handleActivateEngine(),
@@ -504,9 +519,12 @@ export function usePlayOrchestrator({
     }, [engine.status, handleActivateEngine, handleStopEngine]);
 
     const gameSlug = game.slug;
+    const hasAccount = user !== null;
     const choosePreset = useCallback(
         (choice: string) => {
             setStoredPresetChoice(choice);
+            // De un invitado no se guarda nada: vale solo para esta visita.
+            if (!hasAccount) return;
             void sendJson(updatePresetChoice.url(gameSlug), 'PUT', { choice });
             // Para que volver atrás a esta página no vuelva a preguntar. Solo
             // cambia esta prop: el resto conserva su identidad (un `game` o
@@ -517,7 +535,7 @@ export function usePlayOrchestrator({
                 props: (props) => ({ ...props, presetChoice: choice }),
             });
         },
-        [gameSlug],
+        [gameSlug, hasAccount],
     );
 
     // ── Recenter cursor al centro del iframe (no del viewport) ───────────
@@ -553,7 +571,7 @@ export function usePlayOrchestrator({
     // setTarget es imperativo (no setState) — lee iframeRef.current en effect.
     const dispatcherSetTarget = dispatcher.setTarget;
     useEffect(() => {
-        if (handshake.status === 'authenticated') {
+        if (handshake.status === 'connected') {
             const win = iframeRef.current?.contentWindow;
             if (win) dispatcherSetTarget(win);
         } else {

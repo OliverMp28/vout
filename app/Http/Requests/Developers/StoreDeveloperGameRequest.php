@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Developers;
 
+use App\Enums\AccountRequirement;
 use App\Enums\FacialControlSupport;
 use App\Models\Category;
 use App\Models\Developer;
@@ -65,6 +66,9 @@ class StoreDeveloperGameRequest extends FormRequest
 
             // Si el juego recibe los controles de Vout. Si no viene, `none`.
             'facial_control_support' => ['sometimes', 'required', Rule::enum(FacialControlSupport::class)],
+
+            // Si hace falta una cuenta de Vout para jugar. Si no viene, `required`.
+            'account_requirement' => ['sometimes', 'required', Rule::enum(AccountRequirement::class)],
 
             'cover_image' => ['nullable', 'string', new PortableUrl, 'max:500'],
             'release_date' => ['nullable', 'date', 'before_or_equal:today'],

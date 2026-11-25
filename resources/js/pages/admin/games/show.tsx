@@ -175,6 +175,12 @@ function DetailsPanel({ game }: { game: AdminGameDetail }) {
                         `facial_control.support.${game.facial_control_support}.label`,
                     )}
                 />
+                <MetaRow
+                    label={t('admin.games.show.details.account')}
+                    value={t(
+                        `account_requirement.${game.account_requirement}.label`,
+                    )}
+                />
                 {game.registered_app && (
                     <MetaRow
                         label={t('admin.games.show.details.app')}

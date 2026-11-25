@@ -10,21 +10,23 @@
  * 4. Tras un READY válido, responder con VOUT_AUTH al iframe usando
  *    `targetOrigin` específico (nunca `'*'`). Un juego puede repetir READY
  *    hasta recibir respuesta: cada uno se contesta con la sesión vigente.
+ *    Sin sesión (invitado, o juego que no usa la cuenta) se responde con
+ *    VOUT_GUEST: el juego queda conectado sin identidad.
  * 5. Reenviar VOUT_AUTH cuando la sesión se renueva (`useGameSession`), para
  *    que el juego reciba el token nuevo antes de que caduque el anterior.
  * 6. Avisar al juego con VOUT_SESSION_END cuando la sesión deja de
  *    renovarse (sesión web cerrada, app revocada, juego no disponible).
  * 7. Atender EXIT: el juego pide al portal cerrar la sesión de juego.
  * 8. Exponer `sendAction` y `sendCursor` para que ActionDispatcher y el head
- *    tracker en modo cursor puedan empujar mensajes al juego una vez que la
- *    sesión está autenticada.
+ *    tracker en modo cursor puedan empujar mensajes al juego una vez que el
+ *    juego está conectado.
  *
  * Flujo:
- *   waiting ──READY válido──▶ ready ──AUTH enviado──▶ authenticated ─┐
- *      │                         │                          ▲           │
- *      │                         │                          └─ sesión ──┘
- *      │                         │                             renovada → AUTH
- *      └────error──────────────▶ error ◀──────fallo envío AUTH────┘
+ *   waiting ──READY válido──▶ ready ──AUTH o GUEST enviado──▶ connected ─┐
+ *      │                         │                            ▲            │
+ *      │                         │                            └─ sesión ───┘
+ *      │                         │                               renovada → AUTH
+ *      └────error──────────────▶ error ◀──────fallo de envío───────┘
  *
  * Patrones React 19 (consistentes con use-action-dispatcher):
  * - `iframeRef` no se lee durante render — solo dentro de handlers/effects.
@@ -38,9 +40,8 @@
  * const handshake = useIframeHandshake({
  *     iframeRef,
  *     allowedOrigins: game.effective_origins,
- *     session,
- *     voutId: user.vout_id,
- *     username: user.name,
+ *     session,                       // null → VOUT_GUEST
+ *     player: { voutId: user.vout_id, username: user.name },
  *     onReady: (preset) => preset && askApplyPreset(preset),
  *     onExit: () => router.visit(catalogUrl),
  * });
@@ -64,6 +65,14 @@ import type {
 // Tipos
 // ---------------------------------------------------------------------------
 
+/** Lo que VOUT_AUTH cuenta del jugador. */
+export type PlayerIdentity = {
+    /** UUID público del usuario (campo `vout_id` en BD). */
+    voutId: string;
+    /** Nombre visible del usuario para mostrar en el juego. */
+    username: string;
+};
+
 export type UseIframeHandshakeOptions = {
     /** Ref al elemento iframe en el DOM. Puede ser null durante el primer render. */
     iframeRef: RefObject<HTMLIFrameElement | null>;
@@ -76,8 +85,8 @@ export type UseIframeHandshakeOptions = {
     /**
      * Sesión de juego vigente (token + expiración), mantenida por
      * `useGameSession`. Cuando cambia tras el handshake, se reenvía al juego
-     * con otro VOUT_AUTH. Si es null no se envía AUTH y el handshake queda
-     * en `error`.
+     * con otro VOUT_AUTH. Si es null el juego no recibe identidad: se le
+     * responde con VOUT_GUEST.
      */
     session: GameSession | null;
     /**
@@ -85,13 +94,11 @@ export type UseIframeHandshakeOptions = {
      * viva. Al pasar a un motivo se avisa al juego con VOUT_SESSION_END.
      */
     sessionEndReason?: VoutSessionEndReason | null;
-    /** UUID público del usuario (campo `vout_id` en BD). */
-    voutId: string;
-    /** Nombre visible del usuario para mostrar en el juego. */
-    username: string;
+    /** Quién juega, para VOUT_AUTH. Null si no hay sesión que entregar. */
+    player: PlayerIdentity | null;
     /**
      * Callback opcional invocado al recibir el primer READY válido de una
-     * conexión, justo después de enviar VOUT_AUTH. Útil para reaccionar a
+     * conexión, justo después de enviar VOUT_AUTH o VOUT_GUEST. Útil para reaccionar a
      * `suggestedPreset`. Los READY repetidos del mismo origen no lo invocan.
      */
     onReady?: (suggestedPreset?: string) => void;
@@ -122,7 +129,7 @@ export type UseIframeHandshakeReturn = {
     status: HandshakeStatus;
     /**
      * Origen validado del iframe tras el handshake. `null` mientras
-     * `status !== 'authenticated'`. Se usa como `targetOrigin` para envíos
+     * `status !== 'connected'`. Se usa como `targetOrigin` para envíos
      * posteriores (sendAction, sendCursor).
      */
     connectedOrigin: string | null;
@@ -146,7 +153,7 @@ export type UseIframeHandshakeReturn = {
 
 /**
  * El usuario pidió el modo de depuración del juego con `?voutdebug=1` en la
- * URL del portal. Se comunica al juego dentro de VOUT_AUTH: su `embed_url`
+ * URL del portal. Se comunica al juego dentro de VOUT_AUTH (o VOUT_GUEST): su `embed_url`
  * se carga siempre limpia, sin parámetros heredados de la URL del portal.
  */
 function isDebugRequested(): boolean {
@@ -165,8 +172,7 @@ export function useIframeHandshake(
         allowedOrigins,
         session,
         sessionEndReason = null,
-        voutId,
-        username,
+        player,
         onReady,
         onExit,
         onGameState,
@@ -196,8 +202,7 @@ export function useIframeHandshake(
     // que podrían perder mensajes en flight.
     const allowedOriginsRef = useRef<readonly string[]>(allowedOrigins);
     const sessionRef = useRef<GameSession | null>(session);
-    const voutIdRef = useRef<string>(voutId);
-    const usernameRef = useRef<string>(username);
+    const playerRef = useRef<PlayerIdentity | null>(player);
     const onReadyRef = useRef<typeof onReady>(onReady);
     const onExitRef = useRef<typeof onExit>(onExit);
     const onGameStateRef = useRef<typeof onGameState>(onGameState);
@@ -210,12 +215,8 @@ export function useIframeHandshake(
     }, [allowedOrigins]);
 
     useEffect(() => {
-        voutIdRef.current = voutId;
-    }, [voutId]);
-
-    useEffect(() => {
-        usernameRef.current = username;
-    }, [username]);
+        playerRef.current = player;
+    }, [player]);
 
     useEffect(() => {
         onReadyRef.current = onReady;
@@ -229,33 +230,39 @@ export function useIframeHandshake(
         onGameStateRef.current = onGameState;
     }, [onGameState]);
 
-    // Envía VOUT_AUTH con la sesión vigente al origen ya validado. Devuelve
-    // false si no hay iframe, no hay sesión o el envío falla.
+    // Responde al juego en el origen ya validado: VOUT_AUTH con la sesión
+    // vigente o, sin sesión, VOUT_GUEST. Devuelve false si no hay iframe o
+    // el envío falla.
     const postAuth = useCallback(
         (origin: string): boolean => {
             const targetWindow = iframeRef.current?.contentWindow;
             const currentSession = sessionRef.current;
+            const currentPlayer = playerRef.current;
 
-            if (!targetWindow || !currentSession) {
+            if (!targetWindow) {
                 return false;
             }
 
-            const authMessage: VoutToGameMessage = {
-                type: 'VOUT_AUTH',
-                token: currentSession.token,
-                expiresAt: currentSession.expiresAt,
-                voutId: voutIdRef.current,
-                username: usernameRef.current,
-                ...(isDebugRequested() ? { debug: true as const } : {}),
-            };
+            const debug = isDebugRequested() ? { debug: true as const } : {};
+            const message: VoutToGameMessage =
+                currentSession && currentPlayer
+                    ? {
+                          type: 'VOUT_AUTH',
+                          token: currentSession.token,
+                          expiresAt: currentSession.expiresAt,
+                          voutId: currentPlayer.voutId,
+                          username: currentPlayer.username,
+                          ...debug,
+                      }
+                    : { type: 'VOUT_GUEST', ...debug };
 
             try {
-                targetWindow.postMessage(authMessage, origin);
+                targetWindow.postMessage(message, origin);
             } catch {
                 return false;
             }
 
-            lastSentTokenRef.current = currentSession.token;
+            lastSentTokenRef.current = currentSession?.token ?? null;
 
             return true;
         },
@@ -361,14 +368,14 @@ export function useIframeHandshake(
                 return;
             }
 
-            // Un juego puede repetir READY hasta recibir VOUT_AUTH. Siempre
+            // Un juego puede repetir READY hasta recibir respuesta. Siempre
             // respondemos, pero solo anunciamos la conexión la primera vez
             // para no reabrir, por ejemplo, una sugerencia ya descartada.
             const isFirstReady = connectedOriginRef.current !== origin;
 
             connectedOriginRef.current = origin;
             setConnectedOrigin(origin);
-            setStatus('authenticated');
+            setStatus('connected');
 
             if (isFirstReady) {
                 onReadyRef.current?.(suggestedPreset);

@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\AccountRequirement;
 use App\Enums\FacialControlSupport;
 use App\Enums\GameStatus;
 use App\Models\Category;
@@ -158,6 +159,48 @@ it('guarda si el juego admite el control facial', function (): void {
 
     expect(Game::query()->where('slug', 'face-runner')->firstOrFail()->facial_control_support)
         ->toBe(FacialControlSupport::Designed);
+});
+
+it('un juego nuevo exige cuenta si el dev no dice nada y guarda el modo que elija', function (?string $sent, AccountRequirement $expected): void {
+    $user = User::factory()->create();
+    $app = makeAppForUser($user);
+    $category = Category::factory()->create();
+
+    actingAs($user)->post(route('developers.games.store'), array_filter([
+        'name' => 'Guest Game',
+        'description' => str_repeat('Un juego para todos. ', 4),
+        'registered_app_id' => $app->id,
+        'embed_url' => 'https://games.test/guest',
+        'account_requirement' => $sent,
+        'category_ids' => [$category->id],
+    ], fn ($value) => $value !== null))->assertSessionHasNoErrors();
+
+    expect(Game::query()->where('slug', 'guest-game')->firstOrFail()->account_requirement)
+        ->toBe($expected);
+})->with([
+    'sin decir nada' => [null, AccountRequirement::Required],
+    'sin cuenta' => ['none', AccountRequirement::None],
+    'cuenta opcional' => ['optional', AccountRequirement::Optional],
+]);
+
+it('rechaza un modo de cuenta que no existe', function (): void {
+    $user = User::factory()->create();
+    $app = makeAppForUser($user);
+    $category = Category::factory()->create();
+
+    actingAs($user)
+        ->from(route('developers.games.create'))
+        ->post(route('developers.games.store'), [
+            'name' => 'Bad Account',
+            'description' => str_repeat('lorem ipsum ', 5),
+            'registered_app_id' => $app->id,
+            'embed_url' => 'https://games.test/bad-account',
+            'account_requirement' => 'sometimes',
+            'category_ids' => [$category->id],
+        ])
+        ->assertSessionHasErrors('account_requirement');
+
+    expect(Game::query()->count())->toBe(0);
 });
 
 it('rechaza un nivel de control facial que no existe', function (): void {

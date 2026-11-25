@@ -46,9 +46,10 @@ beforeEach(function (): void {
                 received.push(event.data);
             });
 
-            // Como un juego real: repite READY hasta que llega VOUT_AUTH.
+            // Como un juego real: repite READY hasta que el portal responde
+            // (VOUT_AUTH, o VOUT_GUEST si se juega sin cuenta).
             (function announce() {
-                if (received.some((message) => message.type === 'VOUT_AUTH')) {
+                if (received.some((message) => message.type === 'VOUT_AUTH' || message.type === 'VOUT_GUEST')) {
                     return;
                 }
                 window.parent.postMessage({ type: 'READY', suggestedPreset: 'runner' }, portalOrigin);
@@ -75,7 +76,7 @@ beforeEach(function (): void {
         <script src="/sdk/vout-game.js"></script>
         <script>
             const portalOrigin = new URL(document.referrer).origin;
-            const log = { auth: [], keys: [], mouse: [], clicks: [], actions: [], sessionEnds: [], buttonClicks: 0, focused: null };
+            const log = { auth: [], guests: 0, keys: [], mouse: [], clicks: [], actions: [], sessionEnds: [], buttonClicks: 0, focused: null };
 
             document.getElementById('menu-button').addEventListener('click', () => {
                 log.buttonClicks += 1;
@@ -104,6 +105,7 @@ beforeEach(function (): void {
                 portalOrigin,
                 suggestedPreset: 'runner',
                 onAuth: (session) => log.auth.push(session),
+                onGuest: () => { log.guests += 1; },
                 onSessionEnd: (reason) => log.sessionEnds.push(reason),
                 onAction: (event, at) => log.actions.push({ phase: 'start', event, at }),
                 onActionEnd: (event, at) => log.actions.push({ phase: 'end', event, at }),
@@ -117,7 +119,7 @@ beforeEach(function (): void {
 
             setInterval(() => {
                 window.parent.postMessage(
-                    { type: 'TEST_ECHO', received: [], log, embedded: vout.embedded, hasSession: vout.session !== null, debug: vout.debug },
+                    { type: 'TEST_ECHO', received: [], log, embedded: vout.embedded, hasSession: vout.session !== null, guest: vout.guest, debug: vout.debug },
                     portalOrigin,
                 );
             }, 100);
@@ -451,7 +453,118 @@ test('una app third-party sin autorizar pasa por el consentimiento y recibe un t
     $page->assertNoJavaScriptErrors();
 });
 
+// ─── Jugar sin cuenta (`account_requirement`) ─────────────────────────
+
+/**
+ * Los mensajes que el juego de prueba ha recibido hasta ahora.
+ *
+ * @return list<array<string, mixed>>
+ */
+function receivedGameMessages(PendingAwaitablePage|Webpage $page): array
+{
+    return $page->script(<<<'JS'
+        new Promise((resolve) => {
+            const onEcho = (event) => {
+                if (event.data && event.data.type === 'TEST_ECHO') {
+                    window.removeEventListener('message', onEcho);
+                    resolve(event.data.received);
+                }
+            };
+            window.addEventListener('message', onEcho);
+        })
+    JS);
+}
+
+test('un invitado juega a un juego de cuenta opcional: el juego recibe VOUT_GUEST sin datos del jugador', function (): void {
+    visit('/catalog');
+    $game = embedStubIn(Game::factory()->accountOptional()->create(['is_active' => true]));
+
+    $page = visit('/play/'.$game->slug);
+    $guest = waitForGameMessage($page, 'VOUT_GUEST');
+
+    expect($guest)->toBe(['type' => 'VOUT_GUEST']);
+
+    // Los gestos solo viajan con el juego conectado.
+    expect(waitForGameFrame($page, 'handshakeStatus', ['connected']))->toBe('connected');
+
+    $types = array_column(receivedGameMessages($page), 'type');
+
+    expect($types)->not->toContain('VOUT_AUTH');
+
+    $page->assertPresent('[data-play-guest-notice="guest"]')
+        ->assertNoJavaScriptErrors();
+});
+
+test('un juego que no usa la cuenta recibe VOUT_GUEST aunque el jugador haya entrado', function (): void {
+    $this->actingAs(User::factory()->create());
+
+    visit('/catalog');
+    $game = embedStubIn(Game::factory()->withoutAccount()->create(['is_active' => true]));
+
+    $page = visit('/play/'.$game->slug);
+
+    expect(waitForGameMessage($page, 'VOUT_GUEST'))->toBe(['type' => 'VOUT_GUEST'])
+        ->and(array_column(receivedGameMessages($page), 'type'))->not->toContain('VOUT_AUTH');
+
+    // Sin cuenta que compartir no hay nada que avisar.
+    $page->assertMissing('[data-play-guest-notice]')
+        ->assertNoJavaScriptErrors();
+});
+
+test('en una app de terceros se puede jugar sin compartir la cuenta y sin autorizarla', function (): void {
+    $user = User::factory()->create();
+    $this->actingAs($user);
+
+    visit('/catalog');
+    $game = embedStubIn(gameWithOAuthApp(['name' => 'Daino']));
+    $game->update(['account_requirement' => 'optional']);
+
+    $page = visit('/play/'.$game->slug);
+
+    $page->assertSee('Daino')
+        ->click('#btn-play-consent-guest')
+        ->assertPathIs('/play/'.$game->slug);
+
+    expect(waitForGameMessage($page, 'VOUT_GUEST'))->not->toBeNull()
+        ->and(array_column(receivedGameMessages($page), 'type'))->not->toContain('VOUT_AUTH')
+        ->and(OAuthUserGrant::query()->where('user_id', $user->id)->exists())->toBeFalse();
+
+    $page->assertPresent('[data-play-guest-notice="declined"]')
+        ->assertNoJavaScriptErrors();
+});
+
 // ─── SDK público para juegos (`public/sdk/vout-game.js`) ──────────────
+
+test('con el SDK, un invitado recibe onGuest y los controles por gestos le llegan igual', function (): void {
+    visit('/catalog');
+    $game = embedStubIn(Game::factory()->accountOptional()->create(['is_active' => true]), '/__embedded-sdk-game');
+
+    $page = visit('/play/'.$game->slug);
+    $echo = waitForSdkEcho($page, 'echo.log.guests >= 1');
+
+    expect($echo)->not->toBeNull()
+        ->and($echo['guest'])->toBeTrue()
+        ->and($echo['hasSession'])->toBeFalse()
+        ->and($echo['log']['auth'])->toBe([]);
+
+    $page->script(<<<'JS'
+        (() => {
+            const frame = document.querySelector('iframe');
+            const origin = new URL(frame.src).origin;
+            frame.contentWindow.postMessage({ type: 'VOUT_KEY', code: 'Space', key: ' ', state: 'down', at: Date.now() }, origin);
+            frame.contentWindow.postMessage({ type: 'VOUT_KEY', code: 'Space', key: ' ', state: 'up', at: Date.now() }, origin);
+        })()
+    JS);
+
+    $echo = waitForSdkEcho($page, 'echo.log.keys.length >= 2');
+
+    // El portal contesta a cada READY, pero onGuest llega una sola vez.
+    expect($echo)->not->toBeNull()
+        ->and($echo['log']['guests'])->toBe(1)
+        ->and(array_column($echo['log']['keys'], 'type'))->toBe(['keydown', 'keyup']);
+
+    $page->assertNoJavaScriptErrors();
+});
 
 test('un juego integrado con el SDK recibe la identidad sin escribir el saludo a mano', function (): void {
     $user = User::factory()->create();

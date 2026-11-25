@@ -244,6 +244,23 @@ export default function CatalogShow({
                                 </div>
                             )}
 
+                            <div
+                                id="game-account"
+                                data-account-requirement={
+                                    game.account_requirement
+                                }
+                                className="grid gap-2 px-4 py-3"
+                            >
+                                <dt className="font-pixel-label text-base leading-none text-muted-foreground">
+                                    {t('account_requirement.label')}
+                                </dt>
+                                <dd className="text-muted-foreground">
+                                    {t(
+                                        `account_requirement.detail.${game.account_requirement}`,
+                                    )}
+                                </dd>
+                            </div>
+
                             {game.categories.length > 0 && (
                                 <div className="grid gap-2 px-4 py-3">
                                     <dt className="font-pixel-label text-base leading-none text-muted-foreground">

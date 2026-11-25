@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\AccountRequirement;
 use App\Enums\FacialControlSupport;
 use App\Enums\GameStatus;
 use Database\Factories\GameFactory;
@@ -42,6 +43,7 @@ class Game extends Model
         'cover_image',
         'embed_url',
         'facial_control_support',
+        'account_requirement',
         'release_date',
         'play_count',
         'is_active',
@@ -72,6 +74,7 @@ class Game extends Model
             'play_count' => 'integer',
             'status' => GameStatus::class,
             'facial_control_support' => FacialControlSupport::class,
+            'account_requirement' => AccountRequirement::class,
         ];
     }
 
@@ -84,6 +87,7 @@ class Game extends Model
     protected $attributes = [
         'status' => 'published',
         'facial_control_support' => 'none',
+        'account_requirement' => 'required',
     ];
 
     /**

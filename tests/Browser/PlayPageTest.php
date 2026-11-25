@@ -1,6 +1,8 @@
 <?php
 
+use App\Models\Game;
 use App\Models\User;
+use Pest\Browser\ServerManager;
 
 // -----------------------------------------------------------------------
 // La página de juego "el juego primero": el control facial solo en juegos
@@ -27,7 +29,7 @@ test('un juego que no admite el control facial no ofrece la cámara', function (
 
     $page = visit('/play/'.$game->slug);
 
-    expect(waitForGameFrame($page, 'handshakeStatus', ['authenticated']))->toBe('authenticated');
+    expect(waitForGameFrame($page, 'handshakeStatus', ['connected']))->toBe('connected');
 
     $page->script('new Promise((resolve) => setTimeout(resolve, 3000))');
 
@@ -115,7 +117,7 @@ test('los controles que sugiere el juego se preguntan una vez y se recuerdan', f
 
     $page = visit('/play/'.$game->slug);
 
-    expect(waitForGameFrame($page, 'handshakeStatus', ['authenticated']))->toBe('authenticated')
+    expect(waitForGameFrame($page, 'handshakeStatus', ['connected']))->toBe('connected')
         ->and(waitForSelector($page, '#play-preset-choice[data-preset-ask="true"]'))->toBeTrue();
 
     $page->click('#play-preset-use-game');
@@ -126,7 +128,7 @@ test('los controles que sugiere el juego se preguntan una vez y se recuerdan', f
     // En la partida siguiente no se pregunta: se usan los del juego.
     $page = visit('/play/'.$game->slug);
 
-    expect(waitForGameFrame($page, 'handshakeStatus', ['authenticated']))->toBe('authenticated')
+    expect(waitForGameFrame($page, 'handshakeStatus', ['connected']))->toBe('connected')
         ->and(waitForSelector($page, '#play-preset-choice[data-preset-ask="false"]'))->toBeTrue()
         ->and(waitForGameFrame($page, 'presetChoice', ['runner']))->toBe('runner');
 
@@ -225,7 +227,7 @@ test('quien no juega con la cámara no la tiene en automático', function (): vo
 
     $page = visit('/play/'.$game->slug, ['permissions' => ['camera']]);
 
-    expect(waitForGameFrame($page, 'handshakeStatus', ['authenticated']))->toBe('authenticated');
+    expect(waitForGameFrame($page, 'handshakeStatus', ['connected']))->toBe('connected');
 
     pauseFor($page, 4000);
 
@@ -301,7 +303,7 @@ test('a pantalla completa, un juego sin control facial ocupa toda la pantalla si
 
     $page = visit('/play/'.$game->slug);
 
-    expect(waitForGameFrame($page, 'handshakeStatus', ['authenticated']))->toBe('authenticated');
+    expect(waitForGameFrame($page, 'handshakeStatus', ['connected']))->toBe('connected');
 
     $page->click('#play-fullscreen');
 
@@ -309,4 +311,25 @@ test('a pantalla completa, un juego sin control facial ocupa toda la pantalla si
         ->and($page->script('document.querySelector("#play-fullscreen-toolbar") === null'))->toBeTrue();
 
     $page->assertNoJavaScriptErrors();
+});
+
+test('un invitado prueba los gestos sin cuenta y se le ofrece entrar para guardarlos', function (): void {
+    $game = Game::factory()->accountOptional()->compatibleWithFace()->create([
+        'is_active' => true,
+        'embed_url' => 'http://localhost:'.parse_url(ServerManager::instance()->http()->rewrite('/'), PHP_URL_PORT).'/__engine-ready-game',
+    ]);
+
+    $page = visit('/play/'.$game->slug);
+
+    expect(waitForGameFrame($page, 'handshakeStatus', ['connected']))->toBe('connected');
+
+    $page->assertPresent('[data-play-guest-notice="guest"]')
+        ->click('#play-panel-trigger')
+        ->assertVisible('#play-engine-toggle')
+        ->assertSee('Entrar para guardar tus controles')
+        ->assertDontSee('Configurar en Ajustes')
+        ->assertNoJavaScriptErrors();
+
+    // Abrir el panel no guarda nada: no hay cuenta.
+    expect(User::query()->count())->toBe(0);
 });

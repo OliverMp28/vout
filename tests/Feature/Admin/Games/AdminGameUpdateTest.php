@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\AccountRequirement;
 use App\Enums\FacialControlSupport;
 use App\Models\AuditLog;
 use App\Models\Category;
@@ -109,4 +110,36 @@ it('el detalle del admin muestra si el juego admite el control facial', function
         ->get(route('admin.games.show', $game))
         ->assertInertia(fn ($page) => $page
             ->where('game.facial_control_support', 'designed'));
+});
+
+it('el admin cambia si hace falta cuenta para jugar y lo ve en el detalle', function (): void {
+    $admin = User::factory()->admin()->create();
+    $game = Game::factory()->create();
+
+    $this->actingAs($admin)
+        ->put(route('admin.games.update', $game), [
+            'account_requirement' => 'optional',
+        ])
+        ->assertRedirect()
+        ->assertSessionHasNoErrors();
+
+    expect($game->fresh()->account_requirement)->toBe(AccountRequirement::Optional);
+
+    $this->actingAs($admin)
+        ->get(route('admin.games.show', $game))
+        ->assertInertia(fn ($page) => $page
+            ->where('game.account_requirement', 'optional'));
+});
+
+it('rechaza un modo de cuenta que no existe', function (): void {
+    $admin = User::factory()->admin()->create();
+    $game = Game::factory()->create();
+
+    $this->actingAs($admin)
+        ->put(route('admin.games.update', $game), [
+            'account_requirement' => 'maybe',
+        ])
+        ->assertSessionHasErrors('account_requirement');
+
+    expect($game->fresh()->account_requirement)->toBe(AccountRequirement::Required);
 });

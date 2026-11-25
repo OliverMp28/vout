@@ -27,8 +27,9 @@ function registerEngineGameRoutes(): void
         '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>Engine stub</title></head><body></body></html>',
     ));
 
-    // Como un juego real: repite READY hasta que llega VOUT_AUTH, así que el
-    // handshake termina y el portal da el juego por cargado.
+    // Como un juego real: repite READY hasta que el portal responde (VOUT_AUTH
+    // o VOUT_GUEST), así que el handshake termina y el portal da el juego por
+    // cargado.
     Route::get('/__engine-ready-game', fn () => response(<<<'HTML'
         <!DOCTYPE html>
         <html lang="en">
@@ -39,7 +40,7 @@ function registerEngineGameRoutes(): void
             let authenticated = false;
 
             window.addEventListener('message', (event) => {
-                if (event.source === window.parent && event.data?.type === 'VOUT_AUTH') {
+                if (event.source === window.parent && (event.data?.type === 'VOUT_AUTH' || event.data?.type === 'VOUT_GUEST')) {
                     authenticated = true;
                 }
             });
@@ -67,7 +68,7 @@ function registerEngineGameRoutes(): void
             let authenticated = false;
 
             window.addEventListener('message', (event) => {
-                if (event.source === window.parent && event.data?.type === 'VOUT_AUTH') {
+                if (event.source === window.parent && (event.data?.type === 'VOUT_AUTH' || event.data?.type === 'VOUT_GUEST')) {
                     authenticated = true;
                 }
             });

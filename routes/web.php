@@ -11,6 +11,7 @@ use App\Http\Controllers\OAuth\OidcDiscoveryController;
 use App\Http\Controllers\Play\ConsentController as PlayConsentController;
 use App\Http\Controllers\Play\PresetChoiceController as PlayPresetChoiceController;
 use App\Http\Controllers\Play\SessionTokenController as PlaySessionTokenController;
+use App\Http\Controllers\Play\SignInController as PlaySignInController;
 use App\Http\Controllers\PlayController;
 use App\Http\Controllers\VisionLabController;
 use App\Http\Middleware\HandleAppearance;
@@ -69,16 +70,20 @@ Route::get('legal/{slug}', [LegalController::class, 'show'])
     ->where('slug', '[a-z0-9-]+')
     ->name('legal.show');
 
+// Fase 3.3 — Reproductor de juegos embebidos. Abierto a invitados: quién
+// puede jugar lo decide el `account_requirement` de cada juego en el
+// controlador (los de cuenta obligatoria mandan a entrar).
+Route::get('play/{game}', [PlayController::class, 'show'])->name('play.show');
+
+// "Entrar" desde la página de juego: tras el login se vuelve al juego.
+Route::get('play/{game}/sign-in', PlaySignInController::class)->name('play.sign-in');
+
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', DashboardController::class)->name('dashboard');
 
     // Fase 2.5 — Descarta el hero de onboarding del dashboard.
     Route::post('dashboard/welcome/dismiss', [DashboardController::class, 'dismissWelcome'])
         ->name('dashboard.welcome.dismiss');
-
-    // Fase 3.3 — Reproductor de juegos embebidos.
-    // Requiere autenticación verificada porque genera un token de identidad.
-    Route::get('play/{game}', [PlayController::class, 'show'])->name('play.show');
 
     // Consentimiento previo para juegos de apps third-party sin autorizar.
     Route::post('play/{game}/consent', [PlayConsentController::class, 'store'])

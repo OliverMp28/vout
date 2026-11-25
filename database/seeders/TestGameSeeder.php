@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Enums\AccountRequirement;
 use App\Enums\FacialControlSupport;
 use App\Models\Game;
 use Illuminate\Database\Seeder;
@@ -51,6 +52,8 @@ class TestGameSeeder extends Seeder
                 'embed_url' => 'http://localhost/test-game/index.html',
                 // Recibe las teclas como eventos reales (mismo origen).
                 'facial_control_support' => FacialControlSupport::Compatible,
+                // Se juega sin cuenta: sirve para probar también el modo invitado.
+                'account_requirement' => AccountRequirement::Optional,
                 'cover_image' => null,
                 'release_date' => now()->toDateString(),
                 'play_count' => 0,

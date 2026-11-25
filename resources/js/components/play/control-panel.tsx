@@ -128,7 +128,39 @@ type ControlPanelProps = {
     /** Hay que preguntar qué controles se usan en este juego. */
     askPresetChoice: boolean;
     onChoosePreset: (choice: string) => void;
+    /**
+     * Juega un invitado: los enlaces a Ajustes pasan a "Entrar" (vuelve al
+     * juego tras el login), porque sin cuenta no hay controles que guardar.
+     */
+    signInHref: string | null;
 };
+
+/** A dónde lleva "guardar tus controles": Ajustes, o entrar si no hay cuenta. */
+function useSaveControlsLink(signInHref: string | null): {
+    href: string;
+    /** Botón corto. */
+    label: string;
+    /** Dentro de una frase ("Para guardar los tuyos: …"). */
+    inlineLabel: string;
+    /** Botón del pie del panel. */
+    longLabel: string;
+} {
+    const { t } = useTranslation();
+
+    return signInHref === null
+        ? {
+              href: appearance.edit.url(),
+              label: t('play.panel.unconfigured.cta'),
+              inlineLabel: t('play.panel.unconfigured.cta'),
+              longLabel: t('play.panel.configure_mappings'),
+          }
+        : {
+              href: signInHref,
+              label: t('play.panel.guest.cta'),
+              inlineLabel: t('play.panel.guest.inline'),
+              longLabel: t('play.panel.guest.cta'),
+          };
+}
 
 // ---------------------------------------------------------------------------
 // Constantes
@@ -180,11 +212,17 @@ function TrialPanel({
     cameraNotice,
     onToggleEngine,
     onEngineIntent,
+    signInHref,
 }: Pick<
     ControlPanelProps,
-    'cameraBusy' | 'cameraNotice' | 'onToggleEngine' | 'onEngineIntent'
+    | 'cameraBusy'
+    | 'cameraNotice'
+    | 'onToggleEngine'
+    | 'onEngineIntent'
+    | 'signInHref'
 >) {
     const { t } = useTranslation();
+    const saveLink = useSaveControlsLink(signInHref);
 
     return (
         <div className="flex h-full flex-col items-center justify-center gap-5 p-1 text-center">
@@ -239,9 +277,9 @@ function TrialPanel({
             </div>
 
             <Button asChild variant="ghost" size="sm" className="gap-2">
-                <Link href={appearance.edit.url()}>
+                <Link href={saveLink.href}>
                     <Settings2 className="size-4" />
-                    {t('play.panel.unconfigured.cta')}
+                    {saveLink.label}
                 </Link>
             </Button>
         </div>
@@ -290,6 +328,7 @@ function IdlePanel(props: ControlPanelProps) {
         onEngineIntent,
     } = props;
     const { t } = useTranslation();
+    const saveLink = useSaveControlsLink(props.signInHref);
     const engineBadge = ENGINE_BADGE[engineStatus];
 
     return (
@@ -355,9 +394,9 @@ function IdlePanel(props: ControlPanelProps) {
                     size="sm"
                     className="w-full gap-2"
                 >
-                    <Link href={appearance.edit.url()}>
+                    <Link href={saveLink.href}>
                         <Settings2 className="size-4" />
-                        {t('play.panel.configure_mappings')}
+                        {saveLink.longLabel}
                     </Link>
                 </Button>
             </section>
@@ -393,8 +432,10 @@ function RunningPanel(props: ControlPanelProps) {
         previewEnabled,
         onTogglePreview,
         preview,
+        signInHref,
     } = props;
     const { t } = useTranslation();
+    const saveLink = useSaveControlsLink(signInHref);
     const [advancedOpen, setAdvancedOpen] = useState(false);
 
     const engineBadge = ENGINE_BADGE[engineStatus];
@@ -430,10 +471,10 @@ function RunningPanel(props: ControlPanelProps) {
                     <AlertDescription className="text-xs">
                         {t('play.panel.trial_notice')}{' '}
                         <Link
-                            href={appearance.edit.url()}
+                            href={saveLink.href}
                             className="font-semibold text-foreground underline decoration-border-strong underline-offset-2 hover:decoration-signal-strong"
                         >
-                            {t('play.panel.unconfigured.cta')}
+                            {saveLink.inlineLabel}
                         </Link>
                     </AlertDescription>
                 </Alert>
@@ -510,9 +551,7 @@ function RunningPanel(props: ControlPanelProps) {
                         id="play-dispatch-toggle"
                         checked={dispatchEnabled}
                         onCheckedChange={onToggleDispatch}
-                        disabled={
-                            !isRunning || handshakeStatus !== 'authenticated'
-                        }
+                        disabled={!isRunning || handshakeStatus !== 'connected'}
                         aria-label={t('play.panel.dispatch')}
                     />
                 </div>
@@ -707,9 +746,9 @@ function RunningPanel(props: ControlPanelProps) {
                     size="sm"
                     className="w-full gap-2"
                 >
-                    <Link href={appearance.edit.url()}>
+                    <Link href={saveLink.href}>
                         <Settings2 className="size-4" />
-                        {t('play.panel.configure_mappings')}
+                        {saveLink.longLabel}
                     </Link>
                 </Button>
             </section>

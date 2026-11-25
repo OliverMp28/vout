@@ -1,6 +1,7 @@
 import { Link } from '@inertiajs/react';
 import { AlertCircle, BadgeCheck, Plus, UserRoundPlus } from 'lucide-react';
 import type { ReactNode, SubmitEvent } from 'react';
+import { AccountRequirementField } from '@/components/catalog/account-requirement-field';
 import { FacialControlSupportField } from '@/components/catalog/facial-control-support-field';
 import { FlowDiagram } from '@/components/developers/flow-diagram';
 import { InfoHint } from '@/components/developers/info-hint';
@@ -327,6 +328,29 @@ export function GameForm({
                         className="inline-block text-sm font-medium text-primary underline-offset-4 hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
                     >
                         {t('developers.games.form.facial_control.cta')}
+                    </Link>
+                </Section>
+
+                <Section
+                    title={t('developers.games.form.section.account.title')}
+                    description={t(
+                        'developers.games.form.section.account.description',
+                    )}
+                >
+                    <AccountRequirementField
+                        idPrefix="game"
+                        value={data.account_requirement}
+                        onChange={(next) =>
+                            onChange('account_requirement', next)
+                        }
+                        disabled={isLocked}
+                    />
+                    <InputError message={errors.account_requirement} />
+                    <Link
+                        href={`/developers/docs/integration-guide#${t('developers.games.form.account.guide_anchor')}`}
+                        className="inline-block text-sm font-medium text-primary underline-offset-4 hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                    >
+                        {t('developers.games.form.account.cta')}
                     </Link>
                 </Section>
 

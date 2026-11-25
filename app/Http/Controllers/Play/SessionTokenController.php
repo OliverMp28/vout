@@ -21,7 +21,8 @@ use Symfony\Component\HttpFoundation\Response;
  * portal traduce en el fin de la sesión de juego:
  *
  *   - 401: la sesión web caducó o se cerró (middleware `auth`).
- *   - 403: el usuario revocó la app (`GameSessionTokenIssuer::issue()`).
+ *   - 403: el usuario revocó la app o el juego dejó de usar la cuenta de
+ *     Vout (`GameSessionTokenIssuer::issue()`).
  *   - 404: el juego ya no está disponible.
  *   - 409: la sesión web pertenece ahora a otra cuenta. La página de juego
  *     se renderizó para un usuario y el navegador tiene la sesión de otro

@@ -35,6 +35,9 @@ function seedSmokeCatalog(): Game
             'cover_image' => null,
             'is_featured' => $index === 0,
             'facial_control_support' => $index === 0 ? 'designed' : 'none',
+            // El destacado se juega sin cuenta: así se ve también la página de
+            // juego de un invitado.
+            'account_requirement' => $index === 0 ? 'optional' : 'required',
             'embed_url' => 'http://localhost:'.$port.'/__engine-ready-game',
         ]));
 
@@ -79,6 +82,7 @@ dataset('public_pages', [
     'recuperar contraseña' => '/forgot-password',
     'desarrolladores' => '/developers',
     'privacidad' => '/legal/privacidad',
+    'juego sin cuenta' => '/play/{slug}',
 ]);
 
 dataset('account_pages', [
@@ -118,6 +122,7 @@ dataset('key_pages', [
     'perfil' => ['/settings/profile', true],
     'privacidad de la cuenta' => ['/settings/privacy', true],
     'desarrolladores' => ['/developers', false],
+    'juego sin cuenta' => ['/play/{slug}', false],
     'admin' => ['/admin/dashboard', true],
 ]);
 

@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Admin;
 
+use App\Enums\AccountRequirement;
 use App\Enums\FacialControlSupport;
 use App\Rules\PortableUrl;
 use Illuminate\Contracts\Validation\ValidationRule;
@@ -30,6 +31,7 @@ class UpdateGameRequest extends FormRequest
             'description' => ['sometimes', 'string', 'min:20', 'max:5000'],
             'embed_url' => ['sometimes', new PortableUrl],
             'facial_control_support' => ['sometimes', 'required', Rule::enum(FacialControlSupport::class)],
+            'account_requirement' => ['sometimes', 'required', Rule::enum(AccountRequirement::class)],
             'cover_image' => ['nullable', new PortableUrl, 'max:500'],
             'release_date' => ['nullable', 'date'],
             'repo_url' => ['nullable', new PortableUrl, 'max:500'],
