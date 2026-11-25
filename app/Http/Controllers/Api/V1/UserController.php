@@ -42,7 +42,9 @@ class UserController extends Controller
             'vout_id' => $user->vout_id,
             'name' => $user->name,
             'username' => $user->username,
-            'avatar' => $user->avatar,
+            // Una foto subida al portal se guarda como ruta (`/storage/...`):
+            // las apps externas la necesitan con el dominio de Vout delante.
+            'avatar' => $user->avatar === null ? null : url($user->avatar),
         ];
 
         // Datos sensibles: solo disponibles con scope user:email.

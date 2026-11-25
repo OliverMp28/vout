@@ -67,3 +67,16 @@ test('nunca expone el ID autoincremental del usuario', function () {
         ->assertJsonMissingPath('data.google_id')
         ->assertJsonMissingPath('data.password');
 });
+
+test('devuelve la foto subida al portal como URL absoluta y null si no hay foto', function (?string $stored, ?string $expected) {
+    $user = User::factory()->create(['avatar' => $stored]);
+
+    Passport::actingAs($user, ['user:read']);
+
+    $this->getJson('/api/v1/user/me')
+        ->assertOk()
+        ->assertJsonPath('data.avatar', $expected === null ? null : url($expected));
+})->with([
+    'subida al portal' => ['/storage/avatars/foto.jpg', '/storage/avatars/foto.jpg'],
+    'sin foto' => [null, null],
+]);

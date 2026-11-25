@@ -627,7 +627,7 @@
     "developers.landing.faq.q1": "Do I need approval to publish my app?",
     "developers.landing.faq.a1": "To create an app, no: any account can do it from your dashboard and the credentials are issued right away. Games are reviewed before they appear in the catalog.",
     "developers.landing.faq.q2": "Which scopes can I request?",
-    "developers.landing.faq.a2": "user:read, user:email, games:read, games:write, and game:play. Combine them according to your app flow.",
+    "developers.landing.faq.a2": "user:read (name, username, picture and vout_id) and user:email (the email too). games:read and games:write are reserved for a future API version, and game:play is only issued by the portal itself.",
     "developers.landing.faq.q3": "Can I use Vout without Passport on my backend?",
     "developers.landing.faq.a3": "Yes. Vout is a standard OAuth 2.1 server. Any JWT library (lcobucci/jwt, jose, etc.) validates tokens against our public key.",
     "developers.landing.faq.q4": "What if I lose the client_secret?",

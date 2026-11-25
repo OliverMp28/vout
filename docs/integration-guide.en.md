@@ -1,48 +1,128 @@
-# Integration Guide: Vout User Ecosystem
+# Vout Integration Guide
 
-> **Version:** 1.1  
-> **Protocol:** OAuth 2.0 (Authorization Code + PKCE)  
-> **Last updated:** October 2026
+> **Version:** 1.2 · **Last updated:** November 2026
+> **Protocols:** OAuth 2.0 (Authorization Code + PKCE), RS256 JWTs and the portal's `postMessage` protocol
 
----
-
-## What is Vout?
-
-Vout is an **Identity Provider (IdP)** that centralizes user accounts for an ecosystem of web-based minigames. Instead of each game managing its own user database, Vout provides a "universal passport": users register once and can play any integrated project.
-
-**Benefits for your project:**
-- No need to manage registration, passwords, or account recovery.
-- Your users sign in with one click using their Vout (or Google) account.
-- You receive a unique identifier (`vout_id`) to link progress and data.
+This guide is the complete reference for connecting a game or a website to Vout. It is written so that a person, or an AI agent, can follow it without having to ask anyone: everything Vout offers today is here, and anything that doesn't exist yet is said so.
 
 ---
 
-## Integration Types
+## What Vout gives you
 
-Your project can integrate with Vout in two ways:
+1. **Accounts you don't have to build.** Your players sign in with their Vout account (or with Google through Vout). You don't handle passwords, account recovery or email verification. You get a stable identifier, `vout_id`, to store their progress in your database.
+2. **A spot in the portal's catalog.** Your game loads inside the portal in an iframe, stays on your server and anyone visiting Vout can play it.
+3. **No double sign-in.** If the player is already signed in to Vout, your game recognizes them as soon as it loads inside the portal: Vout hands the identity to the iframe. It's the same account they use on your site with "Sign in with Vout", so their progress is the same in both places.
+4. **Gesture control.** The portal analyzes the camera in the player's browser and sends your game keys, clicks or events. You don't touch the camera and you don't need any computer vision.
 
-### 1. Catalog Only (no authentication)
-Your game appears in the Vout portal but **doesn't need to identify users**. Ideal for simple games with no backend or database.
+You can use just one part. A game without accounts can be in the catalog and receive gestures without implementing OAuth.
 
-- Your app is registered in Vout with `requires_auth = false`.
-- No OAuth2 or token configuration needed.
-- The game simply loads in the portal.
+---
 
-### 2. With User Ecosystem (OAuth2)
-Your game needs to know **who the user is** (to save scores, display their name, etc.).
+## Before you start
 
-- Your app is registered in Vout with `requires_auth = true`.
-- You receive a `client_id` (and optionally a `client_secret`).
-- You implement the standard OAuth2 flow described below.
-- If you also publish the game in the portal, there is no redirect inside the iframe: the portal passes you the token over `postMessage` (see "Identity Inside the iFrame").
+- **The domain in the examples.** `https://vout.example.com` stands for the address of the Vout instance you integrate with. Replace it with the real one: the one you see in the portal's address bar. Always use it with the same scheme and no trailing slash, because it is the tokens' `iss` and the exact origin of the iframe messages.
+- **Everything happens in your dashboard.** Creating apps, seeing credentials, regenerating the secret and submitting games are things you do yourself at `/developers/dashboard`, with a Vout account whose email is confirmed. The only thing that goes through the Vout team is reviewing each game before it appears in the catalog.
+- **Vocabulary.**
+  - **App:** your project registered in Vout (name, URL, allowed origins and, if it uses accounts, an OAuth client).
+  - **Allowed origin:** scheme + host + port your app runs on, for example `https://mygame.com` or `http://localhost:8090`. The portal only accepts messages from your iframe if they come from one of them, and your redirect URLs and your game's URL must be inside them.
+  - **Game:** a catalog entry pointing to a URL of your app (`embed_url`).
 
-> **Note:** The protocol is **exactly the same** for first-party and third-party projects. The only difference is that Vout's own projects (`is_first_party = true`) don't show an authorization prompt — the session starts transparently.
+---
+
+## Quick reference
+
+**Endpoints**
+
+| Method and path | Purpose |
+| :--- | :--- |
+| `GET /oauth/authorize` | Start of the OAuth sign-in (Authorization Code + PKCE). |
+| `POST /oauth/token` | Exchange the `code` for tokens, or renew with `refresh_token`. |
+| `GET /api/v1/user/me` | Profile of the token's player (`Authorization: Bearer …`). |
+| `GET /oauth/jwks` | Public keys to verify the JWTs (RS256, with `kid`). |
+| `GET /.well-known/openid-configuration` | Discovery: endpoints, scopes and algorithms. |
+| `GET /sdk/vout-game.js` | Optional SDK for games inside the portal. |
+
+**Fixed values**
+
+| What | Value |
+| :--- | :--- |
+| Access token lifetime | 60 minutes (`expires_in: 3600`) |
+| Refresh token lifetime | 30 days |
+| Signing algorithm | RS256, with `kid` in the header |
+| `iss` | The instance URL, no trailing slash |
+| `aud` | Your `client_id` |
+| Player identifier | The `vout_id` claim (UUID). Don't use `sub`. |
+| Scopes you can request | `user:read` (default) and `user:email` |
+| PKCE method | `S256` |
+
+**Iframe messages** (details in "Identity Inside the iFrame")
+
+| Direction | Type |
+| :--- | :--- |
+| game → portal | `READY`, `EXIT`, `GAME_STATE` (reserved) |
+| portal → game | `VOUT_AUTH`, `VOUT_GUEST`, `VOUT_SESSION_END`, `VOUT_KEY`, `VOUT_POINTER`, `VOUT_CURSOR`, `VOUT_ACTION`, `VOUT_ACTION_END` |
+
+---
+
+## Choose your integration
+
+| What you want | Register | Implement |
+| :--- | :--- | :--- |
+| **A. Your game in the catalog, no accounts** | An app **without** Vout accounts and a game in "No account" mode. | The headers that let the portal embed you (see "Embedding Your Game"). For gestures, the SDK. |
+| **B. Your game in the catalog, recognizing the player** | An app **with** Vout accounts and a game in "Optional account" or "Account required" mode. | Receive `VOUT_AUTH` / `VOUT_GUEST` in the iframe and verify the token on your backend. |
+| **C. "Sign in with Vout" on your own site** | An app **with** Vout accounts. | The OAuth 2.0 + PKCE flow on your backend. |
+| **B + C together** | The same app. | Both. The player has the same `vout_id` on your site and inside the portal, so their progress is one. |
+
+> The protocol is the same for Vout's own projects and for third parties. The only difference is that a Vout app (`is_first_party`, only the Vout team can set it) doesn't show the permissions screen.
+
+---
+
+## Step by step in your dashboard
+
+### 1. Create your account
+
+Sign up to Vout and confirm your email. The developer dashboard is at `/developers/dashboard`.
+
+### 2. Register your app
+
+Under "New app" you fill in:
+
+| Field | Notes |
+| :--- | :--- |
+| Name | Players see it on the permissions screen. Unique among your apps. |
+| App URL | Your project's home page. |
+| Allowed origins | 1 to 10, scheme + host + port only (no path). Include your development one if you'll test locally. |
+| Uses Vout accounts? | If not, no OAuth client is created (case A). You can turn it on later. |
+| Client type | **Confidential** if your server does the code exchange (you get a `client_secret`). **Public** if you can't keep a secret: there is no `client_secret` and PKCE is mandatory. |
+| Redirect URLs | 1 to 5. They must be inside your allowed origins. Vout only redirects to one of them, compared exactly. |
+
+### 3. Store your credentials
+
+When you create the app you see the `client_id` (a UUID) and, if it's confidential, the `client_secret`. **The secret is shown only once**: Vout doesn't store it in plain text. If you lose it, generate a new one from the app's page; the old one stops working immediately.
+
+Store it like any secret: in your server's environment variables, never in browser code or in the repository.
+
+### 4. Submit your game
+
+Under "Games" → "Submit game":
+
+| Field | Notes |
+| :--- | :--- |
+| Name and description | Description between 20 and 2000 characters. |
+| App | One of your active apps. |
+| Game URL (`embed_url`) | The page loaded in the iframe. It must be inside the app's allowed origins. |
+| Categories | 1 to 5. |
+| Face control | Whether your game receives gesture controls (see "Declare whether your game supports gestures"). |
+| Vout account | No account, optional or required (see "Playing without an account"). Required by default. |
+| Cover, release date and repository | Optional. Without a cover, the catalog generates one from the name. |
+
+The game stays **in review** and doesn't appear in the catalog until the Vout team approves it. If it's rejected, you see the reason in your dashboard; once you fix it, it goes back to review.
 
 ---
 
 ## Protocol: OAuth2 Authorization Code + PKCE
 
-Vout implements the **OAuth 2.0** standard with the **PKCE** extension (Proof Key for Code Exchange), the recommended flow for modern web applications.
+Vout implements **OAuth 2.0** with **PKCE** (Proof Key for Code Exchange), today's recommended flow for web applications. There is no implicit or password flow.
 
 ### What does this mean for you?
 
@@ -62,16 +142,18 @@ For Phase 2 you have two ways to verify the token:
 
 > Which one to pick? If your app is simple, start with Option B: less code, and revocations are detected instantly. When the per-request round-trip starts to hurt under load, move to Option A. There's a comparison table further down with all the details.
 
+> **From your server, not the browser.** Today Vout only accepts browser requests (CORS) from its own domain. Do the code exchange (`/oauth/token`) and the calls to `/api/v1/user/me` from your backend. A site with no backend can't complete the OAuth flow yet; inside the portal it does receive the identity over `postMessage`.
+
 ---
 
 ## Step-by-Step Flow
 
-### Step 1: Register your application
+### Step 1: Have your credentials at hand
 
-Contact the Vout administrator to register your app. You'll receive:
-- **`client_id`**: Your application's public identifier (UUID).
-- **`client_secret`** (optional): Only for applications with a secure backend. SPAs use PKCE without a secret.
-- **`redirect_uri`**: The URL in your app where Vout will redirect the user after authentication.
+From your dashboard (see "Step by step in your dashboard"):
+- **`client_id`**: your app's public identifier (UUID).
+- **`client_secret`**: only if your client is confidential.
+- **`redirect_uri`**: one of the redirect URLs you registered, written exactly the same.
 
 ### Step 2: Redirect the user to Vout
 
@@ -105,6 +187,8 @@ GET https://vout.example.com/oauth/authorize?
 
 - For **first-party** apps, the user is redirected automatically without seeing any prompt.
 - For **third-party** apps, the user will see: *"App X requests access to your profile"*, with the scopes listed.
+- If the user isn't signed in to Vout, they sign in (or sign up) first and then the flow continues.
+- If they deny access, they come back to your `redirect_uri` with `?error=access_denied&state=...`. Always check that `state` is the one you sent.
 
 > **Vout remembers consent.** After a successful first authorization, subsequent `/oauth/authorize` calls from the same user for your app skip the screen and emit the `code` directly (UX parity with Google/GitHub). The user can revoke access from `/settings/connected-apps` at any time; that invalidates the active tokens and the next authorization will display the screen again. If your app requests a **new scope** that the existing grant doesn't cover, Vout prompts again (incremental consent).
 
@@ -154,34 +238,34 @@ Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOi...
 {
     "data": {
         "vout_id": "550e8400-e29b-41d4-a716-446655440000",
-        "name": "Oliver",
-        "username": "oliver_mp",
-        "avatar": "https://lh3.googleusercontent.com/...",
-        "email": "oliver@example.com"
+        "name": "Ada",
+        "username": "ada_plays",
+        "avatar": "https://vout.example.com/storage/avatars/ada.jpg",
+        "email": "ada@example.com"
     }
 }
 ```
 
-> **Note:** The `email` field only appears if you requested the `user:email` scope.
+- `email` only appears if the token has the `user:email` scope.
+- `avatar` is an absolute URL, or `null` if the player has no picture.
+- `name` and `username` can change: always link the player by `vout_id`.
+- With no token, or with an expired or revoked one, the response is `401`.
 
 ---
 
 ## Available Scopes
 
-Scopes control what user data Vout shares with your app. **Important:** Vout does not store your game's internal progress (levels, inventory, etc.). You manage that data in your own database using the `vout_id` as the key.
+Scopes control which player data Vout shares with your app. Vout doesn't store your game's progress (levels, inventory, high scores): that lives in your database, keyed by `vout_id`.
 
-Game-related scopes are exclusively used to sync **global metadata** with the public Vout portal (e.g., displaying high scores or favorites on the player's public profile).
-
-| Scope | Included data | Use case |
+| Scope | What it gives | Status |
 | :--- | :--- | :--- |
-| `user:read` | `vout_id`, `name`, `username`, `avatar` | Display name and photo in your game |
-| `user:email` | `email` | Send notifications, direct communication |
-| `games:read` | Global history and statistics in Vout | Know what other games the user prefers in the portal |
-| `games:write` | Public metadata directed to Vout | Update the Vout portal when a user breaks a record in your game, or mark your game as their favorite |
+| `user:read` | `vout_id`, `name`, `username`, `avatar` | Available. It's the default if you request none. |
+| `user:email` | Also `email` in `/api/v1/user/me` | Available. |
+| `games:read` | The player's history and stats in the portal | **Reserved.** There are no endpoints using it yet: don't request it. |
+| `games:write` | Publishing high scores or favorites to the portal | **Reserved.** Same as above. |
+| `game:play` | Portal token for games without an OAuth client | Internal: the portal itself issues it (see "Which token you get"). It isn't requested at `/oauth/authorize`. |
 
-**Default scope:** If you don't specify any scope, `user:read` is assigned.
-
-**Best practice:** Only request the scopes you need. Users trust apps that ask for fewer permissions.
+Only ask for what you need: the permissions screen shows it as is, and a player trusts an app that asks for little. If you later request a new scope, Vout asks the player again only about that one.
 
 ---
 
@@ -214,8 +298,8 @@ GET /oauth/authorize?...&prompt=consent
 
 Any user can go to `/settings/connected-apps` (in their Vout account) and revoke your app's access. That:
 
-- Marks the grant as revoked (it doesn't disappear from history; it stays with `revoked_at` populated).
-- Marks all `oauth_access_tokens` and `oauth_refresh_tokens` for that (user, client) pair as `revoked=1`. Your next refresh will fail with `invalid_grant`.
+- Removes your app's authorization for that player.
+- Revokes every access and refresh token your app holds for that player. Your next refresh fails with `invalid_grant` and `/api/v1/user/me` answers `401`.
 - Already-issued JWTs remain cryptographically valid until their natural `exp` (≤ 60 min), because stateless validation does not query the DB. If you need instant revocation, call `/api/v1/user/me` periodically or shorten your TTL.
 
 When the user revokes and signs in to your app again, Vout will display the consent screen again as if it were the first time.
@@ -444,11 +528,11 @@ Content-Type: application/x-www-form-urlencoded
 grant_type=refresh_token
 &refresh_token=def50200c...
 &client_id=YOUR_CLIENT_ID
-&client_secret=YOUR_CLIENT_SECRET
+&client_secret=YOUR_CLIENT_SECRET    (only if your client is confidential)
 &scope=user:read
 ```
 
-Refresh Tokens are valid for **30 days** (configurable).
+Refresh Tokens are valid for **30 days**. Each renewal gives you a new refresh token and the previous one stops working: always keep the latest. If renewal fails with `invalid_grant` (expired or revoked), send the player to `/oauth/authorize` again.
 
 ---
 
@@ -458,12 +542,12 @@ Each Vout user has a **unique UUID** called `vout_id`. It's the identifier you s
 
 You can obtain it from two places, and both return exactly the same value:
 
-1. Inside the JWT, as the `vout_id` claim. No network in the middle, so it's instant. Available since the current version of Vout.
+1. Inside the JWT, as the `vout_id` claim. No network in the middle, so it's instant.
 2. From `GET /api/v1/user/me`, in the `vout_id` field. It also includes name, avatar, and email.
 
 For the `JWT → local user` lookup, read the claim from the JWT and you save the call. Reserve `/me` for when you need fresh profile data (updated avatar, email, etc.).
 
-Don't use the auto-incremental ID: for security reasons, Vout does not expose it externally.
+Don't link by `sub` (an internal identifier whose format may change), nor by `email` or `username` (the player can change them).
 
 ```sql
 -- In your database (example for your players table):
@@ -502,10 +586,10 @@ The modern and recommended standard is `Content-Security-Policy: frame-ancestors
 On your game's server, **remove** `X-Frame-Options` and **add**:
 
 ```
-Content-Security-Policy: frame-ancestors 'self' https://vout.app https://www.vout.app
+Content-Security-Policy: frame-ancestors 'self' https://vout.example.com
 ```
 
-`frame-ancestors` lists the **origins of the portal that will embed your game**, not your own. Replace `https://vout.app` with the actual domain of the Vout instance where you registered your app (we confirm it when you onboard). Your game can run on `localhost`, staging, or production — that does not affect this header. What matters is **where** the embedding iframe is loaded from: that's the origin you must authorize.
+`frame-ancestors` lists the **origins of the portal that will embed your game**, not your own. Replace `https://vout.example.com` with the portal's real domain (the one in the address bar). If the portal is also served with `www.`, add both. Your game can run on `localhost`, staging, or production — that does not affect this header. What matters is **where** the embedding iframe is loaded from: that's the origin you must authorize.
 
 ### Recipes by stack
 
@@ -519,7 +603,7 @@ public function handle(Request $request, Closure $next): Response
     $response->headers->remove('X-Frame-Options');
     $response->headers->set(
         'Content-Security-Policy',
-        "frame-ancestors 'self' https://vout.app",
+        "frame-ancestors 'self' https://vout.example.com",
     );
     return $response;
 }
@@ -531,7 +615,7 @@ public function handle(Request $request, Closure $next): Response
 app.use(helmet({ frameguard: false }));
 app.use(helmet.contentSecurityPolicy({
     directives: {
-        frameAncestors: ["'self'", 'https://vout.app'],
+        frameAncestors: ["'self'", 'https://vout.example.com'],
     },
 }));
 ```
@@ -544,7 +628,7 @@ async headers() {
         source: '/:path*',
         headers: [{
             key: 'Content-Security-Policy',
-            value: "frame-ancestors 'self' https://vout.app",
+            value: "frame-ancestors 'self' https://vout.example.com",
         }],
     }];
 }
@@ -553,7 +637,7 @@ async headers() {
 **nginx** — in the game's `server` block:
 
 ```
-add_header Content-Security-Policy "frame-ancestors 'self' https://vout.app" always;
+add_header Content-Security-Policy "frame-ancestors 'self' https://vout.example.com" always;
 # Remove any previous line setting X-Frame-Options.
 ```
 
@@ -561,7 +645,7 @@ add_header Content-Security-Policy "frame-ancestors 'self' https://vout.app" alw
 
 ```
 Header always unset X-Frame-Options
-Header always set Content-Security-Policy "frame-ancestors 'self' https://vout.app"
+Header always set Content-Security-Policy "frame-ancestors 'self' https://vout.example.com"
 ```
 
 ### Verify before publishing
@@ -571,7 +655,7 @@ curl -I https://your-game.com/ | grep -iE "x-frame|content-security"
 ```
 
 - If you see `X-Frame-Options: SAMEORIGIN` or `DENY` → your game won't embed in Vout.
-- If you see `Content-Security-Policy: frame-ancestors 'self' https://vout.app` → you're all set.
+- If you see `Content-Security-Policy: frame-ancestors 'self' https://vout.example.com` → you're all set.
 
 Without this header configured correctly, the portal's iframe will show a blank box, and your players won't be able to open your game from Vout. Check both environments (development and production) before submitting the game.
 
@@ -590,10 +674,10 @@ That token is a regular Vout access token: same format, same signature and same 
 Vout publishes a script that does everything in this section for you. Load it, tell it the portal origin, and you are done:
 
 ```html
-<script src="https://vout.app/sdk/vout-game.js"></script>
+<script src="https://vout.example.com/sdk/vout-game.js"></script>
 <script>
     const vout = VoutGame.connect({
-        portalOrigin: 'https://vout.app',
+        portalOrigin: 'https://vout.example.com',
 
         // Identity: arrives on connect and on every token renewal.
         onAuth(session) {
@@ -670,16 +754,18 @@ If you don't send `READY` within 8 seconds of your page loading, the user sees a
 
 ### Which token you get
 
-| | App with OAuth (`requires_auth = true`) | Catalog-only game |
+| | App with Vout accounts (with an OAuth client) | App without Vout accounts |
 | :--- | :--- | :--- |
 | `aud` | Your `client_id` | An internal portal client |
 | `scopes` | `["user:read"]` | `["game:play"]` |
 | Lifetime | 60 minutes | 60 minutes |
 | Asks for consent | Only if your app is third-party and the user hasn't authorized it yet | No |
 
+If the game is in "No account" mode, or the player has no identity to give you, there is no token: you get `VOUT_GUEST` (see "Playing without an account").
+
 If your app has an OAuth client, the token is issued for you: validate `aud` against your `client_id` just like in the direct flow, and you can use it as a Bearer token against `/api/v1/user/me`.
 
-If your game is catalog-only, the token is not issued for you. At most, use it to greet the player by name. If you need an identity you can rely on (saving progress, leaderboards), register your app with `requires_auth = true`.
+If your game is catalog-only, the token is not issued for you. At most, use it to greet the player by name. If you need an identity you can rely on (saving progress, leaderboards), turn on Vout accounts for your app (request the credentials from its page).
 
 ### Consent
 
@@ -835,7 +921,7 @@ With a guest:
 
 ```js
 // The portal origin, fixed in your configuration. Never derive it from the message.
-const VOUT_ORIGIN = 'https://vout.app';
+const VOUT_ORIGIN = 'https://vout.example.com';
 
 let session = null;
 // The portal already answered READY (with VOUT_AUTH or VOUT_GUEST).
@@ -922,19 +1008,38 @@ The portal loads your game with `sandbox="allow-scripts allow-same-origin allow-
 **No.** Vout uses standard OAuth2. Any compatible OAuth2 library works. For a game embedded in the portal there is an optional SDK (`/sdk/vout-game.js`) that saves you from implementing the iframe protocol.
 
 ### What if my game has no backend?
-If your game is frontend-only (HTML/JS without a server), use a PKCE client (`--public`) that doesn't require a `client_secret`. The flow works directly from the browser.
+Inside the portal it can know who is playing (`VOUT_AUTH` carries `voutId` and `username`) and receive gestures, but without a server it can't verify the token or store anything under the player's name. Outside the portal, "Sign in with Vout" needs a backend today: Vout doesn't yet accept the code exchange from a browser on another domain (CORS). If your game stores nothing per player, publish it in "No account" mode.
 
 ### Can I register my app but not use authentication?
-**Yes.** Register your app with `requires_auth = false`. It will appear in the Vout catalog without needing OAuth2.
+**Yes.** When you create the app, say it doesn't use Vout accounts: no OAuth client is created. Your game can be in the catalog ("No account" mode) and still receive gestures. If you want accounts later, request the credentials from the app's page.
+
+### Can I test locally?
+**Yes.** Add your local origin (for example `http://localhost:8090`) to the allowed origins and a local redirect URL. Keep in mind what "Watch out locally" says about cookies inside the iframe.
+
+### What if I change domains?
+Add the new origin and its redirect URLs to the app, and update your game's URL from your dashboard. Keep the old one until it's no longer used.
 
 ### Can I refresh the token from inside the portal's iframe?
 **Don't count on it.** While embedded, your cookies are third-party and the browser may block them. The portal renews the token for you and resends it with another `VOUT_AUTH` before the previous one expires (see "Identity Inside the iFrame").
 
 ### How are first-party projects different from third-party ones?
-Apps marked as `is_first_party = true` don't show the authorization prompt to the user. The OAuth2 flow is identical in both cases — the only difference is the user experience.
+Apps marked as `is_first_party = true` don't show the authorization prompt to the user. Only the Vout team can mark an app that way. The OAuth2 flow is identical in both cases — the only difference is the user experience.
+
+---
+
+## Pre-publish checklist
+
+- [ ] Your app's allowed origins are exactly your game's (scheme, host and port), production included.
+- [ ] Your server lets the portal embed you (`frame-ancestors`) and doesn't send `X-Frame-Options`.
+- [ ] Your game sends `READY` as soon as it starts and accepts `VOUT_AUTH` and `VOUT_GUEST` (or uses the SDK).
+- [ ] When receiving messages you check `event.origin` and `event.source`; when sending, you pass the portal's origin, never `'*'`.
+- [ ] Your backend verifies every token: signature against the JWKS, `iss`, `aud` equal to your `client_id`, and `exp`.
+- [ ] You store each player by `vout_id`, not by `sub`, `email` or `username`.
+- [ ] The `client_secret` only lives on your server.
+- [ ] The account mode and face-control level you declare are the real ones.
 
 ---
 
 ## Support
 
-To register your application or resolve technical questions, contact the Vout team.
+Everything in this guide is done from your dashboard, without asking anyone. The only things that depend on the Vout team are reviewing games and marking an app as one of Vout's own.
