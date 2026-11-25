@@ -19,7 +19,12 @@ resources/js/routes
 resources/js/wayfinder
 
 tests
-docs
+# docs/ fuera, salvo lo que la app lee en producción: /legal/* y
+# /developers/docs/integration-guide.
+docs/*
+!docs/legal
+!docs/integration-guide.md
+!docs/integration-guide.en.md
 ejemplos mediapipe
 .phpunit.cache
 .phpunit.result.cache
