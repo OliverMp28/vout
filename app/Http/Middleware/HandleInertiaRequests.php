@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Enums\GameStatus;
 use App\Models\Game;
+use App\Support\PasswordPolicy;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -57,6 +58,8 @@ class HandleInertiaRequests extends Middleware
                     'settings' => $request->user()->settings,
                 ] : null,
             ],
+            // Pista de los campos de contraseña: lo mismo que exige el servidor.
+            'passwordRequirements' => PasswordPolicy::requirements(),
             'admin' => $this->adminContext($request),
             'flash' => [
                 'status' => $request->session()->get('status'),

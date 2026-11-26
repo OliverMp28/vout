@@ -4,6 +4,7 @@ import { useRef } from 'react';
 import PasswordController from '@/actions/App/Http/Controllers/Settings/PasswordController';
 import InputError from '@/components/input-error';
 import { CelebrateOnSuccess } from '@/components/mascot/celebrate-on-success';
+import PasswordHint, { usePasswordHintId } from '@/components/password-hint';
 import { SectionPanel } from '@/components/section-panel';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -25,6 +26,7 @@ export default function Password() {
         },
     ];
     const passwordInput = useRef<HTMLInputElement>(null);
+    const passwordHintId = usePasswordHintId('password-hint');
     const currentPasswordInput = useRef<HTMLInputElement>(null);
 
     // Un único mensaje: tip de seguridad. Es tap-only — el auto-show aquí
@@ -71,7 +73,12 @@ export default function Password() {
                         }}
                         className="space-y-6"
                     >
-                        {({ errors, processing, recentlySuccessful }) => (
+                        {({
+                            errors,
+                            processing,
+                            recentlySuccessful,
+                            clearErrors,
+                        }) => (
                             <>
                                 <CelebrateOnSuccess
                                     recentlySuccessful={recentlySuccessful}
@@ -116,8 +123,11 @@ export default function Password() {
                                         name="password"
                                         type="password"
                                         autoComplete="new-password"
+                                        aria-describedby={passwordHintId}
+                                        onChange={() => clearErrors('password')}
                                     />
 
+                                    <PasswordHint id="password-hint" />
                                     <InputError message={errors.password} />
                                 </div>
 
@@ -131,6 +141,12 @@ export default function Password() {
                                         name="password_confirmation"
                                         type="password"
                                         autoComplete="new-password"
+                                        onChange={() =>
+                                            clearErrors(
+                                                'password',
+                                                'password_confirmation',
+                                            )
+                                        }
                                     />
 
                                     <InputError

@@ -2,6 +2,7 @@ import { Form, Head } from '@inertiajs/react';
 import { useState } from 'react';
 import { GoogleIcon } from '@/components/icons/google-icon';
 import InputError from '@/components/input-error';
+import PasswordHint, { usePasswordHintId } from '@/components/password-hint';
 import TextLink from '@/components/text-link';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -16,6 +17,7 @@ import { store } from '@/routes/register';
 
 export default function Register() {
     const { t } = useTranslation();
+    const passwordHintId = usePasswordHintId('password-hint');
     const [acceptTerms, setAcceptTerms] = useState(false);
     // Age-gate oculto por decisión de producto (proyecto personal, sin público masivo).
     // Backend + i18n + traducciones siguen intactos — para reactivarlo basta con
@@ -34,7 +36,7 @@ export default function Register() {
                 disableWhileProcessing
                 className="flex flex-col gap-5"
             >
-                {({ processing, errors }) => (
+                {({ processing, errors, clearErrors }) => (
                     <>
                         <div className="space-y-4">
                             <div className="space-y-2">
@@ -95,13 +97,15 @@ export default function Register() {
                                         autoComplete="new-password"
                                         name="password"
                                         placeholder="••••••••"
+                                        aria-describedby={passwordHintId}
+                                        onChange={() => clearErrors('password')}
                                     />
                                     <InputError message={errors.password} />
                                 </div>
 
                                 <div className="space-y-2">
                                     <Label htmlFor="password_confirmation">
-                                        Confirm
+                                        {t('auth.register.password_confirm')}
                                     </Label>
                                     <Input
                                         id="password_confirmation"
@@ -110,10 +114,20 @@ export default function Register() {
                                         autoComplete="new-password"
                                         name="password_confirmation"
                                         placeholder="••••••••"
+                                        onChange={() =>
+                                            clearErrors(
+                                                'password',
+                                                'password_confirmation',
+                                            )
+                                        }
                                     />
                                     <InputError
                                         message={errors.password_confirmation}
                                     />
+                                </div>
+
+                                <div className="col-span-2">
+                                    <PasswordHint id="password-hint" />
                                 </div>
                             </div>
 

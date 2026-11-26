@@ -7,13 +7,17 @@ use App\Models\Passport\Client;
 use App\Models\RegisteredApp;
 use App\Models\User;
 use App\Passport\AccessToken as VoutAccessToken;
+use App\Support\PasswordPolicy;
 use Carbon\CarbonImmutable;
+use Illuminate\Contracts\Validation\UncompromisedVerifier;
+use Illuminate\Http\Client\Factory as HttpFactory;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Validation\NotPwnedVerifier;
 use Illuminate\Validation\Rules\Password;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -28,7 +32,12 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // `extend` y no `singleton`: el provider de validación es diferido y
+        // volvería a registrar el suyo (con 30 s de espera) al pedirlo.
+        $this->app->extend(UncompromisedVerifier::class, fn (UncompromisedVerifier $verifier, $app): NotPwnedVerifier => new NotPwnedVerifier(
+            $app->make(HttpFactory::class),
+            PasswordPolicy::BREACH_CHECK_TIMEOUT_SECONDS,
+        ));
     }
 
     /**
@@ -168,14 +177,6 @@ class AppServiceProvider extends ServiceProvider
             app()->isProduction(),
         );
 
-        Password::defaults(fn (): ?Password => app()->isProduction()
-            ? Password::min(12)
-                ->mixedCase()
-                ->letters()
-                ->numbers()
-                ->symbols()
-                ->uncompromised()
-            : null,
-        );
+        Password::defaults(fn (): ?Password => PasswordPolicy::rule());
     }
 }

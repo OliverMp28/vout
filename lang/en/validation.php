@@ -202,6 +202,14 @@ return [
     |
     */
 
-    'attributes' => [],
+    // Explícitos aunque coincidan con el nombre del campo: si faltan, Laravel
+    // usa los del idioma de reserva y un usuario en inglés leería "contraseña".
+    'attributes' => [
+        'name' => 'name',
+        'username' => 'username',
+        'email' => 'email',
+        'password' => 'password',
+        'password_confirmation' => 'password confirmation',
+    ],
 
 ];
